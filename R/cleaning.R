@@ -27,6 +27,7 @@ html_text_vec <- function(url) {
 #' @importFrom stringr str_sub str_detect str_replace_all
 #' @importFrom glue glue
 #' @return A scalar, concatenated string of dependencies
+#' @export
 get_dep_str <- function(v, x) {
     x <- stringr::str_replace_all(x, "_", "\u00a0") # \u00a0 is the actual underscore used in pages, while the usual one is \u005F
     x <- glue::glue("{x}:")

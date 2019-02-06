@@ -2,6 +2,7 @@
 
 export(cran_url)
 export(df_to_graph)
+export(get_dep_str)
 export(html_text_vec)
 export(list_of_dep)
 export(unnest_dep)
