@@ -86,6 +86,7 @@ unnest_dep <- function(df, type) {
 #' @importFrom igraph graph_from_data_frame decompose.graph V
 #' @importFrom purrr map_int map
 #' @return An igraph object & a connected graph
+#' @export
 df_to_graph <- function(edgelist, nodelist) {
     l <- igraph::decompose.graph(igraph::graph_from_data_frame(dplyr::semi_join(edgelist, nodelist, c("to" = "name")))) # semi join as some nodes (packages) may have become obsolete
     l[[which.max(purrr::map_int(purrr::map(l, igraph::V), length))]]
