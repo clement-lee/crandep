@@ -27,8 +27,23 @@ devtools::install_github("clement-lee/rackage")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+This is a basic example which shows you how to obtain one kind of dependencies (Imports) for one package (dplyr):
 
-```{r example, echo = FALSE, include = FALSE}
-## basic example code
+```{r example, echo = TRUE, include = TRUE}
+library(rackage)
+
+## Get the CRAN URL for package dplyr
+foo <- cran_url("dplyr")
+foo
+
+## Get the html text of the page
+bar <- html_text_vec(foo)
+
+## Get the string of imported packages
+qux <- get_dep_str(bar, "Imports")
+qux
+
+## Split the above string into a vector
+quz <- list_of_dep(qux)
+quz
 ```
