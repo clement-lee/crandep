@@ -24,12 +24,13 @@ html_text_vec <- function(url) {
 #'
 #' @param v A vector of strings
 #' @param x One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"
-#' @importFrom stringr str_sub str_detect str_replace_all
+#' @importFrom stringr str_sub str_detect str_replace_all str_to_title
 #' @importFrom glue glue
 #' @return A scalar, concatenated string of dependencies
 #' @export
 get_dep_str <- function(v, x) {
     x <- stringr::str_replace_all(x, "_", "\u00a0") # \u00a0 is the actual underscore used in pages, while the usual one is \u005F
+    x <- stringr::str_to_title(x)
     x <- glue::glue("{x}:")
     s <- seq_along(v)
     i <- which(stringr::str_sub(v, 1L, nchar(x)) == x)
@@ -48,7 +49,7 @@ get_dep_str <- function(v, x) {
 #' @importFrom stringr str_split str_locate str_sub
 #' @return A string vector of dependencies
 #' @export
-list_of_dep <- function(x) {
+get_dep_vec <- function(x) {
     if (is.na(x)) {
         y <- as.character(NA)
     } else {

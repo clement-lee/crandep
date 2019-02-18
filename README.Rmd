@@ -44,6 +44,6 @@ qux <- get_dep_str(bar, "Imports")
 qux
 
 ## Split the above string into a vector
-quz <- list_of_dep(qux)
+quz <- get_dep_vec(qux)
 quz
 ```
