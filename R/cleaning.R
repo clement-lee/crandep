@@ -29,8 +29,15 @@ html_text_vec <- function(url) {
 #' @return A scalar, concatenated string of dependencies
 #' @export
 get_dep_str <- function(v, x) {
-    x <- stringr::str_replace_all(x, "_", "\u00a0") # \u00a0 is the actual underscore used in pages, while the usual one is \u005F
+    words <- c("Depends", "Imports", "LinkingTo", "Suggests", "Reverse\u00a0depends", "Reverse\u00a0imports", "Reverse\u00a0linking\u00a0to", "Reverse\u00a0suggests")
     x <- stringr::str_to_title(x)
+    x <- stringr::str_replace_all(x, "_", "\u00a0") # \u00a0 is the actual underscore used in pages, while the usual one is \u005F
+    if (x == "Linkingto") {
+        x <- "LinkingTo"
+    }
+    if (!(x %in% words)) {
+        stop(as.character(glue::glue("x has to be one of the following: {paste(stringr::str_replace_all(words, '\u00a0', '_'), collapse = ', ')}."))) 
+    }
     x <- glue::glue("{x}:")
     s <- seq_along(v)
     i <- which(stringr::str_sub(v, 1L, nchar(x)) == x)
