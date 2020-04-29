@@ -7,11 +7,15 @@
 get_dep_vec(x)
 }
 \arguments{
-\item{x}{A scalar string, preferably an output of get_dep_str()}
+\item{x}{A scalar string, possibly an output of get_dep_str()}
 }
 \value{
 A string vector of dependencies
 }
 \description{
 Split a string to a list of dependencies
+}
+\examples{
+string <- get_dep_str(html_text_vec(cran_url("MASS")), "Depends") # the packages MASS depends on
+get_dep_vec(string) # R (<version>) will be removed
 }

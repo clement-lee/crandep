@@ -17,3 +17,9 @@ A scalar, concatenated string of dependencies
 \description{
 Find string corresponding to "Imports", "Depends" etc.
 }
+\examples{
+get_dep_str(html_text_vec(cran_url("MASS")), "Depends")
+get_dep_str(html_text_vec(cran_url("dplyr")), "Imports")
+get_dep_str(html_text_vec(cran_url("Rcpp")), "Reverse_depends")
+get_dep_str(html_text_vec(cran_url("lme4")), "LinkingTo")
+}

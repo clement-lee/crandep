@@ -15,3 +15,8 @@ The html text of the page as a string vector
 \description{
 Scrap the page (of a package) as a text vector
 }
+\examples{
+str.dplyr <- "https://cran.r-project.org/web/packages/dplyr/index.html" # CRAN page for dplyr
+html.dplyr <- html_text_vec(str.dplyr)
+html.abc <- html_text_vec(cran_url("abc")) # the page for abc on CRAN
+}

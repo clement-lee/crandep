@@ -17,3 +17,10 @@ An igraph object & a connected graph
 \description{
 Construct the giant component of the network from two data frames
 }
+\examples{
+from <- c("1", "2", "4")
+to <- c("2", "3", "5")
+edges <- data.frame(from = from, to = to, stringsAsFactors = FALSE)
+nodes <- data.frame(name = c("1", "2", "3", "4", "5"), stringsAsFactors = FALSE)
+df_to_graph(edges, nodes)
+}

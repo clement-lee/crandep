@@ -1,5 +1,5 @@
 Package: rackage
-Title: Analysis of R packages on CRAN
+Title: Network Analysis of R Packages on CRAN
 Version: 0.0.1
 Authors@R: person("Clement", "Lee", email = "clement.lee.tm@outlook.com", role = c("aut", "cre"))
 Description: R packages on CRAN can be analysed, particularly in a network fashion, easily through scrapping their pages on CRAN.
@@ -8,6 +8,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: glue, xml2, rvest, stringr, dplyr, tidyr, rlang, igraph, purrr
+Suggests: tibble
 RoxygenNote: 6.1.1
 NeedsCompilation: no
 Packaged: 2019-02-06 12:40:16 UTC; clement_lee

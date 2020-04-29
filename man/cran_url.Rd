@@ -15,3 +15,6 @@ The URL for the package on CRAN
 \description{
 Obtain the URL on CRAN using the package name
 }
+\examples{
+cran_url("dplyr")
+}

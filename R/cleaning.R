@@ -1,11 +1,12 @@
 #' Obtain the URL on CRAN using the package name
 #'
 #' @param name String, name of the package
-#' @importFrom glue glue
 #' @return The URL for the package on CRAN
+#' @examples
+#' cran_url("dplyr")
 #' @export
 cran_url <- function(name) {
-    glue::glue("https://CRAN.R-project.org/package={name}") # canonical form
+    paste0("https://CRAN.R-project.org/package=", name) # canonical form
 }
 
 #' Scrap the page (of a package) as a text vector
@@ -15,6 +16,10 @@ cran_url <- function(name) {
 #' @importFrom rvest html_text
 #' @importFrom stringr str_split
 #' @return The html text of the page as a string vector
+#' @examples
+#' str.dplyr <- "https://cran.r-project.org/web/packages/dplyr/index.html" # CRAN page for dplyr
+#' html.dplyr <- html_text_vec(str.dplyr)
+#' html.abc <- html_text_vec(cran_url("abc")) # the page for abc on CRAN
 #' @export
 html_text_vec <- function(url) {
     as.vector(stringr::str_split(rvest::html_text(xml2::read_html(url)), "\n", simplify = TRUE))
@@ -27,6 +32,11 @@ html_text_vec <- function(url) {
 #' @importFrom stringr str_sub str_detect str_replace_all str_to_title
 #' @importFrom glue glue
 #' @return A scalar, concatenated string of dependencies
+#' @examples
+#' get_dep_str(html_text_vec(cran_url("MASS")), "Depends")
+#' get_dep_str(html_text_vec(cran_url("dplyr")), "Imports")
+#' get_dep_str(html_text_vec(cran_url("Rcpp")), "Reverse_depends")
+#' get_dep_str(html_text_vec(cran_url("lme4")), "LinkingTo")
 #' @export
 get_dep_str <- function(v, x) {
     words <- c("Depends", "Imports", "LinkingTo", "Suggests", "Reverse\u00a0depends", "Reverse\u00a0imports", "Reverse\u00a0linking\u00a0to", "Reverse\u00a0suggests")
@@ -52,9 +62,12 @@ get_dep_str <- function(v, x) {
 
 #' Split a string to a list of dependencies
 #'
-#' @param x A scalar string, preferably an output of get_dep_str()
+#' @param x A scalar string, possibly an output of get_dep_str()
 #' @importFrom stringr str_split str_locate str_sub
 #' @return A string vector of dependencies
+#' @examples
+#' string <- get_dep_str(html_text_vec(cran_url("MASS")), "Depends") # the packages MASS depends on
+#' get_dep_vec(string) # R (<version>) will be removed
 #' @export
 get_dep_vec <- function(x) {
     if (is.na(x)) {
@@ -80,6 +93,20 @@ get_dep_vec <- function(x) {
 #' @importFrom dplyr select filter rename
 #' @importFrom tidyr unnest
 #' @return A data frame with two columns: from & to
+#' @examples
+#' if (requireNamespace("tibble", quietly = TRUE)) {
+#'     name.vec <- c("dplyr", "MASS", "Rcpp")
+#'     depends.vec <- rep(NA, length(name.vec))
+#'     imports.vec <- rep(NA, length(name.vec))
+#'     for (i in seq_along(name.vec)) {
+#'         html0 <- html_text_vec(cran_url(name.vec[i]))
+#'         depends.vec[i] <- list(get_dep_vec(get_dep_str(html0, "Depends")))
+#'         imports.vec[i] <- list(get_dep_vec(get_dep_str(html0, "Imports")))
+#'     }
+#'     df0 <- tibble::tibble(name = name.vec, depends = depends.vec, imports = imports.vec)
+#'     unnest_dep(df0, depends)
+#'     unnest_dep(df0, imports)
+#' }
 #' @export
 unnest_dep <- function(df, type) {
     type_enquo <- rlang::enquo(type)
@@ -95,6 +122,12 @@ unnest_dep <- function(df, type) {
 #' @importFrom igraph graph_from_data_frame decompose.graph V
 #' @importFrom purrr map_int map
 #' @return An igraph object & a connected graph
+#' @examples
+#' from <- c("1", "2", "4")
+#' to <- c("2", "3", "5")
+#' edges <- data.frame(from = from, to = to, stringsAsFactors = FALSE)
+#' nodes <- data.frame(name = c("1", "2", "3", "4", "5"), stringsAsFactors = FALSE)
+#' df_to_graph(edges, nodes)
 #' @export
 df_to_graph <- function(edgelist, nodelist) {
     l <- igraph::decompose.graph(igraph::graph_from_data_frame(dplyr::semi_join(edgelist, nodelist, c("to" = "name")))) # semi join as some nodes (packages) may have become obsolete

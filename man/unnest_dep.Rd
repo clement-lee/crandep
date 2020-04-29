@@ -17,3 +17,18 @@ A data frame with two columns: from & to
 \description{
 Obtain the data frame of one kind of dependencies
 }
+\examples{
+if (requireNamespace("tibble", quietly = TRUE)) {
+    name.vec <- c("dplyr", "MASS", "Rcpp")
+    depends.vec <- rep(NA, length(name.vec))
+    imports.vec <- rep(NA, length(name.vec))
+    for (i in seq_along(name.vec)) {
+        html0 <- html_text_vec(cran_url(name.vec[i]))
+        depends.vec[i] <- list(get_dep_vec(get_dep_str(html0, "Depends")))
+        imports.vec[i] <- list(get_dep_vec(get_dep_str(html0, "Imports")))
+    }
+    df0 <- tibble::tibble(name = name.vec, depends = depends.vec, imports = imports.vec)
+    unnest_dep(df0, depends)
+    unnest_dep(df0, imports)
+}
+}
