@@ -1,8 +1,8 @@
 Package: rackage
-Title: Network Analysis of R Packages on CRAN
+Title: Network Analysis of Packages on CRAN
 Version: 0.0.1
-Authors@R: person("Clement", "Lee", email = "clement.lee.tm@outlook.com", role = c("aut", "cre"))
-Description: R packages on CRAN can be analysed, particularly in a network fashion, easily through scrapping their pages on CRAN.
+Authors@R: person("Clement", "Lee", email = "clement.lee.tm@outlook.com", role = c("aut", "cre", "cph"))
+Description: Packages on CRAN can be analysed, particularly in a network fashion, easily through scrapping their pages on CRAN.
 Depends: R (>= 3.4)
 License: MIT + file LICENSE
 Encoding: UTF-8

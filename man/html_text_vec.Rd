@@ -10,7 +10,7 @@ html_text_vec(url)
 \item{url}{An URL}
 }
 \value{
-The html text of the page as a string vector
+A string vector of the html text of the page according to the url
 }
 \description{
 Scrap the page (of a package) as a text vector

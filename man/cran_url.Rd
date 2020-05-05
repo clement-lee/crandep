@@ -10,7 +10,7 @@ cran_url(name)
 \item{name}{String, name of the package}
 }
 \value{
-The URL for the package on CRAN
+A string of the URL for the package on CRAN
 }
 \description{
 Obtain the URL on CRAN using the package name

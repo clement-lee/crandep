@@ -1,16 +1,21 @@
 #' Return a sorted vector of nodes id
 #'
-#' @param g An igraph graph object
+#' @param g An igraph object of a DAG
 #' @param random Boolean, whether the order of selected nodes is randomised in the process
+#' @return A data frame with two columns: "id" is the names of nodes in g, and "id_num" is the topological ordering
 #' @examples
 #' df0 <- data.frame(from = c("a", "b"), to = c("b", "c"), stringsAsFactors = FALSE)
-#' g0 <- igraph::graph_from_data_frame(df0)
+#' g0 <- igraph::graph_from_data_frame(df0, directed = TRUE)
 #' topo_sort_kahn(g0)
 #' @importFrom igraph as_data_frame
 #' @importFrom igraph V
 #' @importFrom igraph as_adjacency_matrix
+#' @importFrom igraph is_dag
 #' @export
 topo_sort_kahn <- function(g, random = FALSE) {
+    if (!is_dag(g)) {
+        stop("g has to be a DAG")
+    }
     e0 <- igraph::as_data_frame(g)
     names(e0) <- c("citing", "cited")
     v <- names(igraph::V(g))

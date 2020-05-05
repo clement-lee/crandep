@@ -7,15 +7,18 @@
 topo_sort_kahn(g, random = FALSE)
 }
 \arguments{
-\item{g}{An igraph graph object}
+\item{g}{An igraph object of a DAG}
 
 \item{random}{Boolean, whether the order of selected nodes is randomised in the process}
+}
+\value{
+A data frame with two columns: "id" is the names of nodes in g, and "id_num" is the topological ordering
 }
 \description{
 Return a sorted vector of nodes id
 }
 \examples{
 df0 <- data.frame(from = c("a", "b"), to = c("b", "c"), stringsAsFactors = FALSE)
-g0 <- igraph::graph_from_data_frame(df0)
+g0 <- igraph::graph_from_data_frame(df0, directed = TRUE)
 topo_sort_kahn(g0)
 }

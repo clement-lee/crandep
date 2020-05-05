@@ -12,7 +12,7 @@ get_dep_str(v, x)
 \item{x}{One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"}
 }
 \value{
-A scalar, concatenated string of dependencies
+A string of the concatenation of the dependencies
 }
 \description{
 Find string corresponding to "Imports", "Depends" etc.

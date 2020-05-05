@@ -1,7 +1,7 @@
 #' Obtain the URL on CRAN using the package name
 #'
 #' @param name String, name of the package
-#' @return The URL for the package on CRAN
+#' @return A string of the URL for the package on CRAN
 #' @examples
 #' cran_url("dplyr")
 #' @export
@@ -15,7 +15,7 @@ cran_url <- function(name) {
 #' @importFrom xml2 read_html
 #' @importFrom rvest html_text
 #' @importFrom stringr str_split
-#' @return The html text of the page as a string vector
+#' @return A string vector of the html text of the page according to the url
 #' @examples
 #' str.dplyr <- "https://cran.r-project.org/web/packages/dplyr/index.html" # CRAN page for dplyr
 #' html.dplyr <- html_text_vec(str.dplyr)
@@ -31,7 +31,7 @@ html_text_vec <- function(url) {
 #' @param x One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"
 #' @importFrom stringr str_sub str_detect str_replace_all str_to_title
 #' @importFrom glue glue
-#' @return A scalar, concatenated string of dependencies
+#' @return A string of the concatenation of the dependencies
 #' @examples
 #' get_dep_str(html_text_vec(cran_url("MASS")), "Depends")
 #' get_dep_str(html_text_vec(cran_url("dplyr")), "Imports")
