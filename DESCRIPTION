@@ -2,15 +2,19 @@ Package: rackage
 Title: Network Analysis of Packages on CRAN
 Version: 0.0.1
 Authors@R: person("Clement", "Lee", email = "clement.lee.tm@outlook.com", role = c("aut", "cre", "cph"))
-Description: Packages on CRAN can be analysed, particularly in a network fashion, easily through scrapping their pages on CRAN.
+Description: The dependencies of CRAN packages can be analysed in a network fashion. Through scrapping the page of a package on CRAN, we can obtain the packages that it depends, imports, suggests, etc. By iterating this procedure over a number of packages, we can build the dependency network and represent it by a graph object, most easily through the igraph package. Subsequently, the dependency network can be visualised and analysed using social network analysis methods, enabling us to have a bird's-eye view of the CRAN ecosystem.
 Depends: R (>= 3.4)
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: glue, xml2, rvest, stringr, dplyr, tidyr, rlang, igraph, purrr
-Suggests: tibble
+Suggests: 
+    tibble,
+    knitr,
+    rmarkdown
 RoxygenNote: 6.1.1
 NeedsCompilation: no
 Packaged: 2019-02-06 12:40:16 UTC; clement_lee
-Author: Clement Lee [aut, cre]
+Author: Clement Lee [aut, cre, cph]
 Maintainer: Clement Lee <clement.lee.tm@outlook.com>
+VignetteBuilder: knitr

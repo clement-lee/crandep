@@ -1,0 +1,82 @@
+---
+title: "Introduction to rackage"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to rackage}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This vignette provides an introduction to using the functions to analyse the dependencies of CRAN packages using social network analysis.
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, message = FALSE}
+library(rackage)
+library(igraph)
+```
+
+To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep_all()` which takes the package name and the type of dependencies as the first and second arguments, respectively.
+
+```{r}
+imports_dplyr <- get_dep_all("dplyr", "Imports")
+imports_dplyr
+depends_MASS <- get_dep_all("MASS", "Depends")
+depends_MASS
+```
+
+`Imports` and `Depends` are the most common types of dependencies in `R` packages, but there are other types such as `Suggests`. Currently, the second argument accepts `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Reverse_depends`, `Reverse_imports`, `Reverse_linking_to`, and `Reverse_suggests`. For more information on different types of dependencies, see [the official guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies) and [http://r-pkgs.had.co.nz/description.html](http://r-pkgs.had.co.nz/description.html).  
+
+
+To build a dependency network, we have to obtain the dependencies for multiple packages. For illustration, we choose the [core packages of the tidyverse](https://www.tidyverse.org/packages/), and find out what each package `Imports`.
+
+```{r}
+(imports_ggplot2 <- get_dep_all("ggplot2", "Imports"))
+imports_tidyr <- get_dep_all("tidyr", "Imports")
+imports_readr <- get_dep_all("readr", "Imports")
+imports_purrr <- get_dep_all("purrr", "Imports")
+imports_tibble <- get_dep_all("tibble", "Imports")
+imports_stringr <- get_dep_all("stringr", "Imports")
+imports_forcats <- get_dep_all("forcats", "Imports")
+```
+
+Next, we put all the dependencies into one data frame, in which the package in the `from` column imports the package in the `to` column. This is essentially the edge list of the dependency network.
+
+```{r}
+df0_imports <- rbind(
+    data.frame(from = "ggplot2", to = imports_ggplot2, stringsAsFactors = FALSE),
+    data.frame(from = "dplyr", to = imports_dplyr, stringsAsFactors = FALSE),
+    data.frame(from = "tidyr", to = imports_tidyr, stringsAsFactors = FALSE),
+    data.frame(from = "readr", to = imports_readr, stringsAsFactors = FALSE),
+    data.frame(from = "purrr", to = imports_purrr, stringsAsFactors = FALSE),
+    data.frame(from = "tibble", to = imports_tibble, stringsAsFactors = FALSE),
+    data.frame(from = "stringr", to = imports_stringr, stringsAsFactors = FALSE),
+    data.frame(from = "forcats", to = imports_forcats, stringsAsFactors = FALSE)
+)
+head(df0_imports)
+```
+
+With the help of the igraph package, we can use this data frame to build a graph object that represents the dependency network.
+
+```{r, echo=c(1,2,4), out.width="660px", out.height="660px", fig.width=12, fig.height=12}
+g0_imports <- igraph::graph_from_data_frame(df0_imports)
+set.seed(1457L)
+par(mar = rep(0.0, 4))
+plot(g0_imports, vertex.label.cex=1.5)
+```
+
+The nature of a dependency network makes it a directed acyclic graph (DAG). We can use the igraph function `is_dag()` to check.
+
+```{r}
+igraph::is_dag(g0_imports)
+```
+
+Note that this applies to `Imports` (and `Depends`) only due to their nature. This acyclic nature does not apply to a network of, for example, `Suggests`.
+
+Methods in social network analysis, such as community detection algorithms, can be applied to study the properties of the network. With a comprehensive list of packages, a substantial dependency network can be built and visualised. Ideally, the dependencies of all the CRAN packages can be obtained to build the ultimate dependency network and to provide a bird's-eye view of the CRAN ecosystem.

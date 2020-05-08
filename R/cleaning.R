@@ -3,8 +3,8 @@
 #' @param name String, name of the package
 #' @return A string of the URL for the package on CRAN
 #' @examples
-#' cran_url("dplyr")
-#' @export
+#' \dontrun{cran_url("dplyr")}
+#' @keywords internal
 cran_url <- function(name) {
     paste0("https://CRAN.R-project.org/package=", name) # canonical form
 }
@@ -17,10 +17,12 @@ cran_url <- function(name) {
 #' @importFrom stringr str_split
 #' @return A string vector of the html text of the page according to the url
 #' @examples
+#' \dontrun{
 #' str.dplyr <- "https://cran.r-project.org/web/packages/dplyr/index.html" # CRAN page for dplyr
 #' html.dplyr <- html_text_vec(str.dplyr)
 #' html.abc <- html_text_vec(cran_url("abc")) # the page for abc on CRAN
-#' @export
+#' }
+#' @keywords internal
 html_text_vec <- function(url) {
     as.vector(stringr::str_split(rvest::html_text(xml2::read_html(url)), "\n", simplify = TRUE))
 }
@@ -33,11 +35,13 @@ html_text_vec <- function(url) {
 #' @importFrom glue glue
 #' @return A string of the concatenation of the dependencies
 #' @examples
+#' \dontrun{
 #' get_dep_str(html_text_vec(cran_url("MASS")), "Depends")
 #' get_dep_str(html_text_vec(cran_url("dplyr")), "Imports")
 #' get_dep_str(html_text_vec(cran_url("Rcpp")), "Reverse_depends")
 #' get_dep_str(html_text_vec(cran_url("lme4")), "LinkingTo")
-#' @export
+#' }
+#' @keywords internal
 get_dep_str <- function(v, x) {
     words <- c("Depends", "Imports", "LinkingTo", "Suggests", "Reverse\u00a0depends", "Reverse\u00a0imports", "Reverse\u00a0linking\u00a0to", "Reverse\u00a0suggests")
     x <- stringr::str_to_title(x)
@@ -66,9 +70,11 @@ get_dep_str <- function(v, x) {
 #' @importFrom stringr str_split str_locate str_sub
 #' @return A string vector of dependencies
 #' @examples
+#' \dontrun{
 #' string <- get_dep_str(html_text_vec(cran_url("MASS")), "Depends") # the packages MASS depends on
 #' get_dep_vec(string) # R (<version>) will be removed
-#' @export
+#' }
+#' @keywords internal
 get_dep_vec <- function(x) {
     if (is.na(x)) {
         y <- as.character(NA)
@@ -85,6 +91,19 @@ get_dep_vec <- function(x) {
     y
 }
 
+#' Obtain one type of dependencies of a package directly. This is essentially the same as chaining get
+#'
+#' @param name String, name of the package
+#' @param type One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"
+#' @return A string vector of dependencies
+#' @examples
+#' get_dep_all("dplyr", "Imports")
+#' get_dep_all("MASS", "Depends")
+#' @export
+get_dep_all <- function(name, type) {
+    get_dep_vec(get_dep_str(html_text_vec(cran_url(name)), type))
+}
+
 #' Obtain the data frame of one kind of dependencies
 #'
 #' @param df A data frame with at least two columns: name - a string vector, and <type> - a list of string vectors
@@ -99,9 +118,8 @@ get_dep_vec <- function(x) {
 #'     depends.vec <- rep(NA, length(name.vec))
 #'     imports.vec <- rep(NA, length(name.vec))
 #'     for (i in seq_along(name.vec)) {
-#'         html0 <- html_text_vec(cran_url(name.vec[i]))
-#'         depends.vec[i] <- list(get_dep_vec(get_dep_str(html0, "Depends")))
-#'         imports.vec[i] <- list(get_dep_vec(get_dep_str(html0, "Imports")))
+#'         depends.vec[i] <- list(get_dep_all(name.vec[i], "Depends"))
+#'         imports.vec[i] <- list(get_dep_all(name.vec[i], "Imports"))
 #'     }
 #'     df0 <- tibble::tibble(name = name.vec, depends = depends.vec, imports = imports.vec)
 #'     unnest_dep(df0, depends)

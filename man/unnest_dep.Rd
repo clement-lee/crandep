@@ -23,9 +23,8 @@ if (requireNamespace("tibble", quietly = TRUE)) {
     depends.vec <- rep(NA, length(name.vec))
     imports.vec <- rep(NA, length(name.vec))
     for (i in seq_along(name.vec)) {
-        html0 <- html_text_vec(cran_url(name.vec[i]))
-        depends.vec[i] <- list(get_dep_vec(get_dep_str(html0, "Depends")))
-        imports.vec[i] <- list(get_dep_vec(get_dep_str(html0, "Imports")))
+        depends.vec[i] <- list(get_dep_all(name.vec[i], "Depends"))
+        imports.vec[i] <- list(get_dep_all(name.vec[i], "Imports"))
     }
     df0 <- tibble::tibble(name = name.vec, depends = depends.vec, imports = imports.vec)
     unnest_dep(df0, depends)

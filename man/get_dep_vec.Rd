@@ -16,6 +16,9 @@ A string vector of dependencies
 Split a string to a list of dependencies
 }
 \examples{
+\dontrun{
 string <- get_dep_str(html_text_vec(cran_url("MASS")), "Depends") # the packages MASS depends on
 get_dep_vec(string) # R (<version>) will be removed
 }
+}
+\keyword{internal}
