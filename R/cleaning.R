@@ -32,7 +32,6 @@ html_text_vec <- function(url) {
 #' @param v A vector of strings
 #' @param x One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"
 #' @importFrom stringr str_sub str_detect str_replace_all str_to_title
-#' @importFrom glue glue
 #' @return A string of the concatenation of the dependencies
 #' @examples
 #' \dontrun{
@@ -50,9 +49,10 @@ get_dep_str <- function(v, x) {
         x <- "LinkingTo"
     }
     if (!(x %in% words)) {
-        stop(as.character(glue::glue("x has to be one of the following: {paste(stringr::str_replace_all(words, '\u00a0', '_'), collapse = ', ')}."))) 
+        s <- paste(stringr::str_replace_all(words, '\u00a0', '_'), collapse = ', ')
+        stop(as.character(paste0("x has to be one of the following: ", s, "."))) 
     }
-    x <- glue::glue("{x}:")
+    x <- paste0(x, ":")
     s <- seq_along(v)
     i <- which(stringr::str_sub(v, 1L, nchar(x)) == x)
     if (length(i) == 0L) {
@@ -107,6 +107,7 @@ get_dep_all <- function(name, type) {
 #' Obtain the data frame of multiple kinds of dependencies
 #' @param name String, name of the package
 #' @param type A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"
+#' @importFrom stringr str_to_lower str_detect str_sub
 #' @return A data frame of dependencies
 #' @examples
 #' get_dep_df("dplyr", c("Imports", "Depends"))
@@ -120,44 +121,22 @@ get_dep_df <- function(name, type) {
         v0 <- get_dep_vec(get_dep_str(html0, typei))
         l0[[i]] <- data.frame(from = name, to = v0, type = typei, stringsAsFactors = FALSE)
     }
-    do.call(rbind, l0)
+    df0 <- do.call(rbind, l0)
+    df0 <- df0[!is.na(df0$to),]
+    df0$type <- stringr::str_to_lower(df0$type)
+    df0$type <- ifelse(df0$type == "linkingto", "linking_to", df0$type)
+    df0$reverse <- stringr::str_detect(df0$type, "reverse_")
+    df0$type <- ifelse(df0$reverse, stringr::str_sub(df0$type, 9L, -1L), df0$type)
+    df0
 }
-
-#' Obtain the data frame of one kind of dependencies
-#'
-#' @param df A data frame with at least two columns: name - a string vector, and <type> - a list of string vectors
-#' @param type The dependency type desired
-#' @importFrom rlang !! enquo .data
-#' @importFrom dplyr select filter rename
-#' @importFrom tidyr unnest
-#' @return A data frame with two columns: from & to
-#' @examples
-#' if (requireNamespace("tibble", quietly = TRUE)) {
-#'     name.vec <- c("dplyr", "MASS", "Rcpp")
-#'     depends.vec <- rep(NA, length(name.vec))
-#'     imports.vec <- rep(NA, length(name.vec))
-#'     for (i in seq_along(name.vec)) {
-#'         depends.vec[i] <- list(get_dep_all(name.vec[i], "Depends"))
-#'         imports.vec[i] <- list(get_dep_all(name.vec[i], "Imports"))
-#'     }
-#'     df0 <- tibble::tibble(name = name.vec, depends = depends.vec, imports = imports.vec)
-#'     unnest_dep(df0, depends)
-#'     unnest_dep(df0, imports)
-#' }
-#' @export
-unnest_dep <- function(df, type) {
-    type_enquo <- rlang::enquo(type)
-    dplyr::rename(dplyr::filter(tidyr::unnest(dplyr::select(df, .data$name, !!type_enquo)), !is.na(!!type_enquo)), from = .data$name, to = !!type_enquo)
-}
-
 
 #' Construct the giant component of the network from two data frames
 #'
-#' @param edgelist A data frame with (at least) two columns: from and to, preferably an output of unnest_dep()
+#' @param edgelist A data frame with (at least) two columns: from and to
 #' @param nodelist A data frame with (at least) one column: name, that contains the nodes to include
+#' @param gc Boolean, if 'TRUE' (default) then the giant component is extracted, if 'FALSE' then the whole graph is returned
 #' @importFrom dplyr semi_join
-#' @importFrom igraph graph_from_data_frame decompose.graph V
-#' @importFrom purrr map_int map
+#' @importFrom igraph graph_from_data_frame decompose.graph gorder
 #' @return An igraph object & a connected graph
 #' @examples
 #' from <- c("1", "2", "4")
@@ -166,7 +145,17 @@ unnest_dep <- function(df, type) {
 #' nodes <- data.frame(name = c("1", "2", "3", "4", "5"), stringsAsFactors = FALSE)
 #' df_to_graph(edges, nodes)
 #' @export
-df_to_graph <- function(edgelist, nodelist) {
-    l <- igraph::decompose.graph(igraph::graph_from_data_frame(dplyr::semi_join(edgelist, nodelist, c("to" = "name")))) # semi join as some nodes (packages) may have become obsolete
-    l[[which.max(purrr::map_int(purrr::map(l, igraph::V), length))]]
+df_to_graph <- function(edgelist, nodelist, gc = TRUE) {
+    df <- dplyr::semi_join(edgelist, nodelist, c("to" = "name")) # semi join as some nodes may have become obsolete
+    g <- igraph::graph_from_data_frame(df)
+    if (gc) {
+        l <- igraph::decompose.graph(g)
+        n <- length(l)
+        v <- rep(as.integer(NA), n)
+        for (i in seq(n)) {
+            v[i] <- igraph::gorder(l[[i]])
+        }
+        g <- l[[which.max(v)]]
+    }
+    g
 }
