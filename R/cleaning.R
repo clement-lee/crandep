@@ -104,6 +104,25 @@ get_dep_all <- function(name, type) {
     get_dep_vec(get_dep_str(html_text_vec(cran_url(name)), type))
 }
 
+#' Obtain the data frame of multiple kinds of dependencies
+#' @param name String, name of the package
+#' @param type A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"
+#' @return A data frame of dependencies
+#' @examples
+#' get_dep_df("dplyr", c("Imports", "Depends"))
+#' get_dep_df("MASS", c("Suggests", "Depends", "Imports"))
+#' @export
+get_dep_df <- function(name, type) {
+    html0 <- html_text_vec(cran_url(name))
+    l0 <- list()
+    for (i in seq_along(type)) {
+        typei <- type[i]
+        v0 <- get_dep_vec(get_dep_str(html0, typei))
+        l0[[i]] <- data.frame(from = name, to = v0, type = typei, stringsAsFactors = FALSE)
+    }
+    do.call(rbind, l0)
+}
+
 #' Obtain the data frame of one kind of dependencies
 #'
 #' @param df A data frame with at least two columns: name - a string vector, and <type> - a list of string vectors
