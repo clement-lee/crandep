@@ -5,6 +5,10 @@ output: github_document
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 
+# crandep
+
+<!-- badges: start -->
+<!-- badges: end -->
 
 The goal of crandep is to provide functions for analysing the dependencies of CRAN packages using social network analysis.
 
