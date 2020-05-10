@@ -4,12 +4,12 @@
 \alias{df_to_graph}
 \title{Construct the giant component of the network from two data frames}
 \usage{
-df_to_graph(edgelist, nodelist, gc = TRUE)
+df_to_graph(edgelist, nodelist = NULL, gc = TRUE)
 }
 \arguments{
 \item{edgelist}{A data frame with (at least) two columns: from and to}
 
-\item{nodelist}{A data frame with (at least) one column: name, that contains the nodes to include}
+\item{nodelist}{NULL, or a data frame with (at least) one column: name, that contains the nodes to include}
 
 \item{gc}{Boolean, if 'TRUE' (default) then the giant component is extracted, if 'FALSE' then the whole graph is returned}
 }

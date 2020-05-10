@@ -101,7 +101,7 @@ get_dep_vec <- function(x) {
 #' get_dep_all("MASS", "Depends")
 #' @export
 get_dep_all <- function(name, type) {
-    get_dep_vec(get_dep_str(html_text_vec(cran_url(name)), type))
+    unique(get_dep_vec(get_dep_str(html_text_vec(cran_url(name)), type)))
 }
 
 #' Obtain the data frame of multiple kinds of dependencies
@@ -127,13 +127,13 @@ get_dep_df <- function(name, type) {
     df0$type <- ifelse(df0$type == "linkingto", "linking_to", df0$type)
     df0$reverse <- stringr::str_detect(df0$type, "reverse_")
     df0$type <- ifelse(df0$reverse, stringr::str_sub(df0$type, 9L, -1L), df0$type)
-    df0
+    unique(df0) # there are duplicates
 }
 
 #' Construct the giant component of the network from two data frames
 #'
 #' @param edgelist A data frame with (at least) two columns: from and to
-#' @param nodelist A data frame with (at least) one column: name, that contains the nodes to include
+#' @param nodelist NULL, or a data frame with (at least) one column: name, that contains the nodes to include
 #' @param gc Boolean, if 'TRUE' (default) then the giant component is extracted, if 'FALSE' then the whole graph is returned
 #' @importFrom dplyr semi_join
 #' @importFrom igraph graph_from_data_frame decompose.graph gorder
@@ -145,9 +145,13 @@ get_dep_df <- function(name, type) {
 #' nodes <- data.frame(name = c("1", "2", "3", "4", "5"), stringsAsFactors = FALSE)
 #' df_to_graph(edges, nodes)
 #' @export
-df_to_graph <- function(edgelist, nodelist, gc = TRUE) {
-    df <- dplyr::semi_join(edgelist, nodelist, c("to" = "name")) # semi join as some nodes may have become obsolete
-    g <- igraph::graph_from_data_frame(df)
+df_to_graph <- function(edgelist, nodelist = NULL, gc = TRUE) {
+    if (is.null(nodelist)) {
+        g <- igraph::graph_from_data_frame(edgelist)
+    } else {
+        df <- dplyr::semi_join(edgelist, nodelist, c("to" = "name")) # semi join as some nodes may have become obsolete
+        g <- igraph::graph_from_data_frame(df)
+    }
     if (gc) {
         l <- igraph::decompose.graph(g)
         n <- length(l)

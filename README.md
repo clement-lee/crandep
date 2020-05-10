@@ -1,4 +1,6 @@
 ---
+title: "Introduction to crandep"
+date: "2020-05-10"
 output: md_document
 ---
 
@@ -6,9 +8,7 @@ output: md_document
 
 
 
-# crandep
-
-The goal of crandep is to provide functions for analysing R packages.
+The goal of crandep is to provide functions for analysing the dependencies of CRAN packages using social network analysis.
 
 ## Installation
 

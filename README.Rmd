@@ -1,4 +1,6 @@
 ---
+title: "Introduction to crandep"
+date: "`r Sys.Date()`"
 output: md_document
 ---
 
@@ -12,9 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# crandep
-
-The goal of crandep is to provide functions for analysing R packages.
+The goal of crandep is to provide functions for analysing the dependencies of CRAN packages using social network analysis.
 
 ## Installation
 
