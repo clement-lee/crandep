@@ -12,38 +12,94 @@ knitr::opts_chunk$set(
 )
 ```
 
-# rackage
+# crandep
 
-The goal of rackage is to provide functions for analysing R packages.
+The goal of crandep is to provide functions for analysing R packages.
 
 ## Installation
 
-You can install rackage from github with:
+You can install crandep from github with:
 
 ```{r gh-installation, eval = FALSE}
 # install.packages("devtools")
-devtools::install_github("clement-lee/rackage")
+devtools::install_github("clement-lee/crandep")
 ```
 
-## Example
-
-This is a basic example which shows you how to obtain one kind of dependencies (Imports) for one package (dplyr):
-
-```{r example, echo = TRUE, include = TRUE}
-library(rackage)
-
-## Get the CRAN URL for package dplyr
-foo <- cran_url("dplyr")
-foo
-
-## Get the html text of the page
-bar <- html_text_vec(foo)
-
-## Get the string of imported packages
-qux <- get_dep_str(bar, "Imports")
-qux
-
-## Split the above string into a vector
-quz <- get_dep_vec(qux)
-quz
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
 ```
+
+```{r setup, message = FALSE}
+library(crandep)
+library(dplyr)
+library(ggplot2)
+library(igraph)
+```
+
+
+
+
+
+## One kind of dependencies 
+To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep_all()` which takes the package name and the type of dependencies as the first and second arguments, respectively. Currently, the second argument accepts `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Reverse_depends`, `Reverse_imports`, `Reverse_linking_to`, and `Reverse_suggests`, or any variations in their letter cases.
+
+```{r}
+get_dep_all("dplyr", "Imports")
+get_dep_all("MASS", "depends")
+get_dep_all("MASS", "dePends")
+```
+
+`Imports` and `Depends` are the most common types of dependencies in `R` packages, but there are other types such as `Suggests`. For more information on different types of dependencies, see [the official guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies) and [http://r-pkgs.had.co.nz/description.html](http://r-pkgs.had.co.nz/description.html).
+
+
+
+
+
+## Multiple kind of dependencies
+As the information all dependencies of one package are on the same page on CRAN, to avoid scraping the same multiple times, we can use `get_dep_df()` instead of  `get_dep_all()`. The output will be a data frame instead of a character vector.
+
+```{r}
+get_dep_df("dplyr", c("imports", "LinkingTo"))
+```
+The column `type` is the type of the dependency converted to lower case. Also, `LinkingTo` is now converted to `linking_to` for consistency. For the four reverse dependencies, the substring `"reverse_"` will not be shown in `type`; instead the `reverse` column will be `TRUE`. This can be illustrated by the following:
+
+```{r}
+get_dep_all("abc", "depends")
+get_dep_all("abc", "reverse_depends")
+get_dep_df("abc", c("depends", "reverse_depends"))
+```
+Theoretically, for each forward dependency
+```{r, echo=FALSE}
+data.frame(from = "A", to = "B", type = "c", reverse = FALSE)
+```
+there should be an equivalent reverse dependency
+```{r, echo=FALSE}
+data.frame(from = "B", to = "A", type = "c", reverse = TRUE)
+```
+Aligning the `type` in the forward dependency and the reverse dependency enables this to be checked easily.
+
+
+
+
+
+## Building and visualising a dependency network
+To build a dependency network, we have to obtain the dependencies for multiple packages. For illustration, we choose the [core packages of the tidyverse](https://www.tidyverse.org/packages/), and find out what each package `Imports`. We put all the dependencies into one data frame, in which the package in the `from` column imports the package in the `to` column. This is essentially the edge list of the dependency network.
+
+```{r}
+df0.imports <- rbind(
+    get_dep_df("ggplot2", "Imports"),
+    get_dep_df("dplyr", "Imports"),
+    get_dep_df("tidyr", "Imports"),
+    get_dep_df("readr", "Imports"),
+    get_dep_df("purrr", "Imports"),
+    get_dep_df("tibble", "Imports"),
+    get_dep_df("stringr", "Imports"),
+    get_dep_df("forcats", "Imports")
+)
+head(df0.imports)
+tail(df0.imports)
+```
+
