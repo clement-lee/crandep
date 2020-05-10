@@ -1,7 +1,5 @@
 ---
-title: "Introduction to crandep"
-date: "2020-05-10"
-output: md_document
+output: github_document
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
