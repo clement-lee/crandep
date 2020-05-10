@@ -1,9 +1,9 @@
 ---
-title: "Introduction to rackage"
+title: "Introduction to crandep"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Introduction to rackage}
+  %\VignetteIndexEntry{Introduction to crandep}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup, message = FALSE}
-library(rackage)
+library(crandep)
 library(dplyr)
 library(ggplot2)
 library(igraph)
