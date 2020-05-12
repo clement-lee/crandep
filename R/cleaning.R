@@ -3,7 +3,7 @@
 #' @param name String, name of the package
 #' @return A string of the URL for the package on CRAN
 #' @examples
-#' \dontrun{cran_url("dplyr")}
+#' crandep:::cran_url("dplyr")
 #' @keywords internal
 cran_url <- function(name) {
     paste0("https://CRAN.R-project.org/package=", name) # canonical form
@@ -17,11 +17,8 @@ cran_url <- function(name) {
 #' @importFrom stringr str_split
 #' @return A string vector of the html text of the page according to the url
 #' @examples
-#' \dontrun{
-#' str.dplyr <- "https://cran.r-project.org/web/packages/dplyr/index.html" # CRAN page for dplyr
-#' html.dplyr <- html_text_vec(str.dplyr)
-#' html.abc <- html_text_vec(cran_url("abc")) # the page for abc on CRAN
-#' }
+#' url.abc <- crandep:::cran_url("abc") # the page for abc on CRAN
+#' html.abc <- crandep:::html_text_vec(url.abc)
 #' @keywords internal
 html_text_vec <- function(url) {
     as.vector(stringr::str_split(rvest::html_text(xml2::read_html(url)), "\n", simplify = TRUE))
@@ -34,12 +31,9 @@ html_text_vec <- function(url) {
 #' @importFrom stringr str_sub str_detect str_replace_all str_to_title
 #' @return A string of the concatenation of the dependencies
 #' @examples
-#' \dontrun{
-#' get_dep_str(html_text_vec(cran_url("MASS")), "Depends")
-#' get_dep_str(html_text_vec(cran_url("dplyr")), "Imports")
-#' get_dep_str(html_text_vec(cran_url("Rcpp")), "Reverse_depends")
-#' get_dep_str(html_text_vec(cran_url("lme4")), "LinkingTo")
-#' }
+#' url.mass <- crandep:::cran_url("MASS")
+#' html.mass <- crandep:::html_text_vec(url.mass)
+#' crandep:::get_dep_str(html.mass, "Depends")
 #' @keywords internal
 get_dep_str <- function(v, x) {
     words <- c("Depends", "Imports", "LinkingTo", "Suggests", "Reverse\u00a0depends", "Reverse\u00a0imports", "Reverse\u00a0linking\u00a0to", "Reverse\u00a0suggests")
@@ -70,10 +64,10 @@ get_dep_str <- function(v, x) {
 #' @importFrom stringr str_split str_locate str_sub
 #' @return A string vector of dependencies
 #' @examples
-#' \dontrun{
-#' string <- get_dep_str(html_text_vec(cran_url("MASS")), "Depends") # the packages MASS depends on
-#' get_dep_vec(string) # R (<version>) will be removed
-#' }
+#' url.mass <- crandep:::cran_url("MASS")
+#' html.mass <- crandep:::html_text_vec(url.mass)
+#' str.mass <- crandep:::get_dep_str(html.mass, "Depends") # the packages MASS depends on
+#' crandep:::get_dep_vec(str.mass) # R (<version>) will be removed
 #' @keywords internal
 get_dep_vec <- function(x) {
     if (is.na(x)) {

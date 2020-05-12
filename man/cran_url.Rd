@@ -16,6 +16,6 @@ A string of the URL for the package on CRAN
 Obtain the URL on CRAN using the package name
 }
 \examples{
-\dontrun{cran_url("dplyr")}
+crandep:::cran_url("dplyr")
 }
 \keyword{internal}

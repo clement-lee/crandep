@@ -90,11 +90,12 @@ tail(df0.imports)
 
 With the help of the 'igraph' package, we can use this data frame to build a graph object that represents the dependency network.
 
-```{r, echo=c(1,2,4), out.width="660px", out.height="660px", fig.width=12, fig.height=12}
+```{r, out.width="660px", out.height="660px", fig.width=12, fig.height=12, fig.show="hold"}
 g0.imports <- igraph::graph_from_data_frame(df0.imports)
 set.seed(1457L)
-par(mar = rep(0.0, 4))
+old.par <- par(mar = rep(0.0, 4))
 plot(g0.imports, vertex.label.cex = 1.5)
+par(old.par)
 ```
 
 The nature of a dependency network makes it a directed acyclic graph (DAG). We can use the 'igraph' function `is_dag()` to check.
@@ -111,12 +112,13 @@ Note that this applies to `Imports` (and `Depends`) only due to their nature. Th
 
 ## Boundary and giant component
 It is possible to set a boundary on the nodes to which the edges are directed, using the function `df_to_graph()`. The second argument takes in a data frame that contains the list of such nodes in the column `name`.
-```{r, echo=c(1,2,3,5), out.width="660px", out.height="660px", fig.width=12, fig.height=12}
+```{r, out.width="660px", out.height="660px", fig.width=12, fig.height=12, fig.show="hold"}
 df0.nodes <- data.frame(name = c("ggplot2", "dplyr", "tidyr", "readr", "purrr", "tibble", "stringr", "forcats"), stringsAsFactors = FALSE)
 g0.core <- df_to_graph(df0.imports, df0.nodes)
 set.seed(259L)
-par(mar = rep(0.0, 4))
+old.par <- par(mar = rep(0.0, 4))
 plot(g0.core, vertex.label.cex = 1.5)
+par(old.par)
 ```
 
 
@@ -130,9 +132,8 @@ Since networks according to `Imports` or `Depends` are DAGs, we can obtain the [
 topo_sort_kahn(g0.core)
 ```
 In the topological ordering, represented by the column `id_num`, a low (high) number represents being at the front (back) of the ordering. If package A `Imports` package B i.e. there is a directed edge from A to B, then A will be topologically before B. As the package 'tibble' doesn't import any package but is imported by most other packages, it naturally goes to the back of the ordering. This ordering may not be unique for a DAG, and other admissible orderings can be obtained by setting `random=TRUE` in the function:
-```{r, echo=c(1)}
+```{r}
 set.seed(387L); topo_sort_kahn(g0.core, random = TRUE)
-#set.seed(106L); topo_sort_kahn(g0.core, random = TRUE)
 ```
 We can also apply the topological sorting to the bigger dependencies network.
 ```{r}

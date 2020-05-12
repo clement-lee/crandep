@@ -18,11 +18,8 @@ A string of the concatenation of the dependencies
 Find string corresponding to "Imports", "Depends" etc.
 }
 \examples{
-\dontrun{
-get_dep_str(html_text_vec(cran_url("MASS")), "Depends")
-get_dep_str(html_text_vec(cran_url("dplyr")), "Imports")
-get_dep_str(html_text_vec(cran_url("Rcpp")), "Reverse_depends")
-get_dep_str(html_text_vec(cran_url("lme4")), "LinkingTo")
-}
+url.mass <- crandep:::cran_url("MASS")
+html.mass <- crandep:::html_text_vec(url.mass)
+crandep:::get_dep_str(html.mass, "Depends")
 }
 \keyword{internal}

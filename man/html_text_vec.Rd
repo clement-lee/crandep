@@ -16,10 +16,7 @@ A string vector of the html text of the page according to the url
 Scrap the page (of a package) as a text vector
 }
 \examples{
-\dontrun{
-str.dplyr <- "https://cran.r-project.org/web/packages/dplyr/index.html" # CRAN page for dplyr
-html.dplyr <- html_text_vec(str.dplyr)
-html.abc <- html_text_vec(cran_url("abc")) # the page for abc on CRAN
-}
+url.abc <- crandep:::cran_url("abc") # the page for abc on CRAN
+html.abc <- crandep:::html_text_vec(url.abc)
 }
 \keyword{internal}
