@@ -68,32 +68,54 @@ void hzeta_check(const double alpha, const int u) {
   }
 }
 
-//' Probability mass function of discrete power law greater than or equal to u
+//' Probability mass function (PMF) of discrete power law
 //'
-//' @param x data vector of positive integers
-//' @param u scalar, non-negative integer threshold
-//' @param alpha scalar, a numeric value greater than 1.0
+//' \code{dupp} returns the PMF at x for the discrete power law with exponent alpha, for values greater than or equal to u. 
+//'
+//' The PMF is proportional to x^(-alpha). To be a proper PMF, it is normalised by 1/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... Any values below u will have PMF equal to 0.0.
+//' @param x Vector of positive integers
+//' @param u Scalar, non-negative integer threshold
+//' @param alpha Scalar, a numeric value greater than 1.0
+//' @param give_log Boolean, whether the PMF should be returned on the log scale. If 'FALSE', the PMF is returned on the original scale.
 //' @return A numeric vector of the same length as x
+//' @examples
+//' dupp(c(10,20,30,40,50), 12, 2.0, FALSE)
+//' dupp(c(10,20,30,40,50), 12, 2.0, TRUE)
+//' @seealso \code{\link{Supp}} for the corresponding survival function, \code{\link{dmix}} for the PMF of the discrete extreme value mixture distribution.
 //' @export
 // [[Rcpp::export]]
-const NumericVector dupp(const NumericVector x, const int u, const double alpha) {
+const NumericVector dupp(const NumericVector x, const int u, const double alpha, const bool give_log = false) {
   // density f() of discrete power law >= u
   const int n = x.size();
   NumericVector v(n);
   hzeta_check(alpha, u);
   const double log_denom = log(gsl_sf_hzeta(alpha, u));
   for (int i = 0; i < n; i++) {
-    v[i] = exp(-alpha * log(x[i]) - log_denom);
+    v[i] = -alpha * log(x[i]) - log_denom;
   }
-  return v;
+  v = ifelse(x < u, -INFINITY, v);
+  NumericVector output;
+  if (give_log) {
+	output = v;
+  }
+  else {
+	output = exp(v);
+  }
+  return output;
 }
 
-//' Survival function of discrete power law greater than or equal to u
+//' Survival function of discrete power law
 //'
-//' @param x data vector of positive integers
-//' @param u scalar, non-negative integer threshold
-//' @param alpha scalar, a numeric value greater than 1.0
+//' \code{Supp} returns the survival function at x for the discrete power law with exponent alpha, for values greater than or equal to u.
+//'
+//' The survival function used is S(x) = Pr(X >= x), where X is a random variable following the discrete power law. The inclusion of x in the sum means S(x) may not necessarily equal to Pr(X > x) as the distribution is discrete. In the case of discrete power law, it can be shown that S(x) = hzeta(alpha, x)/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ...
+//' @param x Vector of positive integers
+//' @param u Scalar, non-negative integer threshold
+//' @param alpha Scalar, a numeric value greater than 1.0
 //' @return A numeric vector of the same length as x
+//' @examples
+//' Supp(c(10,20,30,40,50), 12, 2.0)
+//' @seealso \code{\link{dupp}} for the corresponding probability mass function, \code{\link{Smix}} for the survival function of the discrete extreme value mixture distribution.
 //' @export
 // [[Rcpp::export]]
 const NumericVector Supp(const NumericVector x, const int u, const double alpha) {
@@ -105,6 +127,7 @@ const NumericVector Supp(const NumericVector x, const int u, const double alpha)
   for (int i = 0; i < n; i++) {
     v[i] = exp(log(gsl_sf_hzeta(alpha, x[i])) - log_denom);
   }
+  v = ifelse(x < u, 1.0, v);
   return v;
 }
 
@@ -140,13 +163,30 @@ const double lpost_upp(const NumericVector x, const int u, const double xi1, con
   return lnan(l);
 }
 
+//' Markov chain Monte Carlo for discrete power law
+//'
+//' \code{mcmc_upp} returns the samples from the posterior of xi1, for fitting the discrete power law to the data x. The samples are obtained using Markov chain Monte Carlo (MCMC).
+//'
+//' In the MCMC, a componentwise Metropolis-Hastings algorithm is used. Unlike \code{mcmc_mix}, the threshold u is treated as fixed in \code{mcmc_upp}.
+//' @param x Vector of positive integers, representing the data
+//' @param u Scalar, non-negative integer threshold
+//' @param xi1 Scalar, initial value of the shape parameter
+//' @param a_xi1 Scalar, lower bound of the uniform distribution as the prior of xi1
+//' @param b_xi1 Scalar, upper bound of the uniform distribution as the prior of xi1
+//' @param N Scalar, positive integer representing the length of the output chain i.e. the number of rows in the returned data frame
+//' @param thin Scalar, positive integer representing the thinning in the MCMC
+//' @param burnin Scalar, non-negative integer representing the burn-in of the MCMC
+//' @param print_freq Scalar, positive integer representing the frequency of printing the sampled values
+//' @return A data frame containing N rows and 2 columns which represent xi1 and the log-posterior density (lpost)
+//' @seealso \code{\link{mcmc_mix}} for MCMC for the discrete extreme value mixture distribution.
+//' @export
 // [[Rcpp::export]]
 DataFrame mcmc_upp(const NumericVector x, const int u, const double xi1, const double a_xi1, const double b_xi1, const int N = 20000, const int thin = 10, const int burnin = 20000, const int print_freq = 10000) {
-  double xi1_curr = xi1, xi1_prop, lpost_curr = lpost_upp(x, u, xi1_curr, a_xi1, b_xi1), lpost_prop, sd_xi1 = 0.1, lalpha;
+  double xi1_curr = xi1, xi1_prop, lpost_curr = lpost_upp(x, u, xi1_curr, a_xi1, b_xi1), lpost_prop, sd_xi1 = 0.1;
   Rcout << "Iteration 0: Log-posterior = " << lpost_curr << endl;
   NumericVector xi1_vec(N), lpost_vec(N);
-  unsigned s, t;
-  for (t = 0; t < N * thin + burnin; t++ ){
+  int s, t;
+  for (t = 0; t < N * thin + burnin; t++){
 	xi1_prop = rnorm(1, xi1_curr, sd_xi1)[0];
 	lpost_prop = lpost_upp(x, u, xi1_prop, a_xi1, b_xi1);
 	update(xi1_curr, xi1_prop, lpost_curr, lpost_prop, sd_xi1, t, burnin);
@@ -284,11 +324,28 @@ const double par2phi(const double xi1, const double xi2, const double sig, const
   return phi;
 }
 
+//' Probability mass function (PMF) of discrete extreme value mixture distribution
+//'
+//' \code{dmix} returns the PMF at x for the discrete extreme value mixture distribution.
+//' @param x Vector of positive integers
+//' @param xi1 Scalar, shape parameter for values below or equal to u
+//' @param xi2 Scalar, shape parameter of integer generalised Pareto distribution (IGPD), for values above u
+//' @param sig Scalar, scale parameter of IGPD, for values above u
+//' @param u Scalar, positive integer threshold
+//' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
+//' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
+//' @param give_log Boolean, whether the PMF should be returned on the log scale. If 'FALSE', the PMF is returned on the original scale.
+//' @return A numeric vector of the same length as x
+//' @examples
+//' dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, TRUE)
+//' dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE)
+//' dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE, TRUE)
+//' @seealso \code{\link{Smix}} for the corresponding survival function, \code{\link{dupp}} for the probability mass function of the discrete power law.
+//' @export
 // [[Rcpp::export]]
 const NumericVector dmix(const NumericVector x, const double xi1, const double xi2, const double sig, const int u, const double phi, const bool geo, const bool give_log = false) {
   const double
     sigu = sig + xi2 * u,
-    denu1 = (xi2 == 0.0) ? (1.0 - exp(-1.0 / sigu)) : (1.0 - pow(1.0 + xi2 / sigu, -1.0 / xi2)),
     alpha = 1.0 / xi1 + 1.0,
     p = 1.0 - exp(-1.0 / xi1), q = 1.0 - p;
   NumericVector fl; double denom;
@@ -316,11 +373,26 @@ const NumericVector dmix(const NumericVector x, const double xi1, const double x
   return output;
 }
 
+//' Survival function of discrete extreme value mixture distribution
+//'
+//' \code{Smix} returns the survival function at x for the discrete extreme value mixture distribution.
+//' @param x Vector of positive integers
+//' @param xi1 Scalar, shape parameter for values below or equal to u
+//' @param xi2 Scalar, shape parameter of integer generalised Pareto distribution (IGPD), for values above u
+//' @param sig Scalar, scale parameter of IGPD, for values above u
+//' @param u Scalar, positive integer threshold
+//' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
+//' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
+//' @return A numeric vector of the same length as x
+//' @examples
+//' Smix(10:15, 2.0, 0.5, 1.0, 12, 0.2, TRUE)
+//' Smix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE)
+//' @seealso \code{\link{dmix}} for the corresponding probability mass function, \code{\link{Supp}} for the survival function of the discrete power law.
+//' @export
 // [[Rcpp::export]]
 const NumericVector Smix(const NumericVector x, const double xi1, const double xi2, const double sig, const int u, const double phi, const bool geo) {
   const double
     sigu = sig + xi2 * u,
-    denu1 = (xi2 == 0.0) ? (1.0 - exp(-1.0 / sigu)) : (1.0 - pow(1.0 + xi2 / sigu, -1.0 / xi2)),
     alpha = 1.0 / xi1 + 1.0,
     p = 1.0 - exp(-1.0 / xi1), q = 1.0 - p;
   NumericVector cP(x.size()); double denom;
@@ -384,6 +456,27 @@ const double lpost_mix(const NumericVector x,
   return lnan(l);
 }
 
+//' Markov chain Monte Carlo for discrete extreme value mixture distribution
+//'
+//' \code{mcmc_mix} returns the samples from the joint posterior of the parameters (u, xi1, xi2, sig), for fitting the discrete extreme value mixture distribution (DEVMD) to the data x. The samples are obtained using Markov chain Monte Carlo (MCMC).
+//'
+//' In the MCMC, a componentwise Metropolis-Hastings algorithm is used. Unlike \code{mcmc_upp}, the threshold u is treated as a parameter in \code{mcmc_mix} and therefore inferred. The 8 hyperparameters are used in the following priors: u is such that the implied exceedance probability phi ~ Uniform(a_phi, b_phi); xi1 ~ Uniform(a_xi1, b_xi1); xi2 ~ Normal(mean = m_xi2, sd = s_xi2); sig ~ Gamma(shape = a_sig, rate = b_sig). If pcont = 0.0, only the unconstrained version of the DEVMD is fitted; if pcont = 1.0, only the continuity constrained version is fitted. Setting pcont between 0.0 and 1.0 allows both versions to be fitted, if model selection between the two is of interest.
+//' @param x Vector of positive integers, representing the data
+//' @param u Scalar, initial value of the positive integer threshold
+//' @param xi1 Scalar, initial value of the parameter for values below or equal to u
+//' @param xi2 Scalar, initial value of the shape parameter of the integer generalised Pareto distribution (IGPD), for values above u
+//' @param sig Scalar, initial value of the scale parameter of IGPD, for values above u
+//' @param cont Boolean, whether the continuity constraint is imposed at u
+//' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
+//' @param a_phi,b_phi,a_xi1,b_xi1,m_xi2,s_xi2,a_sig,b_sig Scalars, representing the hyperparameters of the prior distributions of the respective parameters. See details for the specification of the priors.
+//' @param pcont Scalar, between 0.0 and 1.0, representing the prior probability of the continuity constrained version, for model selection.
+//' @param N Scalar, positive integer representing the length of the output chain i.e. the number of rows in the returned data frame
+//' @param thin Scalar, positive integer representing the thinning in the MCMC
+//' @param burnin Scalar, non-negative integer representing the burn-in of the MCMC
+//' @param print_freq Scalar, positive integer representing the frequency of printing the sampled values
+//' @return A data frame containing N rows and 7 columns which represent (in this order) the 4 parameters (u, xi1, xi2, sig), the implied exceedance probability (phi), the log-posterior density (lpost), and whether the continuity constraint is imposed (cont).
+//' @seealso \code{\link{mcmc_upp}} for MCMC for the discrete power law.
+//' @export
 // [[Rcpp::export]]
 DataFrame mcmc_mix(const NumericVector x,
                    const int u,
@@ -428,7 +521,7 @@ DataFrame mcmc_mix(const NumericVector x,
   vec u_burn(burnin), xi1_burn(burnin), xi2_burn(burnin), sig_burn(burnin);
   double sd_u = 1.0, sd_xi1 = 0.1, sd_xi2, sd_sig, cor2, factor = 10.0, lalpha;
   running_stat<double> cont_stat;
-  unsigned s, t;
+  int s, t;
   for (t = 0; t < N * thin + burnin; t++) {
     // u
     u_prop = (int) (u_curr * exp(rnorm(1, 0.0, sd_u)[0])); // (int) rounds down

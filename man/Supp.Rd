@@ -2,20 +2,29 @@
 % Please edit documentation in R/RcppExports.R
 \name{Supp}
 \alias{Supp}
-\title{Survival function of discrete power law greater than or equal to u}
+\title{Survival function of discrete power law}
 \usage{
 Supp(x, u, alpha)
 }
 \arguments{
-\item{x}{data vector of positive integers}
+\item{x}{Vector of positive integers}
 
-\item{u}{scalar, non-negative integer threshold}
+\item{u}{Scalar, non-negative integer threshold}
 
-\item{alpha}{scalar, a numeric value greater than 1.0}
+\item{alpha}{Scalar, a numeric value greater than 1.0}
 }
 \value{
 A numeric vector of the same length as x
 }
 \description{
-Survival function of discrete power law greater than or equal to u
+\code{Supp} returns the survival function at x for the discrete power law with exponent alpha, for values greater than or equal to u.
+}
+\details{
+The survival function used is S(x) = Pr(X >= x), where X is a random variable following the discrete power law. The inclusion of x in the sum means S(x) may not necessarily equal to Pr(X > x) as the distribution is discrete. In the case of discrete power law, it can be shown that S(x) = hzeta(alpha, x)/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ...
+}
+\examples{
+Supp(c(10,20,30,40,50), 12, 2.0)
+}
+\seealso{
+\code{\link{dupp}} for the corresponding probability mass function, \code{\link{Smix}} for the survival function of the discrete extreme value mixture distribution.
 }

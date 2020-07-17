@@ -8,15 +8,16 @@
 using namespace Rcpp;
 
 // dupp
-const NumericVector dupp(const NumericVector x, const int u, const double alpha);
-RcppExport SEXP _crandep_dupp(SEXP xSEXP, SEXP uSEXP, SEXP alphaSEXP) {
+const NumericVector dupp(const NumericVector x, const int u, const double alpha, const bool give_log);
+RcppExport SEXP _crandep_dupp(SEXP xSEXP, SEXP uSEXP, SEXP alphaSEXP, SEXP give_logSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
     Rcpp::traits::input_parameter< const int >::type u(uSEXP);
     Rcpp::traits::input_parameter< const double >::type alpha(alphaSEXP);
-    rcpp_result_gen = Rcpp::wrap(dupp(x, u, alpha));
+    Rcpp::traits::input_parameter< const bool >::type give_log(give_logSEXP);
+    rcpp_result_gen = Rcpp::wrap(dupp(x, u, alpha, give_log));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -119,7 +120,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_crandep_dupp", (DL_FUNC) &_crandep_dupp, 3},
+    {"_crandep_dupp", (DL_FUNC) &_crandep_dupp, 4},
     {"_crandep_Supp", (DL_FUNC) &_crandep_Supp, 3},
     {"_crandep_mcmc_upp", (DL_FUNC) &_crandep_mcmc_upp, 9},
     {"_crandep_dmix", (DL_FUNC) &_crandep_dmix, 8},

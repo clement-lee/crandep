@@ -4,12 +4,14 @@
 \alias{get_dep_df}
 \title{Obtain the data frame of multiple kinds of dependencies}
 \usage{
-get_dep_df(name, type)
+get_dep_df(name, type, scrape = TRUE)
 }
 \arguments{
 \item{name}{String, name of the package}
 
 \item{type}{A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"}
+
+\item{scrape}{Boolean. If 'TRUE' (default), the page of the package will be scraped. If 'FALSE', tools::CRAN_package_db() will be used.}
 }
 \value{
 A data frame of dependencies
@@ -20,4 +22,5 @@ Obtain the data frame of multiple kinds of dependencies
 \examples{
 get_dep_df("dplyr", c("Imports", "Depends"))
 get_dep_df("MASS", c("Suggests", "Depends", "Imports"))
+get_dep_df("MASS", c("Suggests", "Depends", "Imports"), FALSE) # same result as above line
 }

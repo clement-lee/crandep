@@ -85,35 +85,78 @@ get_dep_vec <- function(x) {
     y
 }
 
-#' Obtain one type of dependencies of a package directly. This is essentially the same as chaining get
+#' Obtain dependencies of all CRAN packages
+#'
+#' @importFrom tools CRAN_package_db
+#' @return A data frame of dependencies of all CRAN packages
+#' @examples
+#' df.cran <- crandep:::get_dep_all_packages()
+#' @keywords internal
+get_dep_all_packages <- function() {
+    df0 <- as.data.frame(tools::CRAN_package_db())
+    v0 <- v1 <- names(df0)
+    v1[v0 == "Reverse depends"] <- "Reverse_depends"
+    v1[v0 == "Reverse imports"] <- "Reverse_imports"
+    v1[v0 == "Reverse linking to"] <- "Reverse_linking_to"
+    v1[v0 == "Reverse suggests"] <- "Reverse_suggests"
+    v1[v0 == "Reverse enhances"] <- "Reverse_enhances"
+    names(df0) <- v1
+    df0
+}
+
+#' Obtain one type of dependencies of a package directly
 #'
 #' @param name String, name of the package
 #' @param type One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"
+#' @param scrape Boolean. If 'TRUE' (default), the page of the package will be scraped. If 'FALSE', tools::CRAN_package_db() will be used.
+#' @importFrom stringr str_replace_all
 #' @return A string vector of dependencies
 #' @examples
 #' get_dep_all("dplyr", "Imports")
 #' get_dep_all("MASS", "Depends")
+#' get_dep_all("MASS", "Depends", FALSE) # same result as above line
 #' @export
-get_dep_all <- function(name, type) {
-    unique(get_dep_vec(get_dep_str(html_text_vec(cran_url(name)), type)))
+get_dep_all <- function(name, type, scrape = TRUE) {
+    if (scrape) {
+        str0 <- get_dep_str(html_text_vec(cran_url(name)), type)
+    } else {
+        df0 <- get_dep_all_packages()
+        str0 <- df0[df0$Package == name, type][1L] # some packages have multiple rows
+        str0 <- stringr::str_replace_all(str0, "\n", " ")
+    }
+    unique(get_dep_vec(str0))
 }
 
 #' Obtain the data frame of multiple kinds of dependencies
 #' @param name String, name of the package
 #' @param type A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"
+#' @param scrape Boolean. If 'TRUE' (default), the page of the package will be scraped. If 'FALSE', tools::CRAN_package_db() will be used.
+#' @importFrom tools CRAN_package_db
 #' @importFrom stringr str_to_lower str_detect str_sub
 #' @return A data frame of dependencies
 #' @examples
 #' get_dep_df("dplyr", c("Imports", "Depends"))
 #' get_dep_df("MASS", c("Suggests", "Depends", "Imports"))
+#' get_dep_df("MASS", c("Suggests", "Depends", "Imports"), FALSE) # same result as above line
 #' @export
-get_dep_df <- function(name, type) {
-    html0 <- html_text_vec(cran_url(name))
+get_dep_df <- function(name, type, scrape = TRUE) {
     l0 <- list()
-    for (i in seq_along(type)) {
-        typei <- type[i]
-        v0 <- get_dep_vec(get_dep_str(html0, typei))
-        l0[[i]] <- data.frame(from = name, to = v0, type = typei, stringsAsFactors = FALSE)
+    if (scrape) {
+        html0 <- html_text_vec(cran_url(name))
+        for (i in seq_along(type)) {
+            typei <- type[i]
+            v0 <- get_dep_vec(get_dep_str(html0, typei))
+            l0[[i]] <- data.frame(from = name, to = v0, type = typei, stringsAsFactors = FALSE)
+        }
+    } else {
+        df1 <- get_dep_all_packages()
+        for (i in seq_along(type)) {
+            typei <- type[i]
+            str0 <- df1[df1$Package == name, typei]
+            str0 <- stringr::str_replace_all(str0[1L], "\n", " ") # some packages have multiple rows
+            v0 <- get_dep_vec(str0)
+            l0[[i]] <- data.frame(from = name, to = v0, type = typei, stringsAsFactors = FALSE)
+        }
     }
     df0 <- do.call(rbind, l0)
     df0 <- df0[!is.na(df0$to),]

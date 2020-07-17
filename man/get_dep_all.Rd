@@ -2,22 +2,25 @@
 % Please edit documentation in R/cleaning.R
 \name{get_dep_all}
 \alias{get_dep_all}
-\title{Obtain one type of dependencies of a package directly. This is essentially the same as chaining get}
+\title{Obtain one type of dependencies of a package directly}
 \usage{
-get_dep_all(name, type)
+get_dep_all(name, type, scrape = TRUE)
 }
 \arguments{
 \item{name}{String, name of the package}
 
 \item{type}{One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"}
+
+\item{scrape}{Boolean. If 'TRUE' (default), the page of the package will be scraped. If 'FALSE', tools::CRAN_package_db() will be used.}
 }
 \value{
 A string vector of dependencies
 }
 \description{
-Obtain one type of dependencies of a package directly. This is essentially the same as chaining get
+Obtain one type of dependencies of a package directly
 }
 \examples{
 get_dep_all("dplyr", "Imports")
 get_dep_all("MASS", "Depends")
+get_dep_all("MASS", "Depends", FALSE) # same result as above line
 }
