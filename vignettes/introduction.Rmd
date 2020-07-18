@@ -1,6 +1,6 @@
 ---
 title: "Introduction to crandep"
-date: "`r Sys.Date()`"
+date: "2020-05-12"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Introduction to crandep}
