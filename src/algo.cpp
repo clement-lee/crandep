@@ -70,12 +70,12 @@ void hzeta_check(const double alpha, const int u) {
 
 //' Probability mass function (PMF) of discrete power law
 //'
-//' \code{dupp} returns the PMF at x for the discrete power law with exponent alpha, for values greater than or equal to u. 
+//' \code{dupp} returns the PMF at x for the discrete power law with exponent (1.0 / xi1 + 1.0), for values greater than or equal to u. 
 //'
-//' The PMF is proportional to x^(-alpha). To be a proper PMF, it is normalised by 1/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... Any values below u will have PMF equal to 0.0.
+//' The PMF is proportional to x^(-alpha), where alpha = 1.0 / xi1 + 1.0. To be a proper PMF, it is normalised by 1/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... Any values below u will have PMF equal to 0.0. That xi1 is used instead of alpha is for alignment with the parametrisation in \code{dmix}, \code{Smix} and \code{mcmc_mix}.
 //' @param x Vector of positive integers
 //' @param u Scalar, non-negative integer threshold
-//' @param alpha Scalar, a numeric value greater than 1.0
+//' @param xi1 Scalar, a positive real number representing the shape parameter
 //' @param give_log Boolean, whether the PMF should be returned on the log scale. If 'FALSE', the PMF is returned on the original scale.
 //' @return A numeric vector of the same length as x
 //' @examples
@@ -84,10 +84,11 @@ void hzeta_check(const double alpha, const int u) {
 //' @seealso \code{\link{Supp}} for the corresponding survival function, \code{\link{dmix}} for the PMF of the discrete extreme value mixture distribution.
 //' @export
 // [[Rcpp::export]]
-const NumericVector dupp(const NumericVector x, const int u, const double alpha, const bool give_log = false) {
+const NumericVector dupp(const NumericVector x, const int u, const double xi1, const bool give_log = false) {
   // density f() of discrete power law >= u
   const int n = x.size();
   NumericVector v(n);
+  const double alpha = 1.0 / xi1 + 1.0;
   hzeta_check(alpha, u);
   const double log_denom = log(gsl_sf_hzeta(alpha, u));
   for (int i = 0; i < n; i++) {
@@ -106,22 +107,23 @@ const NumericVector dupp(const NumericVector x, const int u, const double alpha,
 
 //' Survival function of discrete power law
 //'
-//' \code{Supp} returns the survival function at x for the discrete power law with exponent alpha, for values greater than or equal to u.
+//' \code{Supp} returns the survival function at x for the discrete power law with exponent (1.0 / xi1 + 1.0), for values greater than or equal to u.
 //'
-//' The survival function used is S(x) = Pr(X >= x), where X is a random variable following the discrete power law. The inclusion of x in the sum means S(x) may not necessarily equal to Pr(X > x) as the distribution is discrete. In the case of discrete power law, it can be shown that S(x) = hzeta(alpha, x)/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ...
+//' The survival function used is S(x) = Pr(X >= x), where X is a random variable following the discrete power law. The inclusion of x in the sum means S(x) may not necessarily equal to Pr(X > x) as the distribution is discrete. In the case of discrete power law, it can be shown that S(x) = hzeta(alpha, x)/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... and alpha = 1.0 / xi1 + 1.0. That xi1 is used instead of alpha is for alignment with the parametrisation in \code{dmix}, \code{Smix} and \code{mcmc_mix}.
 //' @param x Vector of positive integers
 //' @param u Scalar, non-negative integer threshold
-//' @param alpha Scalar, a numeric value greater than 1.0
+//' @param xi1 Scalar, a positive real number representing the shape parameter
 //' @return A numeric vector of the same length as x
 //' @examples
 //' Supp(c(10,20,30,40,50), 12, 2.0)
 //' @seealso \code{\link{dupp}} for the corresponding probability mass function, \code{\link{Smix}} for the survival function of the discrete extreme value mixture distribution.
 //' @export
 // [[Rcpp::export]]
-const NumericVector Supp(const NumericVector x, const int u, const double alpha) {
+const NumericVector Supp(const NumericVector x, const int u, const double xi1) {
   // survival f() of discrete power law >= u
   const int n = x.size();
   NumericVector v(n);
+  const double alpha = 1.0 / xi1 + 1.0;
   hzeta_check(alpha, u);
   const double log_denom = log(gsl_sf_hzeta(alpha, u));
   for (int i = 0; i < n; i++) {

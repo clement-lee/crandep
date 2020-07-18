@@ -3,12 +3,12 @@
 
 #' Probability mass function (PMF) of discrete power law
 #'
-#' \code{dupp} returns the PMF at x for the discrete power law with exponent alpha, for values greater than or equal to u. 
+#' \code{dupp} returns the PMF at x for the discrete power law with exponent (1.0 / xi1 + 1.0), for values greater than or equal to u. 
 #'
-#' The PMF is proportional to x^(-alpha). To be a proper PMF, it is normalised by 1/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... Any values below u will have PMF equal to 0.0.
+#' The PMF is proportional to x^(-alpha), where alpha = 1.0 / xi1 + 1.0. To be a proper PMF, it is normalised by 1/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... Any values below u will have PMF equal to 0.0. That xi1 is used instead of alpha is for alignment with the parametrisation in \code{dmix}, \code{Smix} and \code{mcmc_mix}.
 #' @param x Vector of positive integers
 #' @param u Scalar, non-negative integer threshold
-#' @param alpha Scalar, a numeric value greater than 1.0
+#' @param xi1 Scalar, a positive real number representing the shape parameter
 #' @param give_log Boolean, whether the PMF should be returned on the log scale. If 'FALSE', the PMF is returned on the original scale.
 #' @return A numeric vector of the same length as x
 #' @examples
@@ -16,25 +16,25 @@
 #' dupp(c(10,20,30,40,50), 12, 2.0, TRUE)
 #' @seealso \code{\link{Supp}} for the corresponding survival function, \code{\link{dmix}} for the PMF of the discrete extreme value mixture distribution.
 #' @export
-dupp <- function(x, u, alpha, give_log = FALSE) {
-    .Call(`_crandep_dupp`, x, u, alpha, give_log)
+dupp <- function(x, u, xi1, give_log = FALSE) {
+    .Call(`_crandep_dupp`, x, u, xi1, give_log)
 }
 
 #' Survival function of discrete power law
 #'
-#' \code{Supp} returns the survival function at x for the discrete power law with exponent alpha, for values greater than or equal to u.
+#' \code{Supp} returns the survival function at x for the discrete power law with exponent (1.0 / xi1 + 1.0), for values greater than or equal to u.
 #'
-#' The survival function used is S(x) = Pr(X >= x), where X is a random variable following the discrete power law. The inclusion of x in the sum means S(x) may not necessarily equal to Pr(X > x) as the distribution is discrete. In the case of discrete power law, it can be shown that S(x) = hzeta(alpha, x)/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ...
+#' The survival function used is S(x) = Pr(X >= x), where X is a random variable following the discrete power law. The inclusion of x in the sum means S(x) may not necessarily equal to Pr(X > x) as the distribution is discrete. In the case of discrete power law, it can be shown that S(x) = hzeta(alpha, x)/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... and alpha = 1.0 / xi1 + 1.0. That xi1 is used instead of alpha is for alignment with the parametrisation in \code{dmix}, \code{Smix} and \code{mcmc_mix}.
 #' @param x Vector of positive integers
 #' @param u Scalar, non-negative integer threshold
-#' @param alpha Scalar, a numeric value greater than 1.0
+#' @param xi1 Scalar, a positive real number representing the shape parameter
 #' @return A numeric vector of the same length as x
 #' @examples
 #' Supp(c(10,20,30,40,50), 12, 2.0)
 #' @seealso \code{\link{dupp}} for the corresponding probability mass function, \code{\link{Smix}} for the survival function of the discrete extreme value mixture distribution.
 #' @export
-Supp <- function(x, u, alpha) {
-    .Call(`_crandep_Supp`, x, u, alpha)
+Supp <- function(x, u, xi1) {
+    .Call(`_crandep_Supp`, x, u, xi1)
 }
 
 #' Markov chain Monte Carlo for discrete power law

@@ -4,14 +4,14 @@
 \alias{dupp}
 \title{Probability mass function (PMF) of discrete power law}
 \usage{
-dupp(x, u, alpha, give_log = FALSE)
+dupp(x, u, xi1, give_log = FALSE)
 }
 \arguments{
 \item{x}{Vector of positive integers}
 
 \item{u}{Scalar, non-negative integer threshold}
 
-\item{alpha}{Scalar, a numeric value greater than 1.0}
+\item{xi1}{Scalar, a positive real number representing the shape parameter}
 
 \item{give_log}{Boolean, whether the PMF should be returned on the log scale. If 'FALSE', the PMF is returned on the original scale.}
 }
@@ -19,10 +19,10 @@ dupp(x, u, alpha, give_log = FALSE)
 A numeric vector of the same length as x
 }
 \description{
-\code{dupp} returns the PMF at x for the discrete power law with exponent alpha, for values greater than or equal to u.
+\code{dupp} returns the PMF at x for the discrete power law with exponent (1.0 / xi1 + 1.0), for values greater than or equal to u.
 }
 \details{
-The PMF is proportional to x^(-alpha). To be a proper PMF, it is normalised by 1/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... Any values below u will have PMF equal to 0.0.
+The PMF is proportional to x^(-alpha), where alpha = 1.0 / xi1 + 1.0. To be a proper PMF, it is normalised by 1/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... Any values below u will have PMF equal to 0.0. That xi1 is used instead of alpha is for alignment with the parametrisation in \code{dmix}, \code{Smix} and \code{mcmc_mix}.
 }
 \examples{
 dupp(c(10,20,30,40,50), 12, 2.0, FALSE)

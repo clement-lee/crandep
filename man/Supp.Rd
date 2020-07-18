@@ -4,23 +4,23 @@
 \alias{Supp}
 \title{Survival function of discrete power law}
 \usage{
-Supp(x, u, alpha)
+Supp(x, u, xi1)
 }
 \arguments{
 \item{x}{Vector of positive integers}
 
 \item{u}{Scalar, non-negative integer threshold}
 
-\item{alpha}{Scalar, a numeric value greater than 1.0}
+\item{xi1}{Scalar, a positive real number representing the shape parameter}
 }
 \value{
 A numeric vector of the same length as x
 }
 \description{
-\code{Supp} returns the survival function at x for the discrete power law with exponent alpha, for values greater than or equal to u.
+\code{Supp} returns the survival function at x for the discrete power law with exponent (1.0 / xi1 + 1.0), for values greater than or equal to u.
 }
 \details{
-The survival function used is S(x) = Pr(X >= x), where X is a random variable following the discrete power law. The inclusion of x in the sum means S(x) may not necessarily equal to Pr(X > x) as the distribution is discrete. In the case of discrete power law, it can be shown that S(x) = hzeta(alpha, x)/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ...
+The survival function used is S(x) = Pr(X >= x), where X is a random variable following the discrete power law. The inclusion of x in the sum means S(x) may not necessarily equal to Pr(X > x) as the distribution is discrete. In the case of discrete power law, it can be shown that S(x) = hzeta(alpha, x)/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... and alpha = 1.0 / xi1 + 1.0. That xi1 is used instead of alpha is for alignment with the parametrisation in \code{dmix}, \code{Smix} and \code{mcmc_mix}.
 }
 \examples{
 Supp(c(10,20,30,40,50), 12, 2.0)

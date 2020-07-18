@@ -8,29 +8,29 @@
 using namespace Rcpp;
 
 // dupp
-const NumericVector dupp(const NumericVector x, const int u, const double alpha, const bool give_log);
-RcppExport SEXP _crandep_dupp(SEXP xSEXP, SEXP uSEXP, SEXP alphaSEXP, SEXP give_logSEXP) {
+const NumericVector dupp(const NumericVector x, const int u, const double xi1, const bool give_log);
+RcppExport SEXP _crandep_dupp(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP give_logSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
     Rcpp::traits::input_parameter< const int >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
     Rcpp::traits::input_parameter< const bool >::type give_log(give_logSEXP);
-    rcpp_result_gen = Rcpp::wrap(dupp(x, u, alpha, give_log));
+    rcpp_result_gen = Rcpp::wrap(dupp(x, u, xi1, give_log));
     return rcpp_result_gen;
 END_RCPP
 }
 // Supp
-const NumericVector Supp(const NumericVector x, const int u, const double alpha);
-RcppExport SEXP _crandep_Supp(SEXP xSEXP, SEXP uSEXP, SEXP alphaSEXP) {
+const NumericVector Supp(const NumericVector x, const int u, const double xi1);
+RcppExport SEXP _crandep_Supp(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
     Rcpp::traits::input_parameter< const int >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const double >::type alpha(alphaSEXP);
-    rcpp_result_gen = Rcpp::wrap(Supp(x, u, alpha));
+    Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
+    rcpp_result_gen = Rcpp::wrap(Supp(x, u, xi1));
     return rcpp_result_gen;
 END_RCPP
 }
