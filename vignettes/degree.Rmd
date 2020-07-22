@@ -21,7 +21,14 @@ In the [introduction](introduction.html) we have seen that reverse dependencies 
 and [Cox et al., 2015](https://ieeexplore.ieee.org/document/7202955).
 In this vignette, we will fit the discrete power law to model this number of reverse dependencies, using functions with the suffix `upp`. While we shall focus on "Depends", which is one of the serveral kinds of dependencies in R, the same analysis can be carried out for all other types.
 
-```{r}
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, message = FALSE}
 library(crandep)
 library(igraph)
 library(dplyr)
