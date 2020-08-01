@@ -6,7 +6,7 @@
 #' \describe{
 #'   \item{from}{the name of the package that introduced the dependencies}
 #'   \item{to}{the name of the package that the dependency is directed towards}
-#'   \item{type}{the type of dependency, which can take the follow values (all in lowercase): "depends", "imports", "linking_to", "suggests"}
+#'   \item{type}{the type of dependency, which can take the follow values (all in lowercase): "depends", "imports", "linking to", "suggests"}
 #'   \item{reverse}{a boolean representing whether the dependency is a reverse one (TRUE) or a forward one (FALSE)}
 #' }
 #' @source The CRAN pages of all the packages available on \url{https://cran.r-project.org/web/packages/available_packages_by_name.html}

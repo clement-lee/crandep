@@ -29,12 +29,12 @@ library(igraph)
 
 
 ## One type of dependencies
-To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep_all()` which takes the package name and the type of dependencies as the first and second arguments, respectively. Currently, the second argument accepts `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Reverse_depends`, `Reverse_imports`, `Reverse_linking_to`, and `Reverse_suggests`, or any variations in their letter cases.
+To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep()` which takes the package name and the type of dependencies as the first and second arguments, respectively. Currently, the second argument accepts `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Reverse_depends`, `Reverse_imports`, `Reverse_linking_to`, and `Reverse_suggests`, or any variations in their letter cases.
 
 ```{r}
-get_dep_all("dplyr", "Imports")
-get_dep_all("MASS", "depends")
-get_dep_all("MASS", "dePends") # should give same result
+get_dep("dplyr", "Imports")
+get_dep("MASS", "depends")
+get_dep("MASS", "dePends") # should give same result
 ```
 
 `Imports` and `Depends` are the most common types of dependencies in `R` packages, but there are other types such as `Suggests`. For more information on different types of dependencies, see [the official guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies) and [http://r-pkgs.had.co.nz/description.html](http://r-pkgs.had.co.nz/description.html).
@@ -44,7 +44,7 @@ get_dep_all("MASS", "dePends") # should give same result
 
 
 ## Multiple types of dependencies
-As the information all dependencies of one package are on the same page on CRAN, to avoid scraping the same multiple times, we can use `get_dep_df()` instead of  `get_dep_all()`. The output will be a data frame instead of a character vector.
+As the information all dependencies of one package are on the same page on CRAN, to avoid scraping the same multiple times, we can use `get_dep_df()` instead of  `get_dep()`. The output will be a data frame instead of a character vector.
 
 ```{r}
 get_dep_df("dplyr", c("imports", "LinkingTo"))
@@ -52,8 +52,8 @@ get_dep_df("dplyr", c("imports", "LinkingTo"))
 The column `type` is the type of the dependency converted to lower case. Also, `LinkingTo` is now converted to `linking_to` for consistency. For the four reverse dependencies, the substring `"reverse_"` will not be shown in `type`; instead the `reverse` column will be `TRUE`. This can be illustrated by the following:
 
 ```{r}
-get_dep_all("abc", "depends")
-get_dep_all("abc", "reverse_depends")
+get_dep("abc", "depends")
+get_dep("abc", "reverse_depends")
 get_dep_df("abc", c("depends", "reverse_depends"))
 ```
 Theoretically, for each forward dependency
