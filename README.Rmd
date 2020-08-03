@@ -17,10 +17,13 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of crandep is to provide functions for analysing the dependencies of CRAN packages using social network analysis.
+The goal of crandep is to provide functions for analysing the dependencies of CRAN packages using social network analysis. 
+
+
+
+
 
 ## Installation
-
 You can install crandep from github with:
 
 ```{r gh-installation, eval = FALSE}
@@ -46,32 +49,43 @@ library(igraph)
 
 
 
+## Overview
+The functions and example dataset can be divided into the following categories:
+
+1. For obtaining data frames of package dependencies, use `get_dep()`, `get_dep_df()`, `get_dep_all_packages()`.
+2. For obtaining igraph objects of package dependencies, use `get_graph_all_packages()` and `df_to_graph()`.
+3. For modelling the number of dependencies, use `*upp()` and `*mix()`.
+4. There is also an example data set `cran_dependencies`.
+
+
+
+
+
 ## One kind of dependencies 
-To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep_all()` which takes the package name and the type of dependencies as the first and second arguments, respectively. Currently, the second argument accepts `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Reverse_depends`, `Reverse_imports`, `Reverse_linking_to`, and `Reverse_suggests`, or any variations in their letter cases.
+To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep()` which takes the package name and the type of dependencies as the first and second arguments, respectively. Currently, the second argument accepts `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Reverse_depends`, `Reverse_imports`, `Reverse_linking_to`, and `Reverse_suggests`, or any variations in their letter cases, or if the underscore "_" is replaced by a space.
 
 ```{r}
-get_dep_all("dplyr", "Imports")
-get_dep_all("MASS", "depends")
-get_dep_all("MASS", "dePends")
+get_dep("dplyr", "Imports")
+get_dep("MASS", "depends")
 ```
 
-`Imports` and `Depends` are the most common types of dependencies in `R` packages, but there are other types such as `Suggests`. For more information on different types of dependencies, see [the official guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies) and [http://r-pkgs.had.co.nz/description.html](http://r-pkgs.had.co.nz/description.html).
+We only consider the 4 most common types of dependencies in R packages, namely `Imports`, `Depends`, `Suggests` and `LinkingTo`, and their reverse counterparts. For more information on different types of dependencies, see [the official guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies) and [http://r-pkgs.had.co.nz/description.html](http://r-pkgs.had.co.nz/description.html).
 
 
 
 
 
 ## Multiple kind of dependencies
-As the information all dependencies of one package are on the same page on CRAN, to avoid scraping the same multiple times, we can use `get_dep_df()` instead of  `get_dep_all()`. The output will be a data frame instead of a character vector.
+As the information all dependencies of one package are on the same page on CRAN, to avoid scraping the same multiple times, we can use `get_dep_df()` instead of  `get_dep()`. The output will be a data frame instead of a character vector.
 
 ```{r}
 get_dep_df("dplyr", c("imports", "LinkingTo"))
 ```
-The column `type` is the type of the dependency converted to lower case. Also, `LinkingTo` is now converted to `linking_to` for consistency. For the four reverse dependencies, the substring `"reverse_"` will not be shown in `type`; instead the `reverse` column will be `TRUE`. This can be illustrated by the following:
+The column `type` is the type of the dependency converted to lower case. Also, `LinkingTo` is now converted to `linking to` for consistency. For the four reverse dependencies, the substring `"reverse_"` will not be shown in `type`; instead the `reverse` column will be `TRUE`. This can be illustrated by the following:
 
 ```{r}
-get_dep_all("abc", "depends")
-get_dep_all("abc", "reverse_depends")
+get_dep("abc", "depends")
+get_dep("abc", "reverse_depends")
 get_dep_df("abc", c("depends", "reverse_depends"))
 ```
 Theoretically, for each forward dependency
@@ -83,6 +97,22 @@ there should be an equivalent reverse dependency
 data.frame(from = "B", to = "A", type = "c", reverse = TRUE)
 ```
 Aligning the `type` in the forward dependency and the reverse dependency enables this to be checked easily.
+
+To obtain all 8 types of dependencies, we can use `"all"` in the second argument, instead of typing a character vector of all 8 words:
+
+```{r}
+df0.abc <- get_dep_df("abc", "all")
+df0.abc
+df0.rstan <- get_dep_df("rstan", "all")
+dplyr::count(df0.rstan, type, reverse) # all 8 types
+```
+
+```{r,echo=FALSE}
+df0.all <- get_dep_all_packages()
+v0.all <- df0.all %>% group_by(from) %>% count(a = n_distinct(type, reverse)) %>% filter(a == 8L)
+```
+
+As of `r Sys.Date()`, the packages that have all 8 types of dependencies are `r paste(v0.all$from, collapse = ", ")`.
 
 
 
@@ -106,3 +136,47 @@ head(df0.imports)
 tail(df0.imports)
 ```
 
+
+
+
+
+## All types of dependencies, in a data frame
+The example dataset `cran_dependencies` contains all dependencies as of 2020-05-09.
+```{r}
+data(cran_dependencies)
+cran_dependencies
+dplyr::count(cran_dependencies, type, reverse)
+```
+
+This is essentially a snapshot of CRAN. We can obtain all the current dependencies using `get_dep_all_packages()`, which requires no arguments:
+```{r}
+df0.cran <- get_dep_all_packages()
+head(df0.cran)
+dplyr::count(df0.cran, type, reverse) # numbers in general larger than above
+```
+
+
+
+
+
+## Network of one type of dependencies, as an igraph object
+We can build dependency network using `get_graph_all_packages()`. Furthermore, we can verify that the forward and reverse dependency networks are (almost) the same, by looking at their size (number of edges) and order (number of nodes).
+```{r}
+g0.depends <- get_graph_all_packages(type = "depends")
+g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
+g0.depends
+g0.rev_depends
+```
+The dependency words accepted by the argument `type` is the same as in `get_dep()` and `get_dep_df()`. The two networks' size and order should be very close if not identical to each other. Because of the dependency direction, their edge lists should be the same but with the column names `from` and `to` swapped.
+
+For verification, the exact same graphs can be obtained by filtering the data frame for the required dependency and applying `df_to_graph()`:
+```{r}
+g1.depends <- df0.cran %>%
+    dplyr::filter(type == "depends" & !reverse) %>%
+    df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
+g1.rev_depends <- df0.cran %>%
+    dplyr::filter(type == "depends" & reverse) %>%
+    df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
+g1.depends # same as g0.depends
+g1.rev_depends # same as g0.rev_depends
+```

@@ -8,7 +8,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-In the [introduction](introduction.html) we have seen that reverse dependencies of all CRAN packages seem to follow the power law. This echoes the phenomenon in other software dependencies observed by, for example,
+From [the dependency network of all CRAN packages](cran.html), we have seen that reverse dependencies of all CRAN packages seem to follow the power law. This echoes the phenomenon in other software dependencies observed by, for example,
 [LaBelle and Wallingford, 2004](https://arxiv.org/abs/cs/0411096),
 [Baxter et al., 2006](https://doi.org/10.1145/1167473.1167507),
 [Jenkins and Kirk, 2007](https://doi.org/10.1016/j.ins.2007.01.021),

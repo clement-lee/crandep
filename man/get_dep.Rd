@@ -2,9 +2,12 @@
 % Please edit documentation in R/get_dep.R
 \name{get_dep}
 \alias{get_dep}
+\alias{get_dep_all}
 \title{One type of dependencies of a package}
 \usage{
 get_dep(name, type, scrape = TRUE)
+
+get_dep_all(name, type, scrape = TRUE)
 }
 \arguments{
 \item{name}{String, name of the package}

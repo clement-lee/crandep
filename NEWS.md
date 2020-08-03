@@ -1,10 +1,10 @@
-# crandep 0.0.3 (2020-08-)
+# crandep 0.0.3 (2020-08-10)
 
 ## New functions
 
 - `get_dep_all_packages()` and `get_graph_all_packages()`: The former is for a data frame of all dependencies of all CRAN packages, while the latter is for the graph of one type of depenedencies of all CRAN packages.
 
-- `get_dep()` replaces `get_dep_all()`, with the same functionality.
+- `get_dep()` replaces `get_dep_all()`, with the same functionality. `get_dep()` gets soft deprecated.
 
 ## Minor changes
 

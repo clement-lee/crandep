@@ -24,6 +24,13 @@ get_dep <- function(name, type, scrape = TRUE) {
     unique(get_dep_vec(str0))
 }
 
+#' @rdname get_dep
+#' @export
+get_dep_all <- function(name, type, scrape = TRUE) {
+    .Deprecated("get_dep")
+    get_dep(name, type, scrape)
+}
+
 #' Multiple types of dependencies
 #'
 #' \code{get_dep_df} returns a data frame of multiple types of dependencies of a package

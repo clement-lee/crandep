@@ -1,5 +1,6 @@
 ^README\.Rmd$
 ^README-.*\.png$
+^README\.html$
 ^doc$
 ^Meta$
 cran-comments.md
