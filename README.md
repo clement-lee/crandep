@@ -158,7 +158,7 @@ dplyr::count(df0.rstan, type, reverse) # all 8 types
 ```
 
 As of 2020-08-03, the packages that have all 8 types of dependencies are
-bigmemory, gRbase, rstan, sf, stochvol, xts.
+gRbase, rstan, sf, stochvol, xts.
 
 ## Building and visualising a dependency network
 
@@ -250,14 +250,14 @@ head(df0.cran)
 #> 7 aaSEA       Bios2cor imports   FALSE
 dplyr::count(df0.cran, type, reverse) # numbers in general larger than above
 #>         type reverse     n
-#> 1    depends   FALSE 11184
+#> 1    depends   FALSE 11036
 #> 2    depends    TRUE  9606
-#> 3    imports   FALSE 60653
+#> 3    imports   FALSE 60533
 #> 4    imports    TRUE 54264
-#> 5 linking to   FALSE  3653
+#> 5 linking to   FALSE  3648
 #> 6 linking to    TRUE  3936
-#> 7   suggests   FALSE 37265
-#> 8   suggests    TRUE 41018
+#> 7   suggests   FALSE 37203
+#> 8   suggests    TRUE 41021
 ```
 
 ## Network of one type of dependencies, as an igraph object
@@ -271,10 +271,10 @@ edges) and order (number of nodes).
 g0.depends <- get_graph_all_packages(type = "depends")
 g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
 g0.depends
-#> IGRAPH b77a083 DN-- 4802 7999 -- 
+#> IGRAPH b290e6d DN-- 4802 7999 -- 
 #> + attr: name (v/c), type (e/c), reverse
 #> | (e/l)
-#> + edges from b77a083 (vertex names):
+#> + edges from b290e6d (vertex names):
 #>  [1] A3      ->xtable   A3      ->pbapply 
 #>  [3] abc     ->abc.data abc     ->nnet    
 #>  [5] abc     ->quantreg abc     ->MASS    
@@ -284,10 +284,10 @@ g0.depends
 #> [13] abctools->abc      abctools->abind   
 #> + ... omitted several edges
 g0.rev_depends
-#> IGRAPH c40edf9 DN-- 4802 7999 -- 
+#> IGRAPH 3ba59d2 DN-- 4802 7999 -- 
 #> + attr: name (v/c), type (e/c), reverse
 #> | (e/l)
-#> + edges from c40edf9 (vertex names):
+#> + edges from 3ba59d2 (vertex names):
 #>  [1] abc     ->abctools   abc     ->EasyABC   
 #>  [3] abc.data->abc        abd     ->tigerstats
 #>  [5] abind   ->abctools   abind   ->BCBCSF    
@@ -315,10 +315,10 @@ g1.rev_depends <- df0.cran %>%
     dplyr::filter(type == "depends" & reverse) %>%
     df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
 g1.depends # same as g0.depends
-#> IGRAPH effe470 DN-- 4802 7999 -- 
+#> IGRAPH 8be1f8f DN-- 4802 7999 -- 
 #> + attr: name (v/c), type (e/c), reverse
 #> | (e/l)
-#> + edges from effe470 (vertex names):
+#> + edges from 8be1f8f (vertex names):
 #>  [1] A3      ->xtable   A3      ->pbapply 
 #>  [3] abc     ->abc.data abc     ->nnet    
 #>  [5] abc     ->quantreg abc     ->MASS    
@@ -328,10 +328,10 @@ g1.depends # same as g0.depends
 #> [13] abctools->abc      abctools->abind   
 #> + ... omitted several edges
 g1.rev_depends # same as g0.rev_depends
-#> IGRAPH 7d0fbfb DN-- 4802 7999 -- 
+#> IGRAPH 7f7a3f0 DN-- 4802 7999 -- 
 #> + attr: name (v/c), type (e/c), reverse
 #> | (e/l)
-#> + edges from 7d0fbfb (vertex names):
+#> + edges from 7f7a3f0 (vertex names):
 #>  [1] abc     ->abctools   abc     ->EasyABC   
 #>  [3] abc.data->abc        abd     ->tigerstats
 #>  [5] abind   ->abctools   abind   ->BCBCSF    

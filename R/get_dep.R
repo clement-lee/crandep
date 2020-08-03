@@ -127,5 +127,6 @@ get_dep_all_packages <- function() {
         stringsAsFactors = FALSE
     )
     df2 <- df2[!is.na(df2$to),]
+    df2 <- df2[df2$to != "",] # there are rows with "" - may need to fix from source get_dep_vec()
     unique(df2)
 }
