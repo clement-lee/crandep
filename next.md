@@ -4,6 +4,6 @@
 
 ## Add community detection w/ visNetwork visualisation
 
-## Change version number
-
 ## Add pupp() & pmix(), merging Supp() & Smix(), respectively
+
+## Fix cor2 & sd_sig w/ initialisation in algo.cpp 

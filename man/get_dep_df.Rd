@@ -21,6 +21,5 @@ A data frame of dependencies
 }
 \examples{
 get_dep_df("dplyr", c("Imports", "Depends"))
-get_dep_df("MASS", c("Suggests", "Depends", "Imports"))
-get_dep_df("MASS", c("Suggests", "Depends", "Imports"), FALSE) # same result as above line
+get_dep_df("MASS", c("Suggests", "Depends", "Imports"), TRUE) # FALSE will give same result
 }

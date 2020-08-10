@@ -7,8 +7,7 @@
 #' @return A string vector of dependencies
 #' @examples
 #' get_dep("dplyr", "Imports")
-#' get_dep("MASS", "Depends")
-#' get_dep("MASS", "Depends", FALSE) # same result as above line
+#' get_dep("MASS", "Depends", TRUE) # FALSE will give same result
 #' @export
 get_dep <- function(name, type, scrape = TRUE) {
     type <- check_dep_word(type)
@@ -42,8 +41,7 @@ get_dep_all <- function(name, type, scrape = TRUE) {
 #' @return A data frame of dependencies
 #' @examples
 #' get_dep_df("dplyr", c("Imports", "Depends"))
-#' get_dep_df("MASS", c("Suggests", "Depends", "Imports"))
-#' get_dep_df("MASS", c("Suggests", "Depends", "Imports"), FALSE) # same result as above line
+#' get_dep_df("MASS", c("Suggests", "Depends", "Imports"), TRUE) # FALSE will give same result
 #' @export
 get_dep_df <- function(name, types, scrape = TRUE) {
     types <- check_dep_word(types)

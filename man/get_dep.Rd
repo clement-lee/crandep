@@ -24,6 +24,5 @@ A string vector of dependencies
 }
 \examples{
 get_dep("dplyr", "Imports")
-get_dep("MASS", "Depends")
-get_dep("MASS", "Depends", FALSE) # same result as above line
+get_dep("MASS", "Depends", TRUE) # FALSE will give same result
 }

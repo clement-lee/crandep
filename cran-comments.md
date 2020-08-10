@@ -1,10 +1,16 @@
-## R CMD check results
-There were no ERRORs or WARNINGs or NOTEs locally.
+This is a resubmission of version 0.1.0.
 
-There may be a NOTE similar to the one below. The URL concerned is for the list of all packages instead of 1 individual package, and therefore the canonical form is not possible. Also, in the two files where this URL is found, no changes have been made since the previous version.
+
+
+
+
+## checking CRAN incoming feasibility ... NOTE
+
+- The invalid file URIs in NEWS.md are now removed.
+
+- Regarding the NOTE below (between the two lines of equal signs), the URL concerned is for the list of all packages instead of 1 individual package, and therefore the canonical form is not possible. Also, in the first file where this URL is found, no changes have been made since the previous version.
 
 =========================================
-
 Found the following (possibly) invalid URLs:
   URL: https://cran.r-project.org/web/packages/available_packages_by_name.html
     From: man/cran_dependencies.Rd
@@ -14,3 +20,14 @@ Found the following (possibly) invalid URLs:
     CRAN URL not in canonical form
   The canonical URL of the CRAN page for a package is 
     https://CRAN.R-project.org/package=pkgname
+==========================================
+
+
+
+
+
+## checking examples ... NOTE / ERROR
+
+- The functions with example times > 10s are `get_dep()` or `get_dep_all()`, `get_graph_all_packages()` and `get_dep_all_packages()`, all of which import `tools::CRAN_package_db()`, and therefore take time and require internet connection.
+
+- The lines of examples which resulted in errors (due to failure to establish server connection) previously are now removed, thus minimising the chances of the aforementioned error.

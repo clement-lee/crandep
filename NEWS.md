@@ -1,4 +1,4 @@
-# crandep 0.0.3 (2020-08-10)
+# crandep 0.1.0 (2020-08-10)
 
 ## New functions
 
@@ -17,6 +17,6 @@
 - In the output of `get_dep_df()` and `get_dep_all_packages()`, any `LinkingTo` and `Reverse linking to` dependencies will become "linking to" ("linking_to" previously) in the variable `type`, with "FALSE" and "TRUE" in the variable `reverse`, respectively. This is also updated in the data `cran_dependencies`.
 
 ## Vignettes
-- The sections on obtaining dependencies of all CRAN packages is now moved to a [new vignette](cran.html). In this vignette, we also provide interactive visualisation of the network of `Depends` of all packages.
+- The sections on obtaining dependencies of all CRAN packages is now moved to a new vignette. In this vignette, we also provide interactive visualisation of the network of `Depends` of all packages.
 
-- The [degree modelling](degree.html) is now for `Imports` network, not `Depends` network. In addition to discrete power law, a discrete extreme value mixture distribution is also used to model the same data set.
+- The degree modelling vignette is now for `Imports` network, not `Depends` network. In addition to discrete power law, a discrete extreme value mixture distribution is also used to model the same data set.
