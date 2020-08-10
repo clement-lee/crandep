@@ -22,6 +22,7 @@ library(crandep)
 library(dplyr)
 library(ggplot2)
 library(igraph)
+library(visNetwork)
 ```
 
 
@@ -135,6 +136,33 @@ gg0.summary <- df1.summary %>%
 gg0.summary
 ```
 This shows the reverse dependencies, in particular `Reverse_depends` and `Reverse_imports`, follow the [power law](https://en.wikipedia.org/wiki/Power-law), which is empirically observed in various academic fields.
+
+
+
+
+
+## Visualisation
+We can now visualise (the giant component of) the CRAN network of `Depends`, using functions in the package **visNetwork**. To do this, we will need to convert the **igraph** object `g0.depends` to the node list and edge list as data frames.
+
+```{r}
+prefix <- "http://CRAN.R-project.org/package=" # canonical form
+degrees <- igraph::degree(g0.depends)
+df0.nodes <- data.frame(id = names(degrees), value = degrees) %>%
+    dplyr::mutate(title = paste0('<a href=\"', prefix, id, '\">', id, '</a>'))
+df0.edges <- igraph::as_data_frame(g0.depends, what = "edges")
+```
+
+By adding the column `title` in `df0.nodes`, we enable clicking the nodes and being directed to their CRAN pages, in the interactive visualisation below:
+
+```{r}
+set.seed(2345L)
+vis0 <- visNetwork::visNetwork(df0.nodes, df0.edges, width = "100%", height = "720px") %>%
+    visNetwork::visOptions(highlightNearest = TRUE) %>%
+	visNetwork::visEdges(arrows = "to", color = list(opacity = 0.5)) %>%
+	visNetwork::visNodes(fixed = TRUE) %>%
+	visNetwork::visIgraphLayout(layout = "layout_with_drl")
+vis0
+```
 
 
 

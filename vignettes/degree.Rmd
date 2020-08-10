@@ -1,6 +1,6 @@
 ---
 title: "Modelling the number of reverse dependencies"
-date: "2020-07-18"
+date: "2020-08-10"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Modelling the number of reverse dependencies}
@@ -19,7 +19,7 @@ From [the dependency network of all CRAN packages](cran.html), we have seen that
 [Li et al., 2013](https://doi.org/10.1016/j.physa.2013.01.035),
 [Bavota et al. 2015](https://doi.org/10.1007/s10664-014-9325-9),
 and [Cox et al., 2015](https://ieeexplore.ieee.org/document/7202955).
-In this vignette, we will fit the discrete power law to model this number of reverse dependencies, using functions with the suffix `upp`. While we shall focus on "Depends", which is one of the serveral kinds of dependencies in R, the same analysis can be carried out for all other types.
+In this vignette, we will fit the discrete power law to model this number of reverse dependencies, using functions with the suffix `upp`, namely `dupp()`, `Supp()` and `mcmc_upp()`. While we shall focus on "Imports", which is one of the serveral kinds of dependencies in R, the same analysis can be carried out for all other types.
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -33,35 +33,41 @@ library(crandep)
 library(igraph)
 library(dplyr)
 library(ggplot2)
-data(cran_dependencies)
 ```
 
+
+
+
+
 ## Obtaining the reverse dependencies
-We continue with the dependency network `g0.depends` in the [introduction](introduction.html). As we are using the forward dependencies to construct the network, the number of reverse dependencies is equivalent to the in-degree of a package, which can be obtained via the function `igraph::degree()`. We then construct a data frame to hold this in-degree information.
+In [the vignette on all CRAN pacakges](cran.html), we looked at the dependency type `Depends`. Here, we look at the dependency type `Imports`, using the same workflow. As we are using the forward dependencies to construct the network, the number of reverse dependencies is equivalent to the in-degree of a package, which can be obtained via the function `igraph::degree()`. We then construct a data frame to hold this in-degree information.
 
 ```{r}
-g0.depends <- cran_dependencies %>%
-    dplyr::filter(type == "depends" & !reverse) %>%
-	df_to_graph(nodelist = dplyr::rename(cran_dependencies, name = from))
-d0.depends <- g0.depends %>% igraph::degree(mode = "in")
-df0.depends <-
-    data.frame(name = names(d0.depends), degree = as.integer(d0.depends)) %>%
+g0.imports <- get_graph_all_packages(type = "imports")
+d0.imports <- g0.imports %>% igraph::degree(mode = "in")
+df0.imports <-
+    data.frame(name = names(d0.imports), degree = as.integer(d0.imports)) %>%
     dplyr::arrange(dplyr::desc(degree), name)
-head(df0.depends, 10)
+head(df0.imports, 10)
 ```
 
 For the purpose of verification, we use the reverse dependencies to construct the network, then look at the out-degrees of the packages this time.
 
 ```{r}
-g0.rev_depends <- cran_dependencies %>%
-    dplyr::filter(type == "depends" & reverse) %>% # note the difference to above
-	df_to_graph(nodelist = dplyr::rename(cran_dependencies, name = from))
-d0.rev_depends <- g0.rev_depends %>% igraph::degree(mode = "out") # note the difference to above
-df0.rev_depends <-
-    data.frame(name = names(d0.rev_depends), degree = as.integer(d0.rev_depends)) %>%
+g0.rev_imports <- get_graph_all_packages(type = "reverse imports")
+d0.rev_imports <- g0.rev_imports %>% igraph::degree(mode = "out") # note the difference to above
+df0.rev_imports <-
+    data.frame(name = names(d0.rev_imports), degree = as.integer(d0.rev_imports)) %>%
     dplyr::arrange(dplyr::desc(degree), name)
-head(df0.rev_depends, 10)
-identical(df0.depends, df0.rev_depends) # expected TRUE
+head(df0.rev_imports, 10)
+```
+
+Theoretically, the two data frames are identical. Any possible (but small) difference is due to the CRAN pages being updated while scraping.
+
+```{r}
+identical(df0.imports, df0.rev_imports)
+setdiff(df0.imports, df0.rev_imports)
+setdiff(df0.rev_imports, df0.imports)
 ```
 
 
@@ -72,7 +78,7 @@ identical(df0.depends, df0.rev_depends) # expected TRUE
 We construct a data frame for the empirical frequencies and survival function at the whole range of data.
 
 ```{r}
-df1.depends <- df0.depends %>%
+df1.imports <- df0.imports %>%
 	dplyr::filter(degree > 0L) %>% # to prevent warning when plotting on log-log scale
     dplyr::count(degree, name = "frequency") %>%
 	dplyr::arrange(dplyr::desc(degree)) %>%
@@ -82,7 +88,7 @@ df1.depends <- df0.depends %>%
 Before fitting the discrete power law, to be determined first is a threshold above which it is appropriate. We will visualise the degree distribution to determine such threshold.
 
 ```{r}
-gg0 <- df1.depends %>%
+gg0 <- df1.imports %>%
 	ggplot2::ggplot() +
 	ggplot2::geom_point(aes(degree, frequency), size = 0.75) +
 	ggplot2::scale_x_log10() +
@@ -106,19 +112,19 @@ We use the function `mcmc_upp()` to fit the discrete power law, of which the PMF
 The Bayesian approach is used here for inference, meaning that a prior has to be set for the parameters. We assume a uniform distribution $U(a_{\xi_1}=0, b_{\xi_1}=100)$ for $\xi_1$. Markov chain Monte Carlo (MCMC) is used as the inference algorithm.
 
 ```{r,results = FALSE}
-x <- dplyr::filter(df0.depends, degree > 0L)$degree # data
+x <- dplyr::filter(df0.imports, degree > 0L)$degree # data
 u <- 1L # threshold
 xi1 <- 1.0 # initial value
 a_xi1 <- 0.0 # lower bound of uniform distribution
 b_xi1 <- 100.0 # upper bound of uniform distribution
 set.seed(3075L)
-mcmc0.depends <- mcmc_upp(x = x, u = u, xi1 = xi1, a_xi1 = a_xi1, b_xi1 = b_xi1) # takes seconds
+mcmc0.imports <- mcmc_upp(x = x, u = u, xi1 = xi1, a_xi1 = a_xi1, b_xi1 = b_xi1) # takes seconds
 ```
 
 Now we have the samples representing the posterior distribution of $\xi_1$:
 
 ```{r}
-mcmc0.depends %>%
+mcmc0.imports %>%
     ggplot2::ggplot() +
 	ggplot2::geom_density(aes(xi1)) +
 	ggplot2::theme_bw(12)
@@ -127,31 +133,46 @@ mcmc0.depends %>%
 We can obtain the resulting posterior of $\alpha=1/\xi_1+1$.
 
 ```{r}
-mcmc0.depends <- mcmc0.depends %>%
+mcmc0.imports <- mcmc0.imports %>%
     dplyr::mutate(alpha = 1.0 / xi1 + 1.0)
-mcmc0.depends %>%
+mcmc0.imports %>%
 	ggplot2::ggplot() +
 	ggplot2::geom_density(aes(alpha)) +
 	ggplot2::theme_bw(12)
 ```
 
-This means the number of reverse "Depends" follows approximately a power law with exponent `r round(mean(mcmc0.depends$alpha),2)`. We can also calculate the fitted frequencies and survival function, using `dupp()` and `Supp()` respectively.
+This means the number of reverse "Imports" follows approximately a power law with exponent `r round(mean(mcmc0.imports$alpha),2)`. We can also calculate the fitted frequencies and survival function, using `dupp()` and `Supp()` respectively.
 
 ```{r}
-n0 <- length(x) ## or sum(df1.depends$frequency)
-freq0 <- n0 * dupp(x = df1.depends$degree, u = 1L, xi1 = mean(mcmc0.depends$xi1))
-surv0 <- Supp(x = df1.depends$degree, u = 1L, xi1 = mean(mcmc0.depends$xi1))
-df1.depends <- df1.depends %>%
-    dplyr::mutate(frequency.fitted = freq0, survival.fitted = surv0)
+n0 <- sum(df1.imports$frequency) # TOTAL number of data points in x
+## or n0 <- length(x)
+n1 <- length(df1.imports$frequency) # number of UNIQUE data points
+N <- length(mcmc0.imports$xi1)
+freq0 <- surv0 <- matrix(as.numeric(NA), N, n1)
+for (i in seq(N)) {
+    freq0[i,] <- n0 * dupp(x = df1.imports$degree, u = 1L, xi1 = mcmc0.imports$xi1[i])
+    surv0[i,] <- Supp(x = df1.imports$degree, u = 1L, xi1 = mcmc0.imports$xi1[i])
+}
+df1.imports <- df1.imports %>%
+    dplyr::mutate(
+	    frequency.mean = apply(freq0, 2, mean),
+		frequency.qlow = apply(freq0, 2, quantile, p = 0.025),
+		frequency.qupp = apply(freq0, 2, quantile, p = 0.975),
+		survival.mean = apply(surv0, 2, mean),
+		survival.qlow = apply(surv0, 2, quantile, p = 0.025),
+		survival.qupp = apply(surv0, 2, quantile, p = 0.975)
+	)
 ```
 
-Finally, we overlay the fitted line on the plot above to check goodness-of-fit:
+Finally, we overlay the fitted line (blue, dashed) and credible intervals (red, dotted) on the plot above to check goodness-of-fit:
 
 ```{r}
-gg1 <- df1.depends %>%
+gg1 <- df1.imports %>%
     ggplot2::ggplot() +
 	ggplot2::geom_point(aes(degree, frequency), size = 0.75) +
-	ggplot2::geom_line(aes(degree, frequency.fitted), col = 2, lty = 2) +
+	ggplot2::geom_line(aes(degree, frequency.mean), col = 4, lty = 2) +
+	ggplot2::geom_line(aes(degree, frequency.qlow), col = 2, lty = 3) +
+	ggplot2::geom_line(aes(degree, frequency.qupp), col = 2, lty = 3) +
 	ggplot2::scale_x_log10() +
 	ggplot2::scale_y_log10() +
 	ggplot2::coord_cartesian(ylim = c(1L, 1e+3L)) +
@@ -162,14 +183,16 @@ gg1
 The corresponding plot using the survival function can also be obtained:
 
 ```{r}
-gg2 <- df1.depends %>%
+gg2 <- df1.imports %>%
     ggplot2::ggplot() +
 	ggplot2::geom_point(aes(degree, survival), size = 0.75) +
-	ggplot2::geom_line(aes(degree, survival.fitted), col = 2, lty = 2) +
+	ggplot2::geom_line(aes(degree, survival.mean), col = 4, lty = 2) +
+	ggplot2::geom_line(aes(degree, survival.qlow), col = 2, lty = 3) +
+	ggplot2::geom_line(aes(degree, survival.qupp), col = 2, lty = 3) +
 	ggplot2::scale_x_log10() +
 	ggplot2::scale_y_log10() +
 	ggplot2::theme_bw(12)
 gg2
 ```
 
-This shows the discrete power law doesn't fit as good as it seems according to the frequency plot. Potential improvements include using a higher threshold, which inevitably means throwing away some data, or using a more flexible distribution, such as those in extreme value theory.
+This shows the discrete power law doesn't fit as good as it seems according to the frequency plot. Potential improvements include using a higher threshold, which inevitably means throwing away some data, or using a more flexible distribution, such as those in extreme value theory. Provided in this package for such purposes are `dmix()`, `Smix()` and `mcmc_mix()`, which are functions for discrete extreme value mixture distributions introduced in [Lee and Eastoe, 2020](https://arxiv.org/abs/2008.03073).
