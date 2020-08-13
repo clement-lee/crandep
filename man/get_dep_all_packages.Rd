@@ -16,5 +16,7 @@ A data frame of dependencies of all CRAN packages
 Unlike \code{get_dep} and \code{get_dep_df}, there is no boolean argument `scrape`, as it is much faster to obtain the dependencies of all packages via `tools::CRAN_package_db()`.
 }
 \examples{
+\dontrun{
 df.cran <- get_dep_all_packages()
+}
 }

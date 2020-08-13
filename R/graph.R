@@ -96,8 +96,10 @@ df_to_graph <- function(edgelist, nodelist = NULL, gc = TRUE) {
 #' @param gc Boolean, if 'TRUE' (default) then the giant component is extracted, if 'FALSE' then the whole graph is returned
 #' @return An igraph object & a connected graph if gc is 'TRUE'
 #' @examples
+#' \dontrun{
 #' g0.cran.depends <- get_graph_all_packages("depends")
 #' g1.cran.imports <- get_graph_all_packages("reverse imports")
+#' }
 #' @export
 get_graph_all_packages <- function(type, gc = TRUE) {
     ## change params to align with others

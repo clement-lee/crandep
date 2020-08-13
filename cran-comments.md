@@ -1,4 +1,4 @@
-This is a resubmission of version 0.1.0.
+This is a resubmission of version 0.1.0, which also fixes the ERROR in last released version's CRAN status - see `checking examples ... NOTE / ERROR` below.
 
 
 
@@ -28,6 +28,8 @@ Found the following (possibly) invalid URLs:
 
 ## checking examples ... NOTE / ERROR
 
-- The functions with example times > 10s are `get_dep()` or `get_dep_all()`, `get_graph_all_packages()` and `get_dep_all_packages()`, all of which import `tools::CRAN_package_db()`, and therefore take time and require internet connection.
+- The functions with example times > 10s are `get_dep()` or `get_dep_all()`, `get_graph_all_packages()` and `get_dep_all_packages()`, all of which import `tools::CRAN_package_db()`, and therefore take time and require internet connection. The fixes are as below:
 
-- The lines of examples which resulted in errors (due to failure to establish server connection) previously are now removed, thus minimising the chances of the aforementioned error.
+- For `get_dep()` and `get_dep_all()`, the lines of examples ` which resulted in errors (due to failure to establish server connection) previously are now removed, thus removing the aforementioned error.
+
+- For `get_graph_all_packages()` and `get_dep_all_packages()`, the examples are now wrapped by \dontrun{}.

@@ -18,6 +18,8 @@ An igraph object & a connected graph if gc is 'TRUE'
 \code{get_graph_all_packages} returns an igraph object representing the network of one type of dependencies of all CRAN packages.
 }
 \examples{
+\dontrun{
 g0.cran.depends <- get_graph_all_packages("depends")
 g1.cran.imports <- get_graph_all_packages("reverse imports")
+}
 }

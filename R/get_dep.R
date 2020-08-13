@@ -95,7 +95,9 @@ reshape_dep <- function(x, names) {
 #' @importFrom dplyr bind_rows
 #' @return A data frame of dependencies of all CRAN packages
 #' @examples
+#' \dontrun{
 #' df.cran <- get_dep_all_packages()
+#' }
 #' @export
 get_dep_all_packages <- function() {
     df0 <- as.data.frame(tools::CRAN_package_db(), stringsAsFactors = FALSE)
