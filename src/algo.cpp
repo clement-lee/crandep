@@ -521,7 +521,7 @@ DataFrame mcmc_mix(const NumericVector x,
     sd0 = 0.1 / sqrt(2.0),
     sd1 = 2.34 / sqrt(2.0);
   vec u_burn(burnin), xi1_burn(burnin), xi2_burn(burnin), sig_burn(burnin);
-  double sd_u = 1.0, sd_xi1 = 0.1, sd_xi2, sd_sig, cor2, factor = 10.0, lalpha;
+  double sd_u = 1.0, sd_xi1 = 0.1, sd_xi2 = 0.1, sd_sig = 0.1, cor2 = 0.1, factor = 10.0, lalpha;
   running_stat<double> cont_stat;
   int s, t;
   for (t = 0; t < N * thin + burnin; t++) {
