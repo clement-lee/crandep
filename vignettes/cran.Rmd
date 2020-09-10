@@ -69,6 +69,11 @@ g1.rev_depends <- df0.cran %>%
 g1.depends # same as g0.depends
 g1.rev_depends # same as g0.rev_depends
 ```
+Also, this network is still a directed acyclic graph:
+```{r}
+igraph::is_dag(g0.depends)
+igraph::is_dag(g0.rev_depends)
+```
 
 
 
@@ -108,10 +113,10 @@ the column `to` lists those which are not on the [page of available packages](ht
 
 
 ## Summary statistics
-Using the dataset `cran_dependencies` as an example, we can also obtain the degree for each package and each type:
+Using the data frame `df0.cran`, we can also obtain the degree for each package and each type:
 ```{r}
-df0.summary <- dplyr::count(cran_dependencies, from, type, reverse)
-df0.summary
+df0.summary <- dplyr::count(df0.cran, from, type, reverse)
+head(df0.summary)
 ```
 We can look at the "winner" in each of the reverse dependencies:
 ```{r}
@@ -147,7 +152,12 @@ We can now visualise (the giant component of) the CRAN network of `Depends`, usi
 ```{r}
 prefix <- "http://CRAN.R-project.org/package=" # canonical form
 degrees <- igraph::degree(g0.depends)
-df0.nodes <- data.frame(id = names(degrees), value = degrees) %>%
+set.seed(3579L)
+clusters <- igraph::membership(igraph::cluster_spinglass(g0.depends))
+df0.nodes <- dplyr::full_join(
+    data.frame(id = names(degrees), value = degrees),
+	data.frame(id = names(clusters), group = as.character(clusters)),
+	"id") %>%
     dplyr::mutate(title = paste0('<a href=\"', prefix, id, '\">', id, '</a>'))
 df0.edges <- igraph::as_data_frame(g0.depends, what = "edges")
 ```
@@ -169,4 +179,4 @@ vis0
 
 
 ## Going forward
-Methods in social network analysis, such as community detection algorithms and/or stochastic block models, can be applied to study the properties of the dependency network. Ideally, by analysing the dependencies of all CRAN packages, we can obtain a bird's-eye view of the ecosystem. The number of reverse dependencies is modelled in [this other vignette](degree.html).
+Methods in social network analysis, such as stochastic block models, can be applied to study the properties of the dependency network. Ideally, by analysing the dependencies of all CRAN packages, we can obtain a bird's-eye view of the ecosystem. The number of reverse dependencies is modelled in [this other vignette](degree.html).

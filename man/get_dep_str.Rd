@@ -17,9 +17,4 @@ A string of the concatenation of the dependencies
 \description{
 Find string corresponding to "Imports", "Depends" etc.
 }
-\examples{
-url.mass <- crandep:::cran_url("MASS")
-html.mass <- crandep:::html_text_vec(url.mass)
-crandep:::get_dep_str(html.mass, "Depends")
-}
 \keyword{internal}

@@ -1,3 +1,21 @@
+# crandep 0.1.1 (2020-09-)
+
+## Functions
+
+- Examples in internal functions `html_text_vec()`, `get_dep_str()` and `get_dep_vec()` removed to minimise the errors due to no internet connection and/or timeout.
+
+## Vignettes
+
+- For the vignette on dependencies of all CRAN packages, community detection is added.
+
+## Data
+
+- Added is a citation network of the CHI conference papers, that can serve as a comparison to the CRAN dependency network, in terms of network summaries and characteristics, such as degree distribution.
+
+
+
+
+
 # crandep 0.1.0 (2020-08-10)
 
 ## New functions
@@ -20,3 +38,25 @@
 - The sections on obtaining dependencies of all CRAN packages is now moved to a new vignette. In this vignette, we also provide interactive visualisation of the network of `Depends` of all packages.
 
 - The degree modelling vignette is now for `Imports` network, not `Depends` network. In addition to discrete power law, a discrete extreme value mixture distribution is also used to model the same data set.
+
+
+
+
+
+# crandep 0.0.2 (2020-07-18)
+
+## New functions
+
+- `dupp()` and `Supp()`: density and survival functions, respectively, of the discrete power law (above a threshold).
+- `mcmc_upp()`: fitting the discrete power law (above a threshold) to data using Markov chain Monte Carlo (MCMC).
+- `dmix()`, `Smix()`: density and survival functions, respectively, of a discrete extreme value mixture distribution.
+- `mcmc_mix()`: fitting the discrete extreme value mixture distribution to data using MCMC.
+
+## Minor changes
+
+- Additional argument in `get_dep_all()` and `get_dep_df()`: `scrape = TRUE` is the same as previous version, while `scrape = FALSE` means `tools::CRAN_package_db()` (thanks to Dirk Eddelbuettel (#1)) will be used instead. Note that changing this argument should still give the same result; the main difference is the time taken.
+
+
+
+
+

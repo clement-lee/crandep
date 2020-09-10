@@ -15,10 +15,4 @@ A string vector of dependencies
 \description{
 Split a string to a list of dependencies
 }
-\examples{
-url.mass <- crandep:::cran_url("MASS")
-html.mass <- crandep:::html_text_vec(url.mass)
-str.mass <- crandep:::get_dep_str(html.mass, "Depends") # the packages MASS depends on
-crandep:::get_dep_vec(str.mass) # R (<version>) will be removed
-}
 \keyword{internal}

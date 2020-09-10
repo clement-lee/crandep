@@ -15,8 +15,4 @@ A string vector of the html text of the page according to the url
 \description{
 Scrap the page (of a package) as a text vector
 }
-\examples{
-url.abc <- crandep:::cran_url("abc") # the page for abc on CRAN
-html.abc <- crandep:::html_text_vec(url.abc)
-}
 \keyword{internal}

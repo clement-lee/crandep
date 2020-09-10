@@ -41,9 +41,6 @@ cran_url <- function(name) {
 #' @importFrom rvest html_text
 #' @importFrom stringr str_split
 #' @return A string vector of the html text of the page according to the url
-#' @examples
-#' url.abc <- crandep:::cran_url("abc") # the page for abc on CRAN
-#' html.abc <- crandep:::html_text_vec(url.abc)
 #' @keywords internal
 html_text_vec <- function(url) {
     as.vector(stringr::str_split(rvest::html_text(xml2::read_html(url)), "\n", simplify = TRUE))
@@ -55,10 +52,6 @@ html_text_vec <- function(url) {
 #' @param x One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"
 #' @importFrom stringr str_detect str_replace_all
 #' @return A string of the concatenation of the dependencies
-#' @examples
-#' url.mass <- crandep:::cran_url("MASS")
-#' html.mass <- crandep:::html_text_vec(url.mass)
-#' crandep:::get_dep_str(html.mass, "Depends")
 #' @keywords internal
 get_dep_str <- function(v, x) {
     x <- check_dep_word(x)
@@ -80,11 +73,6 @@ get_dep_str <- function(v, x) {
 #' @param x A scalar string, possibly an output of get_dep_str()
 #' @importFrom stringr str_split str_locate str_replace_all
 #' @return A string vector of dependencies
-#' @examples
-#' url.mass <- crandep:::cran_url("MASS")
-#' html.mass <- crandep:::html_text_vec(url.mass)
-#' str.mass <- crandep:::get_dep_str(html.mass, "Depends") # the packages MASS depends on
-#' crandep:::get_dep_vec(str.mass) # R (<version>) will be removed
 #' @keywords internal
 get_dep_vec <- function(x) {
     if (is.na(x)) {
