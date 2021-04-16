@@ -22,4 +22,7 @@ cran_dependencies
 \description{
 A dataset containing the dependencies of various types (Imports, Depends, Suggests, LinkingTo, and their reverse counterparts) of more than 14600 packages available on CRAN as of 2020-05-09.
 }
+\seealso{
+\code{\link{chi_citations}}
+}
 \keyword{datasets}

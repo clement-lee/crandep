@@ -1,8 +1,10 @@
-# crandep 0.1.1 (2020-09-)
+# crandep 0.2.0 (2021-04-)
 
 ## Functions
 
 - Examples in internal functions `html_text_vec()`, `get_dep_str()` and `get_dep_vec()` removed to minimise the errors due to no internet connection and/or timeout.
+
+- Multiple dependencies are now allowed in the `type` argument in `get_graph_all_packages()`.
 
 ## Vignettes
 

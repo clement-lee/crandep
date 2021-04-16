@@ -9,6 +9,7 @@
 #'   \item{type}{the type of dependency, which can take the follow values (all in lowercase): "depends", "imports", "linking to", "suggests"}
 #'   \item{reverse}{a boolean representing whether the dependency is a reverse one (TRUE) or a forward one (FALSE)}
 #' }
+#' @seealso \code{\link{chi_citations}}
 #' @source The CRAN pages of all the packages available on \url{https://cran.r-project.org}
 "cran_dependencies"
 
@@ -23,5 +24,6 @@
 #'   \item{year_from}{the publication year of the citing paper}
 #'   \item{year_to}{the publication year of the cited paper}
 #' }
+#' @seealso \code{\link{cran_dependencies}}
 #' @source \url{https://dl.acm.org/conference/chi}
 "chi_citations"

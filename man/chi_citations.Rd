@@ -22,4 +22,7 @@ chi_citations
 \description{
 A dataset containing the citations of conference papers of the ACM Conference on Human Factors in Computing Systems (CHI) from 1981 to 2019, obtained from the ACM digital library. The resulting citation network can be compared to the dependencies network of CRAN packages, in terms of network-related characteristics, such as degree distribution and sparsity.
 }
+\seealso{
+\code{\link{cran_dependencies}}
+}
 \keyword{datasets}

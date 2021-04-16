@@ -20,3 +20,6 @@ Unlike \code{get_dep} and \code{get_dep_df}, there is no boolean argument `scrap
 df.cran <- get_dep_all_packages()
 }
 }
+\seealso{
+\code{\link{get_dep}} for getting one type of dependencies in a character vector, \code{\link{get_dep_df}} for multiple types of dependencies, and \code{\link{get_graph_all_packages}} for obtaining directly a network of dependencies as an igraph object
+}

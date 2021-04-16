@@ -8,6 +8,7 @@
 #' @examples
 #' get_dep("dplyr", "Imports")
 #' get_dep("MASS", "Depends", TRUE) # FALSE will give same result
+#' @seealso \code{\link{get_dep_df}} for multiple types of dependencies, and \code{\link{get_dep_all_packages}} for the dependencies of all CRAN packages
 #' @export
 get_dep <- function(name, type, scrape = TRUE) {
     type <- check_dep_word(type)
@@ -42,6 +43,7 @@ get_dep_all <- function(name, type, scrape = TRUE) {
 #' @examples
 #' get_dep_df("dplyr", c("Imports", "Depends"))
 #' get_dep_df("MASS", c("Suggests", "Depends", "Imports"), TRUE) # FALSE will give same result
+#' @seealso \code{\link{get_dep}} for getting one type of dependencies in a character vector, and \code{\link{get_dep_all_packages}} for the dependencies of all CRAN packages, and \code{\link{get_graph_all_packages}} for obtaining directly a network of dependencies as an igraph object
 #' @export
 get_dep_df <- function(name, types, scrape = TRUE) {
     types <- check_dep_word(types)
@@ -98,6 +100,7 @@ reshape_dep <- function(x, names) {
 #' \dontrun{
 #' df.cran <- get_dep_all_packages()
 #' }
+#' @seealso \code{\link{get_dep}} for getting one type of dependencies in a character vector, \code{\link{get_dep_df}} for multiple types of dependencies, and \code{\link{get_graph_all_packages}} for obtaining directly a network of dependencies as an igraph object
 #' @export
 get_dep_all_packages <- function() {
     df0 <- as.data.frame(tools::CRAN_package_db(), stringsAsFactors = FALSE)

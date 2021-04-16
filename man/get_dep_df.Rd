@@ -23,3 +23,6 @@ A data frame of dependencies
 get_dep_df("dplyr", c("Imports", "Depends"))
 get_dep_df("MASS", c("Suggests", "Depends", "Imports"), TRUE) # FALSE will give same result
 }
+\seealso{
+\code{\link{get_dep}} for getting one type of dependencies in a character vector, and \code{\link{get_dep_all_packages}} for the dependencies of all CRAN packages, and \code{\link{get_graph_all_packages}} for obtaining directly a network of dependencies as an igraph object
+}

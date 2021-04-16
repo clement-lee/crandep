@@ -91,15 +91,17 @@ df_to_graph <- function(edgelist, nodelist = NULL, gc = TRUE) {
 
 #' Graph of dependencies of all CRAN packages
 #'
-#' \code{get_graph_all_packages} returns an igraph object representing the network of one type of dependencies of all CRAN packages.
-#' @param type One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse depends", "Reverse imports", "Reverse linking to", "Reverse suggests", up to letter case and space replaced by underscore
+#' \code{get_graph_all_packages} returns an igraph object representing the network of one or more types of dependencies of all CRAN packages.
+#' @param type A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse depends", "Reverse imports", "Reverse linking to", "Reverse suggests", up to letter case and space replaced by underscore. Alternatively, if 'types = "all"', all eight dependencies will be obtained.
 #' @param gc Boolean, if 'TRUE' (default) then the giant component is extracted, if 'FALSE' then the whole graph is returned
 #' @return An igraph object & a connected graph if gc is 'TRUE'
+#' @importFrom dplyr inner_join
 #' @examples
 #' \dontrun{
 #' g0.cran.depends <- get_graph_all_packages("depends")
 #' g1.cran.imports <- get_graph_all_packages("reverse imports")
 #' }
+#' @seealso \code{\link{get_dep_all_packages}} for the dependencies of all CRAN packages in a data frame, and \code{\link{df_to_graph}} for constructing the giant component of the network from two data frames
 #' @export
 get_graph_all_packages <- function(type, gc = TRUE) {
     ## change params to align with others
@@ -108,7 +110,9 @@ get_graph_all_packages <- function(type, gc = TRUE) {
     type <- ifelse(reverse, substr(type, 9L, nchar(type)), tolower(type))
     type <- ifelse(type == "linkingto", "linking to", type)
     df0 <- get_dep_all_packages()
-    df1 <- df0[df0$type == type & df0$reverse == reverse,] # edgelist
-    df2 <- data.frame(name = unique(df0$from))
-    df_to_graph(df1, df2, gc)
+    df1 <- data.frame(type = type, reverse = reverse)
+    df2 <- dplyr::inner_join(df0, df1, c("type", "reverse")) # edgelist
+    df2 <- unique(df2[, c("from", "to")])
+    df3 <- data.frame(name = unique(df0$from))
+    df_to_graph(df2, df3, gc)
 }

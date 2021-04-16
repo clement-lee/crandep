@@ -26,3 +26,6 @@ A string vector of dependencies
 get_dep("dplyr", "Imports")
 get_dep("MASS", "Depends", TRUE) # FALSE will give same result
 }
+\seealso{
+\code{\link{get_dep_df}} for multiple types of dependencies, and \code{\link{get_dep_all_packages}} for the dependencies of all CRAN packages
+}
