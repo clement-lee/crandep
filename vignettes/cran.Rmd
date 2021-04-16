@@ -8,7 +8,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-In the [introduction](introduction.html) we have see that a dependency network can be built using `get_dep_df()`. While it is theoretically possible to use `get_dep_df()` iteratively to obtain all dependencies of [**all** packages available on CRAN](https://cran.r-project.org/web/packages/available_packages_by_name.html), it is not practical to do so. This package provides two functions `get_dep_all_packages()` and `get_graph_all_packges()` for obtaining the dependencies of all CRAN packages directly, as well as an example dataset.
+In the [introduction](introduction.html) we have see that a dependency network can be built using `get_dep_df()`. While it is theoretically possible to use `get_dep_df()` iteratively to obtain all dependencies of **all** packages available on [CRAN](https://cran.r-project.org), it is not practical to do so. This package provides two functions `get_dep_all_packages()` and `get_graph_all_packges()` for obtaining the dependencies of all CRAN packages directly, as well as an example dataset.
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -106,7 +106,7 @@ dfb.diff.depends <- dplyr::anti_join(
 )
 head(dfb.diff.depends)
 ```
-the column `to` lists those which are not on the [page of available packages](https://cran.r-project.org/web/packages/available_packages_by_name.html) (anymore). These are either defunct or core packages.
+the column `to` lists those which are not on the page of available packages on [CRAN](https://cran.r-project.org) (anymore). These are either defunct or core packages.
 
 
 

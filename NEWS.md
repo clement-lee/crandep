@@ -8,9 +8,14 @@
 
 - For the vignette on dependencies of all CRAN packages, community detection is added.
 
+- Replace https://cran.r-project.org/web/packages/available_packages_by_name.html by https://cran.r-project.org, in the dependency network vignette, to prevent NOTE on possibly invalid URL.
+
 ## Data
 
 - Added is a citation network of the CHI conference papers, that can serve as a comparison to the CRAN dependency network, in terms of network summaries and characteristics, such as degree distribution.
+
+- Replace https://cran.r-project.org/web/packages/available_packages_by_name.html by https://cran.r-project.org, in the manual of `cran_dependencies`, to prevent NOTE on possibly invalid URL.
+
 
 
 

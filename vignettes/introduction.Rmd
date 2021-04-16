@@ -35,7 +35,7 @@ get_dep("dplyr", "Imports")
 get_dep("MASS", "depends")
 ```
 
-We only consider the 4 most common types of dependencies in R packages, namely `Imports`, `Depends`, `Suggests` and `LinkingTo`, and their reverse counterparts. For more information on different types of dependencies, see [the official guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies) and [http://r-pkgs.had.co.nz/description.html](http://r-pkgs.had.co.nz/description.html).
+We only consider the 4 most common types of dependencies in R packages, namely `Imports`, `Depends`, `Suggests` and `LinkingTo`, and their reverse counterparts. For more information on different types of dependencies, see [the official guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies) and [https://r-pkgs.org/description.html](https://r-pkgs.org/description.html).
 
 
 

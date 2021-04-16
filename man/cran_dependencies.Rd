@@ -14,7 +14,7 @@ A data frame with 211408 rows and 4 variables:
 }
 }
 \source{
-The CRAN pages of all the packages available on \url{https://cran.r-project.org/web/packages/available_packages_by_name.html}
+The CRAN pages of all the packages available on \url{https://cran.r-project.org}
 }
 \usage{
 cran_dependencies

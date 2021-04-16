@@ -9,7 +9,7 @@
 #'   \item{type}{the type of dependency, which can take the follow values (all in lowercase): "depends", "imports", "linking to", "suggests"}
 #'   \item{reverse}{a boolean representing whether the dependency is a reverse one (TRUE) or a forward one (FALSE)}
 #' }
-#' @source The CRAN pages of all the packages available on \url{https://cran.r-project.org/web/packages/available_packages_by_name.html}
+#' @source The CRAN pages of all the packages available on \url{https://cran.r-project.org}
 "cran_dependencies"
 
 #' Citation network of CHI papers

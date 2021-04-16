@@ -51,13 +51,11 @@ by a space.
 
 ``` r
 get_dep("dplyr", "Imports")
-#>  [1] "ellipsis"   "generics"   "glue"      
-#>  [4] "lifecycle"  "magrittr"   "methods"   
-#>  [7] "R6"         "rlang"      "tibble"    
-#> [10] "tidyselect" "utils"      "vctrs"
+#>  [1] "ellipsis"   "generics"   "glue"       "lifecycle"  "magrittr"  
+#>  [6] "methods"    "R6"         "rlang"      "tibble"     "tidyselect"
+#> [11] "utils"      "vctrs"
 get_dep("MASS", "depends")
-#> [1] "grDevices" "graphics"  "stats"    
-#> [4] "utils"
+#> [1] "grDevices" "graphics"  "stats"     "utils"
 ```
 
 We only consider the 4 most common types of dependencies in R packages,
@@ -65,7 +63,7 @@ namely `Imports`, `Depends`, `Suggests` and `LinkingTo`, and their
 reverse counterparts. For more information on different types of
 dependencies, see [the official
 guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies)
-and <http://r-pkgs.had.co.nz/description.html>.
+and <https://r-pkgs.org/description.html>.
 
 ## Multiple kind of dependencies
 
@@ -99,8 +97,7 @@ be illustrated by the following:
 
 ``` r
 get_dep("abc", "depends")
-#> [1] "abc.data" "nnet"     "quantreg" "MASS"    
-#> [5] "locfit"
+#> [1] "abc.data" "nnet"     "quantreg" "MASS"     "locfit"
 get_dep("abc", "reverse_depends")
 #> [1] "abctools" "EasyABC"
 get_dep_df("abc", c("depends", "reverse_depends"))
@@ -148,17 +145,17 @@ df0.rstan <- get_dep_df("rstan", "all")
 dplyr::count(df0.rstan, type, reverse) # all 8 types
 #>         type reverse  n
 #> 1    depends   FALSE  2
-#> 2    depends    TRUE 21
+#> 2    depends    TRUE 23
 #> 3    imports   FALSE 10
-#> 4    imports    TRUE 63
+#> 4    imports    TRUE 64
 #> 5 linking to   FALSE  5
-#> 6 linking to    TRUE 50
+#> 6 linking to    TRUE 52
 #> 7   suggests   FALSE 12
-#> 8   suggests    TRUE 18
+#> 8   suggests    TRUE 20
 ```
 
-As of 2020-08-03, the packages that have all 8 types of dependencies are
-gRbase, rstan, sf, stochvol, xts.
+As of 2020-09-11, the packages that have all 8 types of dependencies are
+gRbase, quanteda, rstan, sf, stochvol, xts.
 
 ## Building and visualising a dependency network
 
@@ -250,14 +247,14 @@ head(df0.cran)
 #> 7 aaSEA       Bios2cor imports   FALSE
 dplyr::count(df0.cran, type, reverse) # numbers in general larger than above
 #>         type reverse     n
-#> 1    depends   FALSE 11036
-#> 2    depends    TRUE  9606
-#> 3    imports   FALSE 60533
-#> 4    imports    TRUE 54264
-#> 5 linking to   FALSE  3648
-#> 6 linking to    TRUE  3936
-#> 7   suggests   FALSE 37203
-#> 8   suggests    TRUE 41021
+#> 1    depends   FALSE 11076
+#> 2    depends    TRUE  9640
+#> 3    imports   FALSE 61676
+#> 4    imports    TRUE 55251
+#> 5 linking to   FALSE  3745
+#> 6 linking to    TRUE  4035
+#> 7   suggests   FALSE 38102
+#> 8   suggests    TRUE 41894
 ```
 
 ## Network of one type of dependencies, as an igraph object
@@ -271,30 +268,30 @@ edges) and order (number of nodes).
 g0.depends <- get_graph_all_packages(type = "depends")
 g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
 g0.depends
-#> IGRAPH b290e6d DN-- 4802 7999 -- 
-#> + attr: name (v/c), type (e/c), reverse
-#> | (e/l)
-#> + edges from b290e6d (vertex names):
-#>  [1] A3      ->xtable   A3      ->pbapply 
-#>  [3] abc     ->abc.data abc     ->nnet    
-#>  [5] abc     ->quantreg abc     ->MASS    
-#>  [7] abc     ->locfit   abcdeFBA->Rglpk   
-#>  [9] abcdeFBA->rgl      abcdeFBA->corrplot
-#> [11] abcdeFBA->lattice  ABCp2   ->MASS    
-#> [13] abctools->abc      abctools->abind   
+#> IGRAPH 2947375 DN-- 4811 8023 -- 
+#> + attr: name (v/c), type (e/c), reverse (e/l)
+#> + edges from 2947375 (vertex names):
+#>  [1] A3         ->xtable     A3         ->pbapply    abc        ->abc.data  
+#>  [4] abc        ->nnet       abc        ->quantreg   abc        ->MASS      
+#>  [7] abc        ->locfit     abcdeFBA   ->Rglpk      abcdeFBA   ->rgl       
+#> [10] abcdeFBA   ->corrplot   abcdeFBA   ->lattice    ABCp2      ->MASS      
+#> [13] abctools   ->abc        abctools   ->abind      abctools   ->plyr      
+#> [16] abctools   ->Hmisc      abd        ->nlme       abd        ->lattice   
+#> [19] abd        ->mosaic     abodOutlier->cluster    AbSim      ->ape       
+#> [22] AbSim      ->poweRlaw   Ac3net     ->data.table acc        ->mhsmm     
 #> + ... omitted several edges
 g0.rev_depends
-#> IGRAPH 3ba59d2 DN-- 4802 7999 -- 
-#> + attr: name (v/c), type (e/c), reverse
-#> | (e/l)
-#> + edges from 3ba59d2 (vertex names):
-#>  [1] abc     ->abctools   abc     ->EasyABC   
-#>  [3] abc.data->abc        abd     ->tigerstats
-#>  [5] abind   ->abctools   abind   ->BCBCSF    
-#>  [7] abind   ->CPMCGLM    abind   ->depth     
-#>  [9] abind   ->dgmb       abind   ->dynamo    
-#> [11] abind   ->fractaldim abind   ->funLBM    
-#> [13] abind   ->informR    abind   ->interplot 
+#> IGRAPH 847b8f2 DN-- 4811 8023 -- 
+#> + attr: name (v/c), type (e/c), reverse (e/l)
+#> + edges from 847b8f2 (vertex names):
+#>  [1] abc     ->abctools     abc     ->EasyABC      abc.data->abc         
+#>  [4] abd     ->tigerstats   abind   ->abctools     abind   ->BCBCSF      
+#>  [7] abind   ->CPMCGLM      abind   ->depth        abind   ->dgmb        
+#> [10] abind   ->dynamo       abind   ->FactorCopula abind   ->fractaldim  
+#> [13] abind   ->funLBM       abind   ->informR      abind   ->interplot   
+#> [16] abind   ->magic        abind   ->mlma         abind   ->mlogitBMA   
+#> [19] abind   ->multicon     abind   ->MultiPhen    abind   ->multipol    
+#> [22] abind   ->mvmesh       abind   ->mvSLOUCH     abind   ->plfm        
 #> + ... omitted several edges
 ```
 
@@ -315,29 +312,29 @@ g1.rev_depends <- df0.cran %>%
     dplyr::filter(type == "depends" & reverse) %>%
     df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
 g1.depends # same as g0.depends
-#> IGRAPH 8be1f8f DN-- 4802 7999 -- 
-#> + attr: name (v/c), type (e/c), reverse
-#> | (e/l)
-#> + edges from 8be1f8f (vertex names):
-#>  [1] A3      ->xtable   A3      ->pbapply 
-#>  [3] abc     ->abc.data abc     ->nnet    
-#>  [5] abc     ->quantreg abc     ->MASS    
-#>  [7] abc     ->locfit   abcdeFBA->Rglpk   
-#>  [9] abcdeFBA->rgl      abcdeFBA->corrplot
-#> [11] abcdeFBA->lattice  ABCp2   ->MASS    
-#> [13] abctools->abc      abctools->abind   
+#> IGRAPH 0d4561f DN-- 4811 8023 -- 
+#> + attr: name (v/c), type (e/c), reverse (e/l)
+#> + edges from 0d4561f (vertex names):
+#>  [1] A3         ->xtable     A3         ->pbapply    abc        ->abc.data  
+#>  [4] abc        ->nnet       abc        ->quantreg   abc        ->MASS      
+#>  [7] abc        ->locfit     abcdeFBA   ->Rglpk      abcdeFBA   ->rgl       
+#> [10] abcdeFBA   ->corrplot   abcdeFBA   ->lattice    ABCp2      ->MASS      
+#> [13] abctools   ->abc        abctools   ->abind      abctools   ->plyr      
+#> [16] abctools   ->Hmisc      abd        ->nlme       abd        ->lattice   
+#> [19] abd        ->mosaic     abodOutlier->cluster    AbSim      ->ape       
+#> [22] AbSim      ->poweRlaw   Ac3net     ->data.table acc        ->mhsmm     
 #> + ... omitted several edges
 g1.rev_depends # same as g0.rev_depends
-#> IGRAPH 7f7a3f0 DN-- 4802 7999 -- 
-#> + attr: name (v/c), type (e/c), reverse
-#> | (e/l)
-#> + edges from 7f7a3f0 (vertex names):
-#>  [1] abc     ->abctools   abc     ->EasyABC   
-#>  [3] abc.data->abc        abd     ->tigerstats
-#>  [5] abind   ->abctools   abind   ->BCBCSF    
-#>  [7] abind   ->CPMCGLM    abind   ->depth     
-#>  [9] abind   ->dgmb       abind   ->dynamo    
-#> [11] abind   ->fractaldim abind   ->funLBM    
-#> [13] abind   ->informR    abind   ->interplot 
+#> IGRAPH 7789714 DN-- 4811 8023 -- 
+#> + attr: name (v/c), type (e/c), reverse (e/l)
+#> + edges from 7789714 (vertex names):
+#>  [1] abc     ->abctools     abc     ->EasyABC      abc.data->abc         
+#>  [4] abd     ->tigerstats   abind   ->abctools     abind   ->BCBCSF      
+#>  [7] abind   ->CPMCGLM      abind   ->depth        abind   ->dgmb        
+#> [10] abind   ->dynamo       abind   ->FactorCopula abind   ->fractaldim  
+#> [13] abind   ->funLBM       abind   ->informR      abind   ->interplot   
+#> [16] abind   ->magic        abind   ->mlma         abind   ->mlogitBMA   
+#> [19] abind   ->multicon     abind   ->MultiPhen    abind   ->multipol    
+#> [22] abind   ->mvmesh       abind   ->mvSLOUCH     abind   ->plfm        
 #> + ... omitted several edges
 ```
