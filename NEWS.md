@@ -6,6 +6,10 @@
 
 - Multiple dependencies are now allowed in the `type` argument in `get_graph_all_packages()`.
 
+- Arguments `give_log` in `dupp()` & `dmix()` changed to `log` without changing the functionality. For uniformity, `Supp()` & `Smix()` are also given the additional argument `log`.
+
+- The ordering of arguments in the funcions `*mix()` is made consistent.
+
 ## Vignettes
 
 - For the vignette on dependencies of all CRAN packages, community detection is added.

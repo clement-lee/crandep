@@ -4,10 +4,12 @@
 \alias{dmix}
 \title{Probability mass function (PMF) of discrete extreme value mixture distribution}
 \usage{
-dmix(x, xi1, xi2, sig, u, phi, geo, give_log = FALSE)
+dmix(x, u, xi1, xi2, sig, geo, phi, log = FALSE)
 }
 \arguments{
 \item{x}{Vector of positive integers}
+
+\item{u}{Scalar, positive integer threshold}
 
 \item{xi1}{Scalar, shape parameter for values below or equal to u}
 
@@ -15,13 +17,11 @@ dmix(x, xi1, xi2, sig, u, phi, geo, give_log = FALSE)
 
 \item{sig}{Scalar, scale parameter of IGPD, for values above u}
 
-\item{u}{Scalar, positive integer threshold}
+\item{geo}{Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.}
 
 \item{phi}{Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive}
 
-\item{geo}{Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.}
-
-\item{give_log}{Boolean, whether the PMF should be returned on the log scale. If 'FALSE', the PMF is returned on the original scale.}
+\item{log}{Boolean (default 'FALSE'), whether the PMF should be returned on the log scale.}
 }
 \value{
 A numeric vector of the same length as x
@@ -30,9 +30,9 @@ A numeric vector of the same length as x
 \code{dmix} returns the PMF at x for the discrete extreme value mixture distribution.
 }
 \examples{
-dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, TRUE)
-dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE)
-dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE, TRUE)
+dmix(10:15, 12, 2.0, 0.5, 1.0, TRUE, 0.2)
+dmix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2)
+dmix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2, TRUE)
 }
 \seealso{
 \code{\link{Smix}} for the corresponding survival function, \code{\link{dupp}} for the probability mass function of the discrete power law.

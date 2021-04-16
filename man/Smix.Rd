@@ -4,10 +4,12 @@
 \alias{Smix}
 \title{Survival function of discrete extreme value mixture distribution}
 \usage{
-Smix(x, xi1, xi2, sig, u, phi, geo)
+Smix(x, u, xi1, xi2, sig, geo, phi, log = FALSE)
 }
 \arguments{
 \item{x}{Vector of positive integers}
+
+\item{u}{Scalar, positive integer threshold}
 
 \item{xi1}{Scalar, shape parameter for values below or equal to u}
 
@@ -15,11 +17,11 @@ Smix(x, xi1, xi2, sig, u, phi, geo)
 
 \item{sig}{Scalar, scale parameter of IGPD, for values above u}
 
-\item{u}{Scalar, positive integer threshold}
+\item{geo}{Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.}
 
 \item{phi}{Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive}
 
-\item{geo}{Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.}
+\item{log}{Boolean (default 'FALSE'), whether the survival function should be returned on the log scale.}
 }
 \value{
 A numeric vector of the same length as x
@@ -28,8 +30,8 @@ A numeric vector of the same length as x
 \code{Smix} returns the survival function at x for the discrete extreme value mixture distribution.
 }
 \examples{
-Smix(10:15, 2.0, 0.5, 1.0, 12, 0.2, TRUE)
-Smix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE)
+Smix(10:15, 12, 2.0, 0.5, 1.0, TRUE, 0.2)
+Smix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2)
 }
 \seealso{
 \code{\link{dmix}} for the corresponding probability mass function, \code{\link{Supp}} for the survival function of the discrete power law.

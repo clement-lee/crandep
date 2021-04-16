@@ -10,8 +10,8 @@ mcmc_mix(
   xi1,
   xi2,
   sig,
-  cont,
   geo,
+  cont,
   a_phi,
   b_phi,
   a_xi1,
@@ -38,9 +38,9 @@ mcmc_mix(
 
 \item{sig}{Scalar, initial value of the scale parameter of IGPD, for values above u}
 
-\item{cont}{Boolean, whether the continuity constraint is imposed at u}
-
 \item{geo}{Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.}
+
+\item{cont}{Boolean, whether the continuity constraint is imposed at u}
 
 \item{a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig}{Scalars, representing the hyperparameters of the prior distributions of the respective parameters. See details for the specification of the priors.}
 

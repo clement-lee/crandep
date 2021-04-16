@@ -8,29 +8,30 @@
 using namespace Rcpp;
 
 // dupp
-const NumericVector dupp(const NumericVector x, const int u, const double xi1, const bool give_log);
-RcppExport SEXP _crandep_dupp(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP give_logSEXP) {
+const NumericVector dupp(const NumericVector x, const int u, const double xi1, const bool log);
+RcppExport SEXP _crandep_dupp(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP logSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
     Rcpp::traits::input_parameter< const int >::type u(uSEXP);
     Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
-    Rcpp::traits::input_parameter< const bool >::type give_log(give_logSEXP);
-    rcpp_result_gen = Rcpp::wrap(dupp(x, u, xi1, give_log));
+    Rcpp::traits::input_parameter< const bool >::type log(logSEXP);
+    rcpp_result_gen = Rcpp::wrap(dupp(x, u, xi1, log));
     return rcpp_result_gen;
 END_RCPP
 }
 // Supp
-const NumericVector Supp(const NumericVector x, const int u, const double xi1);
-RcppExport SEXP _crandep_Supp(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP) {
+const NumericVector Supp(const NumericVector x, const int u, const double xi1, const bool log);
+RcppExport SEXP _crandep_Supp(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP logSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
     Rcpp::traits::input_parameter< const int >::type u(uSEXP);
     Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
-    rcpp_result_gen = Rcpp::wrap(Supp(x, u, xi1));
+    Rcpp::traits::input_parameter< const bool >::type log(logSEXP);
+    rcpp_result_gen = Rcpp::wrap(Supp(x, u, xi1, log));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -54,43 +55,44 @@ BEGIN_RCPP
 END_RCPP
 }
 // dmix
-const NumericVector dmix(const NumericVector x, const double xi1, const double xi2, const double sig, const int u, const double phi, const bool geo, const bool give_log);
-RcppExport SEXP _crandep_dmix(SEXP xSEXP, SEXP xi1SEXP, SEXP xi2SEXP, SEXP sigSEXP, SEXP uSEXP, SEXP phiSEXP, SEXP geoSEXP, SEXP give_logSEXP) {
+const NumericVector dmix(const NumericVector x, const int u, const double xi1, const double xi2, const double sig, const bool geo, const double phi, const bool log);
+RcppExport SEXP _crandep_dmix(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP xi2SEXP, SEXP sigSEXP, SEXP geoSEXP, SEXP phiSEXP, SEXP logSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
     Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
     Rcpp::traits::input_parameter< const double >::type xi2(xi2SEXP);
     Rcpp::traits::input_parameter< const double >::type sig(sigSEXP);
-    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const double >::type phi(phiSEXP);
     Rcpp::traits::input_parameter< const bool >::type geo(geoSEXP);
-    Rcpp::traits::input_parameter< const bool >::type give_log(give_logSEXP);
-    rcpp_result_gen = Rcpp::wrap(dmix(x, xi1, xi2, sig, u, phi, geo, give_log));
+    Rcpp::traits::input_parameter< const double >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< const bool >::type log(logSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmix(x, u, xi1, xi2, sig, geo, phi, log));
     return rcpp_result_gen;
 END_RCPP
 }
 // Smix
-const NumericVector Smix(const NumericVector x, const double xi1, const double xi2, const double sig, const int u, const double phi, const bool geo);
-RcppExport SEXP _crandep_Smix(SEXP xSEXP, SEXP xi1SEXP, SEXP xi2SEXP, SEXP sigSEXP, SEXP uSEXP, SEXP phiSEXP, SEXP geoSEXP) {
+const NumericVector Smix(const NumericVector x, const int u, const double xi1, const double xi2, const double sig, const bool geo, const double phi, const bool log);
+RcppExport SEXP _crandep_Smix(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP xi2SEXP, SEXP sigSEXP, SEXP geoSEXP, SEXP phiSEXP, SEXP logSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
     Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
     Rcpp::traits::input_parameter< const double >::type xi2(xi2SEXP);
     Rcpp::traits::input_parameter< const double >::type sig(sigSEXP);
-    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const double >::type phi(phiSEXP);
     Rcpp::traits::input_parameter< const bool >::type geo(geoSEXP);
-    rcpp_result_gen = Rcpp::wrap(Smix(x, xi1, xi2, sig, u, phi, geo));
+    Rcpp::traits::input_parameter< const double >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< const bool >::type log(logSEXP);
+    rcpp_result_gen = Rcpp::wrap(Smix(x, u, xi1, xi2, sig, geo, phi, log));
     return rcpp_result_gen;
 END_RCPP
 }
 // mcmc_mix
-DataFrame mcmc_mix(const NumericVector x, const int u, const double xi1, const double xi2, const double sig, const bool cont, const bool geo, const double a_phi, const double b_phi, const double a_xi1, const double b_xi1, const double m_xi2, const double s_xi2, const double a_sig, const double b_sig, const double pcont, const int N, const int thin, const int burnin, const int print_freq);
-RcppExport SEXP _crandep_mcmc_mix(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP xi2SEXP, SEXP sigSEXP, SEXP contSEXP, SEXP geoSEXP, SEXP a_phiSEXP, SEXP b_phiSEXP, SEXP a_xi1SEXP, SEXP b_xi1SEXP, SEXP m_xi2SEXP, SEXP s_xi2SEXP, SEXP a_sigSEXP, SEXP b_sigSEXP, SEXP pcontSEXP, SEXP NSEXP, SEXP thinSEXP, SEXP burninSEXP, SEXP print_freqSEXP) {
+DataFrame mcmc_mix(const NumericVector x, const int u, const double xi1, const double xi2, const double sig, const bool geo, const bool cont, const double a_phi, const double b_phi, const double a_xi1, const double b_xi1, const double m_xi2, const double s_xi2, const double a_sig, const double b_sig, const double pcont, const int N, const int thin, const int burnin, const int print_freq);
+RcppExport SEXP _crandep_mcmc_mix(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP xi2SEXP, SEXP sigSEXP, SEXP geoSEXP, SEXP contSEXP, SEXP a_phiSEXP, SEXP b_phiSEXP, SEXP a_xi1SEXP, SEXP b_xi1SEXP, SEXP m_xi2SEXP, SEXP s_xi2SEXP, SEXP a_sigSEXP, SEXP b_sigSEXP, SEXP pcontSEXP, SEXP NSEXP, SEXP thinSEXP, SEXP burninSEXP, SEXP print_freqSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -99,8 +101,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
     Rcpp::traits::input_parameter< const double >::type xi2(xi2SEXP);
     Rcpp::traits::input_parameter< const double >::type sig(sigSEXP);
-    Rcpp::traits::input_parameter< const bool >::type cont(contSEXP);
     Rcpp::traits::input_parameter< const bool >::type geo(geoSEXP);
+    Rcpp::traits::input_parameter< const bool >::type cont(contSEXP);
     Rcpp::traits::input_parameter< const double >::type a_phi(a_phiSEXP);
     Rcpp::traits::input_parameter< const double >::type b_phi(b_phiSEXP);
     Rcpp::traits::input_parameter< const double >::type a_xi1(a_xi1SEXP);
@@ -114,17 +116,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const int >::type thin(thinSEXP);
     Rcpp::traits::input_parameter< const int >::type burnin(burninSEXP);
     Rcpp::traits::input_parameter< const int >::type print_freq(print_freqSEXP);
-    rcpp_result_gen = Rcpp::wrap(mcmc_mix(x, u, xi1, xi2, sig, cont, geo, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont, N, thin, burnin, print_freq));
+    rcpp_result_gen = Rcpp::wrap(mcmc_mix(x, u, xi1, xi2, sig, geo, cont, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont, N, thin, burnin, print_freq));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_crandep_dupp", (DL_FUNC) &_crandep_dupp, 4},
-    {"_crandep_Supp", (DL_FUNC) &_crandep_Supp, 3},
+    {"_crandep_Supp", (DL_FUNC) &_crandep_Supp, 4},
     {"_crandep_mcmc_upp", (DL_FUNC) &_crandep_mcmc_upp, 9},
     {"_crandep_dmix", (DL_FUNC) &_crandep_dmix, 8},
-    {"_crandep_Smix", (DL_FUNC) &_crandep_Smix, 7},
+    {"_crandep_Smix", (DL_FUNC) &_crandep_Smix, 8},
     {"_crandep_mcmc_mix", (DL_FUNC) &_crandep_mcmc_mix, 20},
     {NULL, NULL, 0}
 };

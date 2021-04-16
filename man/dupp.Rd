@@ -4,7 +4,7 @@
 \alias{dupp}
 \title{Probability mass function (PMF) of discrete power law}
 \usage{
-dupp(x, u, xi1, give_log = FALSE)
+dupp(x, u, xi1, log = FALSE)
 }
 \arguments{
 \item{x}{Vector of positive integers}
@@ -13,7 +13,7 @@ dupp(x, u, xi1, give_log = FALSE)
 
 \item{xi1}{Scalar, a positive real number representing the shape parameter}
 
-\item{give_log}{Boolean, whether the PMF should be returned on the log scale. If 'FALSE', the PMF is returned on the original scale.}
+\item{log}{Boolean (default 'FALSE'), whether the PMF should be returned on the log scale.}
 }
 \value{
 A numeric vector of the same length as x

@@ -4,7 +4,7 @@
 \alias{Supp}
 \title{Survival function of discrete power law}
 \usage{
-Supp(x, u, xi1)
+Supp(x, u, xi1, log = FALSE)
 }
 \arguments{
 \item{x}{Vector of positive integers}
@@ -12,6 +12,8 @@ Supp(x, u, xi1)
 \item{u}{Scalar, non-negative integer threshold}
 
 \item{xi1}{Scalar, a positive real number representing the shape parameter}
+
+\item{log}{Boolean (default 'FALSE'), whether the survival function should be returned on the log scale.}
 }
 \value{
 A numeric vector of the same length as x

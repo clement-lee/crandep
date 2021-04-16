@@ -9,15 +9,15 @@
 #' @param x Vector of positive integers
 #' @param u Scalar, non-negative integer threshold
 #' @param xi1 Scalar, a positive real number representing the shape parameter
-#' @param give_log Boolean, whether the PMF should be returned on the log scale. If 'FALSE', the PMF is returned on the original scale.
+#' @param log Boolean (default 'FALSE'), whether the PMF should be returned on the log scale.
 #' @return A numeric vector of the same length as x
 #' @examples
 #' dupp(c(10,20,30,40,50), 12, 2.0, FALSE)
 #' dupp(c(10,20,30,40,50), 12, 2.0, TRUE)
 #' @seealso \code{\link{Supp}} for the corresponding survival function, \code{\link{dmix}} for the PMF of the discrete extreme value mixture distribution.
 #' @export
-dupp <- function(x, u, xi1, give_log = FALSE) {
-    .Call(`_crandep_dupp`, x, u, xi1, give_log)
+dupp <- function(x, u, xi1, log = FALSE) {
+    .Call(`_crandep_dupp`, x, u, xi1, log)
 }
 
 #' Survival function of discrete power law
@@ -28,13 +28,14 @@ dupp <- function(x, u, xi1, give_log = FALSE) {
 #' @param x Vector of positive integers
 #' @param u Scalar, non-negative integer threshold
 #' @param xi1 Scalar, a positive real number representing the shape parameter
+#' @param log Boolean (default 'FALSE'), whether the survival function should be returned on the log scale.
 #' @return A numeric vector of the same length as x
 #' @examples
 #' Supp(c(10,20,30,40,50), 12, 2.0)
 #' @seealso \code{\link{dupp}} for the corresponding probability mass function, \code{\link{Smix}} for the survival function of the discrete extreme value mixture distribution.
 #' @export
-Supp <- function(x, u, xi1) {
-    .Call(`_crandep_Supp`, x, u, xi1)
+Supp <- function(x, u, xi1, log = FALSE) {
+    .Call(`_crandep_Supp`, x, u, xi1, log)
 }
 
 #' Markov chain Monte Carlo for discrete power law
@@ -62,42 +63,43 @@ mcmc_upp <- function(x, u, xi1, a_xi1, b_xi1, N = 20000L, thin = 10L, burnin = 2
 #'
 #' \code{dmix} returns the PMF at x for the discrete extreme value mixture distribution.
 #' @param x Vector of positive integers
+#' @param u Scalar, positive integer threshold
 #' @param xi1 Scalar, shape parameter for values below or equal to u
 #' @param xi2 Scalar, shape parameter of integer generalised Pareto distribution (IGPD), for values above u
 #' @param sig Scalar, scale parameter of IGPD, for values above u
-#' @param u Scalar, positive integer threshold
-#' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
 #' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
-#' @param give_log Boolean, whether the PMF should be returned on the log scale. If 'FALSE', the PMF is returned on the original scale.
+#' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
+#' @param log Boolean (default 'FALSE'), whether the PMF should be returned on the log scale.
 #' @return A numeric vector of the same length as x
 #' @examples
-#' dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, TRUE)
-#' dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE)
-#' dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE, TRUE)
+#' dmix(10:15, 12, 2.0, 0.5, 1.0, TRUE, 0.2)
+#' dmix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2)
+#' dmix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2, TRUE)
 #' @seealso \code{\link{Smix}} for the corresponding survival function, \code{\link{dupp}} for the probability mass function of the discrete power law.
 #' @export
-dmix <- function(x, xi1, xi2, sig, u, phi, geo, give_log = FALSE) {
-    .Call(`_crandep_dmix`, x, xi1, xi2, sig, u, phi, geo, give_log)
+dmix <- function(x, u, xi1, xi2, sig, geo, phi, log = FALSE) {
+    .Call(`_crandep_dmix`, x, u, xi1, xi2, sig, geo, phi, log)
 }
 
 #' Survival function of discrete extreme value mixture distribution
 #'
 #' \code{Smix} returns the survival function at x for the discrete extreme value mixture distribution.
 #' @param x Vector of positive integers
+#' @param u Scalar, positive integer threshold
 #' @param xi1 Scalar, shape parameter for values below or equal to u
 #' @param xi2 Scalar, shape parameter of integer generalised Pareto distribution (IGPD), for values above u
 #' @param sig Scalar, scale parameter of IGPD, for values above u
-#' @param u Scalar, positive integer threshold
-#' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
 #' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
+#' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
+#' @param log Boolean (default 'FALSE'), whether the survival function should be returned on the log scale.
 #' @return A numeric vector of the same length as x
 #' @examples
-#' Smix(10:15, 2.0, 0.5, 1.0, 12, 0.2, TRUE)
-#' Smix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE)
+#' Smix(10:15, 12, 2.0, 0.5, 1.0, TRUE, 0.2)
+#' Smix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2)
 #' @seealso \code{\link{dmix}} for the corresponding probability mass function, \code{\link{Supp}} for the survival function of the discrete power law.
 #' @export
-Smix <- function(x, xi1, xi2, sig, u, phi, geo) {
-    .Call(`_crandep_Smix`, x, xi1, xi2, sig, u, phi, geo)
+Smix <- function(x, u, xi1, xi2, sig, geo, phi, log = FALSE) {
+    .Call(`_crandep_Smix`, x, u, xi1, xi2, sig, geo, phi, log)
 }
 
 #' Markov chain Monte Carlo for discrete extreme value mixture distribution
@@ -110,8 +112,8 @@ Smix <- function(x, xi1, xi2, sig, u, phi, geo) {
 #' @param xi1 Scalar, initial value of the parameter for values below or equal to u
 #' @param xi2 Scalar, initial value of the shape parameter of the integer generalised Pareto distribution (IGPD), for values above u
 #' @param sig Scalar, initial value of the scale parameter of IGPD, for values above u
-#' @param cont Boolean, whether the continuity constraint is imposed at u
 #' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
+#' @param cont Boolean, whether the continuity constraint is imposed at u
 #' @param a_phi,b_phi,a_xi1,b_xi1,m_xi2,s_xi2,a_sig,b_sig Scalars, representing the hyperparameters of the prior distributions of the respective parameters. See details for the specification of the priors.
 #' @param pcont Scalar, between 0.0 and 1.0, representing the prior probability of the continuity constrained version, for model selection.
 #' @param N Scalar, positive integer representing the length of the output chain i.e. the number of rows in the returned data frame
@@ -121,7 +123,7 @@ Smix <- function(x, xi1, xi2, sig, u, phi, geo) {
 #' @return A data frame containing N rows and 7 columns which represent (in this order) the 4 parameters (u, xi1, xi2, sig), the implied exceedance probability (phi), the log-posterior density (lpost), and whether the continuity constraint is imposed (cont).
 #' @seealso \code{\link{mcmc_upp}} for MCMC for the discrete power law.
 #' @export
-mcmc_mix <- function(x, u, xi1, xi2, sig, cont, geo, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont, N = 20000L, thin = 100L, burnin = 20000L, print_freq = 10000L) {
-    .Call(`_crandep_mcmc_mix`, x, u, xi1, xi2, sig, cont, geo, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont, N, thin, burnin, print_freq)
+mcmc_mix <- function(x, u, xi1, xi2, sig, geo, cont, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont, N = 20000L, thin = 100L, burnin = 20000L, print_freq = 10000L) {
+    .Call(`_crandep_mcmc_mix`, x, u, xi1, xi2, sig, geo, cont, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont, N, thin, burnin, print_freq)
 }
 

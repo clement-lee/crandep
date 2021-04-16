@@ -76,7 +76,7 @@ void hzeta_check(const double alpha, const int u) {
 //' @param x Vector of positive integers
 //' @param u Scalar, non-negative integer threshold
 //' @param xi1 Scalar, a positive real number representing the shape parameter
-//' @param give_log Boolean, whether the PMF should be returned on the log scale. If 'FALSE', the PMF is returned on the original scale.
+//' @param log Boolean (default 'FALSE'), whether the PMF should be returned on the log scale.
 //' @return A numeric vector of the same length as x
 //' @examples
 //' dupp(c(10,20,30,40,50), 12, 2.0, FALSE)
@@ -84,19 +84,19 @@ void hzeta_check(const double alpha, const int u) {
 //' @seealso \code{\link{Supp}} for the corresponding survival function, \code{\link{dmix}} for the PMF of the discrete extreme value mixture distribution.
 //' @export
 // [[Rcpp::export]]
-const NumericVector dupp(const NumericVector x, const int u, const double xi1, const bool give_log = false) {
+const NumericVector dupp(const NumericVector x, const int u, const double xi1, const bool log = false) {
   // density f() of discrete power law >= u
   const int n = x.size();
   NumericVector v(n);
   const double alpha = 1.0 / xi1 + 1.0;
   hzeta_check(alpha, u);
-  const double log_denom = log(gsl_sf_hzeta(alpha, u));
+  const double log_denom = std::log(gsl_sf_hzeta(alpha, u));
   for (int i = 0; i < n; i++) {
-    v[i] = -alpha * log(x[i]) - log_denom;
+    v[i] = -alpha * std::log(x[i]) - log_denom;
   }
   v = ifelse(x < u, -INFINITY, v);
   NumericVector output;
-  if (give_log) {
+  if (log) {
 	output = v;
   }
   else {
@@ -113,23 +113,29 @@ const NumericVector dupp(const NumericVector x, const int u, const double xi1, c
 //' @param x Vector of positive integers
 //' @param u Scalar, non-negative integer threshold
 //' @param xi1 Scalar, a positive real number representing the shape parameter
+//' @param log Boolean (default 'FALSE'), whether the survival function should be returned on the log scale.
 //' @return A numeric vector of the same length as x
 //' @examples
 //' Supp(c(10,20,30,40,50), 12, 2.0)
 //' @seealso \code{\link{dupp}} for the corresponding probability mass function, \code{\link{Smix}} for the survival function of the discrete extreme value mixture distribution.
 //' @export
 // [[Rcpp::export]]
-const NumericVector Supp(const NumericVector x, const int u, const double xi1) {
+const NumericVector Supp(const NumericVector x, const int u, const double xi1, const bool log = false) {
   // survival f() of discrete power law >= u
   const int n = x.size();
   NumericVector v(n);
   const double alpha = 1.0 / xi1 + 1.0;
   hzeta_check(alpha, u);
-  const double log_denom = log(gsl_sf_hzeta(alpha, u));
+  const double log_denom = std::log(gsl_sf_hzeta(alpha, u));
   for (int i = 0; i < n; i++) {
-    v[i] = exp(log(gsl_sf_hzeta(alpha, x[i])) - log_denom);
+    v[i] = std::log(gsl_sf_hzeta(alpha, x[i])) - log_denom;
   }
-  v = ifelse(x < u, 1.0, v);
+  if (log) {
+    v = ifelse(x < u, 0.0, v);
+  }
+  else {
+	v = ifelse(x < u, 1.0, exp(v));
+  }
   return v;
 }
 
@@ -308,7 +314,11 @@ const double llik_gpd(const NumericVector par, const NumericVector x, const int 
 
 
 // 02) Mixture
-const double par2phi(const double xi1, const double xi2, const double sig, const int u, const bool geo) {
+const double par2phi(const int u,
+					 const double xi1,
+					 const double xi2,
+					 const double sig,
+					 const bool geo) {
   const double
     sigu = sig + xi2 * u,
     denu1 = (xi2 == 0.0) ? (1.0 - exp(-1.0 / sigu)) : (1.0 - pow(1.0 + xi2 / sigu, -1.0 / xi2)),
@@ -330,22 +340,29 @@ const double par2phi(const double xi1, const double xi2, const double sig, const
 //'
 //' \code{dmix} returns the PMF at x for the discrete extreme value mixture distribution.
 //' @param x Vector of positive integers
+//' @param u Scalar, positive integer threshold
 //' @param xi1 Scalar, shape parameter for values below or equal to u
 //' @param xi2 Scalar, shape parameter of integer generalised Pareto distribution (IGPD), for values above u
 //' @param sig Scalar, scale parameter of IGPD, for values above u
-//' @param u Scalar, positive integer threshold
-//' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
 //' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
-//' @param give_log Boolean, whether the PMF should be returned on the log scale. If 'FALSE', the PMF is returned on the original scale.
+//' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
+//' @param log Boolean (default 'FALSE'), whether the PMF should be returned on the log scale.
 //' @return A numeric vector of the same length as x
 //' @examples
-//' dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, TRUE)
-//' dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE)
-//' dmix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE, TRUE)
+//' dmix(10:15, 12, 2.0, 0.5, 1.0, TRUE, 0.2)
+//' dmix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2)
+//' dmix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2, TRUE)
 //' @seealso \code{\link{Smix}} for the corresponding survival function, \code{\link{dupp}} for the probability mass function of the discrete power law.
 //' @export
 // [[Rcpp::export]]
-const NumericVector dmix(const NumericVector x, const double xi1, const double xi2, const double sig, const int u, const double phi, const bool geo, const bool give_log = false) {
+const NumericVector dmix(const NumericVector x,
+						 const int u,
+						 const double xi1,
+						 const double xi2,
+						 const double sig,
+						 const bool geo,
+						 const double phi,
+						 const bool log = false) {
   const double
     sigu = sig + xi2 * u,
     alpha = 1.0 / xi1 + 1.0,
@@ -353,20 +370,20 @@ const NumericVector dmix(const NumericVector x, const double xi1, const double x
   NumericVector fl; double denom;
   if (geo) {
     denom = 1.0 - pow(q, u);
-    fl = log(p) + (x - 1.0) * log(q) + log(1.0 - phi);
+    fl = std::log(p) + (x - 1.0) * std::log(q) + std::log(1.0 - phi);
   }
   else {
     hzeta_check(alpha, u);
     denom = diff_hzeta(alpha, u);
-    fl = - alpha * log(x) - log(denom) + log(1.0 - phi);
+    fl = - alpha * Rcpp::log(x) - std::log(denom) + std::log(1.0 - phi);
   }
   const NumericVector
     y = 1.0 + xi2 / sigu * (x - 1.0 - u),
     z = 1.0 + xi2 / (sigu + xi2 * (x - 1.0 - u)),
-    fu = log(1.0 - pow(z, -1.0 / xi2)) - 1.0 / xi2 * log(y) + log(phi),
+    fu = Rcpp::log(1.0 - pow(z, -1.0 / xi2)) - 1.0 / xi2 * Rcpp::log(y) + std::log(phi),
     ld = ifelse(x <= u, fl, fu);
   NumericVector output;
-  if (give_log) {
+  if (log) {
     output = ld;
   }
   else {
@@ -379,20 +396,28 @@ const NumericVector dmix(const NumericVector x, const double xi1, const double x
 //'
 //' \code{Smix} returns the survival function at x for the discrete extreme value mixture distribution.
 //' @param x Vector of positive integers
+//' @param u Scalar, positive integer threshold
 //' @param xi1 Scalar, shape parameter for values below or equal to u
 //' @param xi2 Scalar, shape parameter of integer generalised Pareto distribution (IGPD), for values above u
 //' @param sig Scalar, scale parameter of IGPD, for values above u
-//' @param u Scalar, positive integer threshold
-//' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
 //' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
+//' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
+//' @param log Boolean (default 'FALSE'), whether the survival function should be returned on the log scale.
 //' @return A numeric vector of the same length as x
 //' @examples
-//' Smix(10:15, 2.0, 0.5, 1.0, 12, 0.2, TRUE)
-//' Smix(10:15, 2.0, 0.5, 1.0, 12, 0.2, FALSE)
+//' Smix(10:15, 12, 2.0, 0.5, 1.0, TRUE, 0.2)
+//' Smix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2)
 //' @seealso \code{\link{dmix}} for the corresponding probability mass function, \code{\link{Supp}} for the survival function of the discrete power law.
 //' @export
 // [[Rcpp::export]]
-const NumericVector Smix(const NumericVector x, const double xi1, const double xi2, const double sig, const int u, const double phi, const bool geo) {
+const NumericVector Smix(const NumericVector x,
+						 const int u,
+						 const double xi1,
+						 const double xi2,
+						 const double sig,
+						 const bool geo,
+						 const double phi,
+						 const bool log = false) {
   const double
     sigu = sig + xi2 * u,
     alpha = 1.0 / xi1 + 1.0,
@@ -400,7 +425,7 @@ const NumericVector Smix(const NumericVector x, const double xi1, const double x
   NumericVector cP(x.size()); double denom;
   if (geo) {
     denom = 1.0 - pow(q, u);
-    cP = 1.0 - exp((x - 1.0) * log(q));
+    cP = 1.0 - exp((x - 1.0) * std::log(q));
   }
   else {
     hzeta_check(alpha, u);
@@ -414,7 +439,11 @@ const NumericVector Smix(const NumericVector x, const double xi1, const double x
     Sl = phi + (1.0 - phi) * (1.0 - cP / denom),
     Su = pow(y, -1.0 / xi2) * phi,
     S = ifelse(x <= u, Sl, Su);
-  return S;
+  NumericVector T = S;
+  if (log) {
+	T = Rcpp::log(S);
+  }
+  return T;
 }
 
 const double lpost_mix(const NumericVector x,
@@ -422,8 +451,8 @@ const double lpost_mix(const NumericVector x,
                        const double xi1,
                        const double xi2,
                        const double sig,
-                       const bool cont,
                        const bool geo,
+                       const bool cont,
                        const double a_phi,
                        const double b_phi,
                        const double a_xi1,
@@ -443,7 +472,7 @@ const double lpost_mix(const NumericVector x,
     l = -INFINITY;
   }
   else {
-    const double phi = cont ? par2phi(xi1, xi2, sig, u, geo) : (nu / n);
+    const double phi = cont ? par2phi(u, xi1, xi2, sig, geo) : (nu / n);
     l =
       (geo ?
        llik_geo(par1, x, u, phi) :
@@ -468,8 +497,8 @@ const double lpost_mix(const NumericVector x,
 //' @param xi1 Scalar, initial value of the parameter for values below or equal to u
 //' @param xi2 Scalar, initial value of the shape parameter of the integer generalised Pareto distribution (IGPD), for values above u
 //' @param sig Scalar, initial value of the scale parameter of IGPD, for values above u
-//' @param cont Boolean, whether the continuity constraint is imposed at u
 //' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
+//' @param cont Boolean, whether the continuity constraint is imposed at u
 //' @param a_phi,b_phi,a_xi1,b_xi1,m_xi2,s_xi2,a_sig,b_sig Scalars, representing the hyperparameters of the prior distributions of the respective parameters. See details for the specification of the priors.
 //' @param pcont Scalar, between 0.0 and 1.0, representing the prior probability of the continuity constrained version, for model selection.
 //' @param N Scalar, positive integer representing the length of the output chain i.e. the number of rows in the returned data frame
@@ -485,8 +514,8 @@ DataFrame mcmc_mix(const NumericVector x,
                    const double xi1,
                    const double xi2,
                    const double sig,
-                   const bool cont,
                    const bool geo,
+                   const bool cont,
                    const double a_phi,
                    const double b_phi,
                    const double a_xi1,
@@ -509,7 +538,7 @@ DataFrame mcmc_mix(const NumericVector x,
     lpost_curr, lpost_prop, lprob;
   bool cont_curr = (pcont == 0.0) ? false : (pcont == 1.0) ? true : cont;
   auto lpost = [x, geo, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont](const double u, const double xi1, const double xi2, const double sig, const bool cont) {
-    return lpost_mix(x, u, xi1, xi2, sig, cont, geo, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont);
+    return lpost_mix(x, u, xi1, xi2, sig, geo, cont, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont);
   };
   lpost_curr = lpost(u_curr, xi1_curr, xi2_curr, sig_curr, cont_curr);
   Rcout << "Iteration 0: Log-posterior = " << lpost_curr << endl;
@@ -595,7 +624,7 @@ DataFrame mcmc_mix(const NumericVector x,
         xi2_vec[s] = xi2_curr;
         sig_vec[s] = sig_curr;
         xu = x[x > u_curr];
-        phi_vec[s] = cont_curr ? par2phi(xi1_curr, xi2_curr, sig_curr, u_curr, geo) : (xu.size() / n);
+        phi_vec[s] = cont_curr ? par2phi(u_curr, xi1_curr, xi2_curr, sig_curr, geo) : (xu.size() / n);
         lpost_vec[s] = lpost_curr;
         cont_vec[s] = cont_curr;
       }
