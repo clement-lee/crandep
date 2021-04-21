@@ -16,6 +16,8 @@
 
 - Replace https://cran.r-project.org/web/packages/available_packages_by_name.html by https://cran.r-project.org, in the dependency network vignette, to prevent NOTE on possibly invalid URL.
 
+- In the vignette on modelling the number of reverse dependencies, a section on fitting extreme value mixture distribution is added.
+
 ## Data
 
 - Added is a citation network of the CHI conference papers, that can serve as a comparison to the CRAN dependency network, in terms of network summaries and characteristics, such as degree distribution.

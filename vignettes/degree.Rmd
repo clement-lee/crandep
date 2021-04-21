@@ -1,6 +1,6 @@
 ---
 title: "Modelling the number of reverse dependencies"
-date: "2020-08-10"
+date: "2021-04-21"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Modelling the number of reverse dependencies}
@@ -180,7 +180,12 @@ gg1 <- df1.imports %>%
 gg1
 ```
 
-The corresponding plot using the survival function can also be obtained:
+
+
+
+
+## Fitting extreme value mixture distribution
+The corresponding survival function according to the power law fit can also be obtained:
 
 ```{r}
 gg2 <- df1.imports %>%
@@ -195,4 +200,19 @@ gg2 <- df1.imports %>%
 gg2
 ```
 
-This shows the discrete power law doesn't fit as good as it seems according to the frequency plot. Potential improvements include using a higher threshold, which inevitably means throwing away some data, or using a more flexible distribution, such as those in extreme value theory. Provided in this package for such purposes are `dmix()`, `Smix()` and `mcmc_mix()`, which are functions for discrete extreme value mixture distributions introduced in [Lee and Eastoe, 2020](https://arxiv.org/abs/2008.03073).
+This shows the discrete power law doesn't fit as good as it seems according to the frequency plot. To improve the fit, we use the discrete extreme value mixture distributions introduced in [Lee and Eastoe, 2020](https://arxiv.org/abs/2008.03073). Provided in this package for such purpose are `dmix()`, `Smix()` and `mcmc_mix()`. As it takes hours to run the inference algorithm using `mcmc_mix()`, we hardcode the parameter values based on their component-wise posterior median, and overlay the data by the fitted line.
+
+```{r}
+Smix.imports <- Smix(df1.imports$degree, 146, 1.58, 0.68, 30.4, FALSE, 0.0172)
+gg3 <- df1.imports %>%
+    dplyr::mutate(survival.mix = Smix.imports) %>%
+    ggplot2::ggplot() +
+	ggplot2::geom_point(aes(degree, survival), size = 0.75) +
+	ggplot2::geom_line(aes(degree, survival.mix), col = 4, lty = 2) +
+	ggplot2::scale_x_log10() +
+	ggplot2::scale_y_log10() +
+	ggplot2::theme_bw(12)
+gg3
+```
+
+This illustrates the mixture distribution's better fit.

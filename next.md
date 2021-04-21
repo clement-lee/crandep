@@ -1,5 +1,3 @@
-## Edit degree vignette with mixture modelling
-
 ## Add pupp() & pmix(), merging Supp() & Smix(), respectively
 
 ## Fix vignettes warning in some flavours: screenshot.force=FALSE?
