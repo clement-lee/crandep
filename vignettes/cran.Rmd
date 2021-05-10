@@ -1,6 +1,6 @@
 ---
 title: "The dependency network of all CRAN packages"
-date: "2020-08-10"
+date: "2021-05-10"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{The dependency network of all CRAN packages}
@@ -10,7 +10,7 @@ vignette: >
 
 In the [introduction](introduction.html) we have see that a dependency network can be built using `get_dep_df()`. While it is theoretically possible to use `get_dep_df()` iteratively to obtain all dependencies of **all** packages available on [CRAN](https://cran.r-project.org), it is not practical to do so. This package provides two functions `get_dep_all_packages()` and `get_graph_all_packges()` for obtaining the dependencies of all CRAN packages directly, as well as an example dataset.
 
-```{r, include = FALSE}
+```{r invisible_setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -31,14 +31,14 @@ library(visNetwork)
 
 ## All types of dependencies, in a data frame
 The example dataset `cran_dependencies` contains all dependencies as of 2020-05-09.
-```{r}
+```{r cran_dependencies}
 data(cran_dependencies)
 cran_dependencies
 dplyr::count(cran_dependencies, type, reverse)
 ```
 
 This is essentially a snapshot of CRAN. We can obtain all the current dependencies using `get_dep_all_packages()`, which requires no arguments:
-```{r}
+```{r get_dep_all_packages}
 df0.cran <- get_dep_all_packages()
 head(df0.cran)
 dplyr::count(df0.cran, type, reverse) # numbers in general larger than above
@@ -50,29 +50,40 @@ dplyr::count(df0.cran, type, reverse) # numbers in general larger than above
 
 ## Network of one type of dependencies, as an igraph object
 We can build dependency network using `get_graph_all_packages()`. Furthermore, we can verify that the forward and reverse dependency networks are (almost) the same, by looking at their size (number of edges) and order (number of nodes).
-```{r}
+```{r get_graph_all_packages}
 g0.depends <- get_graph_all_packages(type = "depends")
-g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
 g0.depends
+```
+
+We could obtain essentially the same graph, but with the direction of the edges reversed, by specifying `type = "reverse depends"`:
+```{r get_graph_all_packages_rev, eval = FALSE}
+# Not run
+g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
 g0.rev_depends
 ```
 The dependency words accepted by the argument `type` is the same as in `get_dep()` and `get_dep_df()`. The two networks' size and order should be very close if not identical to each other. Because of the dependency direction, their edge lists should be the same but with the column names `from` and `to` swapped.
 
 For verification, the exact same graphs can be obtained by filtering the data frame for the required dependency and applying `df_to_graph()`:
-```{r}
+```{r forward_equivalent}
 g1.depends <- df0.cran %>%
     dplyr::filter(type == "depends" & !reverse) %>%
     df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
+g1.depends # same as g0.depends
+```
+
+If we extract the equivalent graph of reverse dependencies, we should obtain the same graph as before (had it been extracted above):
+```{r reverse_equivalent, eval = FALSE}
+# Not run
 g1.rev_depends <- df0.cran %>%
     dplyr::filter(type == "depends" & reverse) %>%
     df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
-g1.depends # same as g0.depends
-g1.rev_depends # same as g0.rev_depends
+g1.rev_depends # should be same as g0.rev_depends
 ```
-Also, this network is still a directed acyclic graph:
-```{r}
+
+The networks obtained above should all be directed acyclic graphs:
+```{r is_dag}
 igraph::is_dag(g0.depends)
-igraph::is_dag(g0.rev_depends)
+igraph::is_dag(g1.depends)
 ```
 
 
@@ -81,7 +92,7 @@ igraph::is_dag(g0.rev_depends)
 
 ## External reverse dependencies & defunct packages
 One may notice that there are external reverse dependencies which won't be appear in the forward dependencies if the scraping is limited to CRAN packages. We can find these external reverse dependencies by `nodelist = NULL` in `df_to_graph()`:
-```{r}
+```{r external_rev_defunct}
 df1.rev_depends <- df0.cran %>%
     dplyr::filter(type == "depends" & reverse) %>%
     df_to_graph(nodelist = NULL, gc = FALSE) %>%
@@ -98,7 +109,7 @@ dfa.diff.depends <- dplyr::anti_join(
 head(dfa.diff.depends)
 ```
 This means we are extracting the reverse dependencies of which the forward equivalents are not listed. The column `to` shows the packages external to CRAN. On the other hand, if we apply `dplyr::anti_join()` by switching the order of two edge lists,
-```{r}
+```{r external_rev_defunct_again}
 dfb.diff.depends <- dplyr::anti_join(
     df1.depends,
     df1.rev_depends,
@@ -114,19 +125,19 @@ the column `to` lists those which are not on the page of available packages on [
 
 ## Summary statistics
 Using the data frame `df0.cran`, we can also obtain the degree for each package and each type:
-```{r}
+```{r summary}
 df0.summary <- dplyr::count(df0.cran, from, type, reverse)
 head(df0.summary)
 ```
 We can look at the "winner" in each of the reverse dependencies:
-```{r}
+```{r tops}
 df0.summary %>%
     dplyr::filter(reverse) %>%
     dplyr::group_by(type) %>%
     dplyr::top_n(1, n)
 ```
 This is not surprising given the nature of each package. To take the summarisation one step further, we can obtain the frequencies of the degrees, and visualise the empirical degree distribution neatly on the log-log scale:
-```{r, out.width="660px", out.height="660px", fig.width=9, fig.height=9}
+```{r summary_plot, out.width="660px", out.height="660px", fig.width=9, fig.height=9}
 df1.summary <- df0.summary %>%
     dplyr::count(type, reverse, n)
 gg0.summary <- df1.summary %>%
@@ -149,22 +160,19 @@ This shows the reverse dependencies, in particular `Reverse_depends` and `Revers
 ## Visualisation
 We can now visualise (the giant component of) the CRAN network of `Depends`, using functions in the package **visNetwork**. To do this, we will need to convert the **igraph** object `g0.depends` to the node list and edge list as data frames.
 
-```{r}
+```{r visualise}
 prefix <- "http://CRAN.R-project.org/package=" # canonical form
 degrees <- igraph::degree(g0.depends)
-set.seed(3579L)
-clusters <- igraph::membership(igraph::cluster_spinglass(g0.depends))
-df0.nodes <- dplyr::full_join(
-    data.frame(id = names(degrees), value = degrees),
-	data.frame(id = names(clusters), group = as.character(clusters)),
-	"id") %>%
+df0.nodes <- data.frame(id = names(degrees), value = degrees) %>%
     dplyr::mutate(title = paste0('<a href=\"', prefix, id, '\">', id, '</a>'))
 df0.edges <- igraph::as_data_frame(g0.depends, what = "edges")
 ```
 
+We could use `igraph::membership()` & `igraph::cluster_*()` for community detection and visualisation of the clusters using different colours, which however will take too much computing time and therefore not shown here.
+
 By adding the column `title` in `df0.nodes`, we enable clicking the nodes and being directed to their CRAN pages, in the interactive visualisation below:
 
-```{r}
+```{r visNetwork}
 set.seed(2345L)
 vis0 <- visNetwork::visNetwork(df0.nodes, df0.edges, width = "100%", height = "720px") %>%
     visNetwork::visOptions(highlightNearest = TRUE) %>%
