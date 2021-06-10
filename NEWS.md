@@ -1,4 +1,12 @@
-# crandep 0.2.0 (2021-04-)
+# crandep 0.2.0 (2021-06-10)
+
+## Functions
+
+- The previous functionality of `get_dep()` is replaced by that of `get_dep_df()`, while `get_dep_df()` is soft deprecated. This means the former is the single function for obtaining dependencies in a non-igraph object.
+
+- The argument `type` in `get_dep()` and `get_graph_all_packages()` now allows `Enhances` and `Reverse enhances` as the value. These two kind of dependencies are also included in the data frame obtained using `get_dep_all_packages()`.
+
+# crandep 0.2.0 (2021-05-10)
 
 ## Functions
 

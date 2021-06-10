@@ -92,7 +92,7 @@ df_to_graph <- function(edgelist, nodelist = NULL, gc = TRUE) {
 #' Graph of dependencies of all CRAN packages
 #'
 #' \code{get_graph_all_packages} returns an igraph object representing the network of one or more types of dependencies of all CRAN packages.
-#' @param type A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse depends", "Reverse imports", "Reverse linking to", "Reverse suggests", up to letter case and space replaced by underscore. Alternatively, if 'types = "all"', all eight dependencies will be obtained.
+#' @param type A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", "Reverse depends", "Reverse imports", "Reverse linking to", "Reverse suggests", "Reverse enhances", up to letter case and space replaced by underscore. Alternatively, if 'types = "all"', all ten dependencies will be obtained.
 #' @param gc Boolean, if 'TRUE' (default) then the giant component is extracted, if 'FALSE' then the whole graph is returned
 #' @return An igraph object & a connected graph if gc is 'TRUE'
 #' @importFrom dplyr inner_join

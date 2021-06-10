@@ -13,7 +13,7 @@ A data frame of dependencies of all CRAN packages
 \code{get_dep_all_packages} returns the data frame of dependencies of all packages currently available on CRAN.
 }
 \details{
-Unlike \code{get_dep} and \code{get_dep_df}, there is no boolean argument `scrape`, as it is much faster to obtain the dependencies of all packages via `tools::CRAN_package_db()`.
+Unlike \code{get_dep}, there is no boolean argument `scrape`, as it is much faster to obtain the dependencies of all packages via `tools::CRAN_package_db()`.
 }
 \examples{
 \dontrun{
@@ -21,5 +21,5 @@ df.cran <- get_dep_all_packages()
 }
 }
 \seealso{
-\code{\link{get_dep}} for getting one type of dependencies in a character vector, \code{\link{get_dep_df}} for multiple types of dependencies, and \code{\link{get_graph_all_packages}} for obtaining directly a network of dependencies as an igraph object
+\code{\link{get_dep}} for multiple types of dependencies, and \code{\link{get_graph_all_packages}} for obtaining directly a network of dependencies as an igraph object
 }

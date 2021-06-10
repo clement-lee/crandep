@@ -8,7 +8,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-In the [introduction](introduction.html) we have see that a dependency network can be built using `get_dep_df()`. While it is theoretically possible to use `get_dep_df()` iteratively to obtain all dependencies of **all** packages available on [CRAN](https://cran.r-project.org), it is not practical to do so. This package provides two functions `get_dep_all_packages()` and `get_graph_all_packges()` for obtaining the dependencies of all CRAN packages directly, as well as an example dataset.
+In the [introduction](introduction.html) we have see that a dependency network can be built using `get_dep()`. While it is theoretically possible to use `get_dep()` iteratively to obtain all dependencies of **all** packages available on [CRAN](https://cran.r-project.org), it is not practical to do so. This package provides two functions `get_dep_all_packages()` and `get_graph_all_packges()` for obtaining the dependencies of all CRAN packages directly, as well as an example dataset.
 
 ```{r invisible_setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -61,7 +61,7 @@ We could obtain essentially the same graph, but with the direction of the edges 
 g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
 g0.rev_depends
 ```
-The dependency words accepted by the argument `type` is the same as in `get_dep()` and `get_dep_df()`. The two networks' size and order should be very close if not identical to each other. Because of the dependency direction, their edge lists should be the same but with the column names `from` and `to` swapped.
+The dependency words accepted by the argument `type` is the same as in `get_dep()`. The two networks' size and order should be very close if not identical to each other. Because of the dependency direction, their edge lists should be the same but with the column names `from` and `to` swapped.
 
 For verification, the exact same graphs can be obtained by filtering the data frame for the required dependency and applying `df_to_graph()`:
 ```{r forward_equivalent}

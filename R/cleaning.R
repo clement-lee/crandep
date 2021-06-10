@@ -5,7 +5,7 @@
 #' @return A character vector of modified dependency words
 #' @keywords internal
 check_dep_word <- function(x) {
-    types <- c("Depends", "Imports", "LinkingTo", "Suggests", "Reverse depends", "Reverse imports", "Reverse linking to", "Reverse suggests")
+    types <- c("Depends", "Imports", "LinkingTo", "Suggests", "Enhances", "Reverse depends", "Reverse imports", "Reverse linking to", "Reverse suggests", "Reverse enhances")
     if (length(x) == 1L && stringr::str_to_title(x) == "All") {
         x <- types
     } else {
@@ -49,7 +49,7 @@ html_text_vec <- function(url) {
 #' Find string corresponding to "Imports", "Depends" etc.
 #'
 #' @param v A vector of strings
-#' @param x One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"
+#' @param x One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests", "Reverse_enhances"
 #' @importFrom stringr str_detect str_replace_all
 #' @return A string of the concatenation of the dependencies
 #' @keywords internal

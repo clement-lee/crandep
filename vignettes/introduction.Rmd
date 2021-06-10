@@ -1,6 +1,6 @@
 ---
 title: "Introduction to crandep"
-date: "2020-08-10"
+date: "2021-06-10"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Introduction to crandep}
@@ -8,7 +8,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This vignette provides an introduction to the functions facilitating the analysis of the dependencies of CRAN packages, specifically `get_dep()`, `get_dep_df()`, `df_to_graph()` and `topo_sort_kahn()`.
+This vignette provides an introduction to the functions facilitating the analysis of the dependencies of CRAN packages, specifically `get_dep()`, `df_to_graph()` and `topo_sort_kahn()`.
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -27,32 +27,28 @@ library(igraph)
 
 
 
-## One type of dependencies
-To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep()` which takes the package name and the type of dependencies as the first and second arguments, respectively. Currently, the second argument accepts `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Reverse_depends`, `Reverse_imports`, `Reverse_linking_to`, and `Reverse_suggests`, or any variations in their letter cases, or if the underscore "_" is replaced by a space.
+## One or multiple types of dependencies
+To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep()` which takes the package name and the type of dependencies as the first and second arguments, respectively. Currently, the second argument accepts a character vector of one or more of the following words: `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Enhances`, `Reverse_depends`, `Reverse_imports`, `Reverse_linking_to`, `Reverse_suggests`, and `Reverse_enhances`, or any variations in their letter cases, or if the underscore "_" is replaced by a space.
 
 ```{r}
 get_dep("dplyr", "Imports")
-get_dep("MASS", "depends")
+get_dep("MASS", c("depends", "suggests"))
 ```
 
-We only consider the 4 most common types of dependencies in R packages, namely `Imports`, `Depends`, `Suggests` and `LinkingTo`, and their reverse counterparts. For more information on different types of dependencies, see [the official guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies) and [https://r-pkgs.org/description.html](https://r-pkgs.org/description.html).
+For more information on different types of dependencies, see [the official guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies) and [https://r-pkgs.org/description.html](https://r-pkgs.org/description.html).
 
-
-
-
-
-## Multiple types of dependencies
-As the information all dependencies of one package are on the same page on CRAN, to avoid scraping the same multiple times, we can use `get_dep_df()` instead of  `get_dep()`. The output will be a data frame instead of a character vector.
+In the output, the column `type` is the type of the dependency converted to lower case. Also, `LinkingTo` is now converted to `linking to` for consistency.
 
 ```{r}
-get_dep_df("dplyr", c("imports", "LinkingTo"))
+get_dep("xts", "LinkingTo")
+get_dep("xts", "linking to")
 ```
-The column `type` is the type of the dependency converted to lower case. Also, `LinkingTo` is now converted to `linking to` for consistency. For the four reverse dependencies, the substring `"reverse_"` will not be shown in `type`; instead the `reverse` column will be `TRUE`. This can be illustrated by the following:
+
+For the reverse dependencies, the substring `"reverse_"` will not be shown in `type`; instead the `reverse` column will be `TRUE`. This can be illustrated by the following:
 
 ```{r}
-get_dep("abc", "depends")
-get_dep("abc", "reverse_depends")
-get_dep_df("abc", c("depends", "reverse_depends"))
+get_dep("abc", c("depends", "reverse_depends"))
+get_dep("xts", c("linking to", "reverse linking to"))
 ```
 Theoretically, for each forward dependency
 ```{r, echo=FALSE}
@@ -64,21 +60,22 @@ data.frame(from = "B", to = "A", type = "c", reverse = TRUE)
 ```
 Aligning the `type` in the forward and reverse dependencies enables this to be checked easily.
 
-To obtain all 8 types of dependencies, we can use `"all"` in the second argument, instead of typing a character vector of all 8 words:
+To obtain all types of dependencies, we can use `"all"` in the second argument, instead of typing a character vector of all 10 words:
 
 ```{r}
-df0.abc <- get_dep_df("abc", "all")
+df0.abc <- get_dep("abc", "all")
 df0.abc
-df0.rstan <- get_dep_df("rstan", "all")
-dplyr::count(df0.rstan, type, reverse) # all 8 types
+df0.rstan <- get_dep("rstan", "all") # too many rows to display
+dplyr::count(df0.rstan, type, reverse) # hence the summary using count()
 ```
 
 ```{r,echo=FALSE}
 df0.all <- get_dep_all_packages()
-v0.all <- df0.all %>% group_by(from) %>% count(a = n_distinct(type, reverse)) %>% filter(a == 8L)
+v9.all <- df0.all %>% group_by(from) %>% count(a = n_distinct(type, reverse)) %>% filter(a == 9L) %>% "[["("from")
+v0.all <- df0.all %>% group_by(from) %>% count(a = n_distinct(type, reverse)) %>% filter(a == 10L) %>% "[["("from")
 ```
 
-As of `r Sys.Date()`, the packages that have all 8 types of dependencies are `r paste(v0.all$from, collapse = ", ")`.
+As of `r Sys.Date()`, there are `r length(v0.all)` packages that have all 10 types of dependencies, and `r length(v9.all)` packages that have 9 types of dependencies: `r paste(v9.all, collapse = ", ")`.
 
 
 
@@ -89,14 +86,14 @@ To build a dependency network, we have to obtain the dependencies for multiple p
 
 ```{r}
 df0.imports <- rbind(
-    get_dep_df("ggplot2", "Imports"),
-    get_dep_df("dplyr", "Imports"),
-    get_dep_df("tidyr", "Imports"),
-    get_dep_df("readr", "Imports"),
-    get_dep_df("purrr", "Imports"),
-    get_dep_df("tibble", "Imports"),
-    get_dep_df("stringr", "Imports"),
-    get_dep_df("forcats", "Imports")
+    get_dep("ggplot2", "Imports"),
+    get_dep("dplyr", "Imports"),
+    get_dep("tidyr", "Imports"),
+    get_dep("readr", "Imports"),
+    get_dep("purrr", "Imports"),
+    get_dep("tibble", "Imports"),
+    get_dep("stringr", "Imports"),
+    get_dep("forcats", "Imports")
 )
 head(df0.imports)
 tail(df0.imports)

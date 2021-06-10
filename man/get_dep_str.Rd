@@ -9,7 +9,7 @@ get_dep_str(v, x)
 \arguments{
 \item{v}{A vector of strings}
 
-\item{x}{One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests"}
+\item{x}{One of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", "Reverse_depends", "Reverse_imports", "Reverse_linking_to", "Reverse_suggests", "Reverse_enhances"}
 }
 \value{
 A string of the concatenation of the dependencies
