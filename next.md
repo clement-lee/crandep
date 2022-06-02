@@ -17,3 +17,5 @@
 ## Add "weak" & "strong" with "reverse"
 
 ## Move "reverse" to a separate parameter?
+
+## Edit README Rmd & md

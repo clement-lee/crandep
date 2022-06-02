@@ -1,4 +1,4 @@
-This is a resubmission of version 0.2.0, with no ERRORs or WARNINGs, and possible NOTEs are explained below. The time for re-creating the vignettes has been reduced.
+This is a first submission of version 0.3.0, with no ERRORs or WARNINGs, and possible NOTEs are explained below. The time for re-creating the vignettes has been reduced.
 
 
 
