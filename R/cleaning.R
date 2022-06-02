@@ -43,7 +43,12 @@ cran_url <- function(name) {
 #' @return A string vector of the html text of the page according to the url
 #' @keywords internal
 html_text_vec <- function(url) {
-    as.vector(stringr::str_split(rvest::html_text(xml2::read_html(url)), "\n", simplify = TRUE))
+    page0 <- try(rvest::html_text(xml2::read_html(url)), silent = TRUE)
+    if (inherits(page0, "try-error")) {
+        stop("html_text_vec() uses rvest::html_text() and xml2::read_html() which fail. Check Internet connection.")
+    } else {
+        return(as.vector(stringr::str_split(page0, "\n", simplify = TRUE)))
+    }
 }
 
 #' Find string corresponding to "Imports", "Depends" etc.

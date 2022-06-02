@@ -1,4 +1,10 @@
-# crandep 0.2.0 (2021-06-10)
+# crandep 0.3.1 (2022-06-02)
+
+## Functions
+
+- `get_dep()`, `html_text_vec()` and `get_dep_all_packages()` now return an error message if Internet resources are not available.
+
+# crandep 0.3.0 (2021-06-10)
 
 ## Functions
 

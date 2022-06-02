@@ -37,12 +37,17 @@ get_dep <- function(name, type, scrape = TRUE) {
             l0[[i]] <- data.frame(from = name, to = v0, type = typei, stringsAsFactors = FALSE)
         }
     } else {
-        df1 <- as.data.frame(tools::CRAN_package_db())
-        for (i in seq_along(type)) {
-            typei <- type[i]
-            str0 <- df1[df1$Package == name, typei]
-            v0 <- get_dep_vec(str0[1L]) # some packages have multiple rows
-            l0[[i]] <- data.frame(from = name, to = v0, type = typei, stringsAsFactors = FALSE)
+        db1 <- try(tools::CRAN_package_db(), silent = TRUE)
+        if (inherits(db1, "try-error")) {
+            stop("get_dep() uses tools::CRAN_package_db() which fails. Check Internet connection.")
+        } else {
+            df1 <- as.data.frame(db1)
+            for (i in seq_along(type)) {
+                typei <- type[i]
+                str0 <- df1[df1$Package == name, typei]
+                v0 <- get_dep_vec(str0[1L]) # some packages have multiple rows
+                l0[[i]] <- data.frame(from = name, to = v0, type = typei, stringsAsFactors = FALSE)
+            }
         }
     }
     df0 <- do.call(rbind, l0)
@@ -84,35 +89,40 @@ reshape_dep <- function(x, names) {
 #' @seealso \code{\link{get_dep}} for multiple types of dependencies, and \code{\link{get_graph_all_packages}} for obtaining directly a network of dependencies as an igraph object
 #' @export
 get_dep_all_packages <- function() {
-    df0 <- as.data.frame(tools::CRAN_package_db(), stringsAsFactors = FALSE)
-    pkgnames <- df0$Package
-    df1 <- dplyr::bind_rows(
-        `FALSE` = dplyr::bind_rows(
-            imports = reshape_dep(df0$Imports, pkgnames),
-            depends = reshape_dep(df0$Depends, pkgnames),
-            `linking to` = reshape_dep(df0$LinkingTo, pkgnames),
-            suggests = reshape_dep(df0$Suggests, pkgnames),
-            enhances = reshape_dep(df0$Enhances, pkgnames),
-            .id = "type"
-        ),
-        `TRUE` = dplyr::bind_rows(
-            imports = reshape_dep(df0$`Reverse imports`, pkgnames),
-            depends = reshape_dep(df0$`Reverse depends`, pkgnames),
-            `linking to` = reshape_dep(df0$`Reverse linking to`, pkgnames),
-            suggests = reshape_dep(df0$`Reverse suggests`, pkgnames),
-            enhances = reshape_dep(df0$`Reverse enhances`, pkgnames),
-            .id = "type"
-        ),
-        .id = "reverse"
-    )
-    df2 <- data.frame(
-        from = df1$from,
-        to = df1$to,
-        type = df1$type,
-        reverse = as.logical(df1$reverse),
-        stringsAsFactors = FALSE
-    )
-    df2 <- df2[!is.na(df2$to),]
-    df2 <- df2[df2$to != "",] # there are rows with "" - may need to fix from source get_dep_vec()
-    unique(df2)
+    db0 <- try(tools::CRAN_package_db(), silent = TRUE)
+    if (inherits(db0, "try-error")) {
+        stop("get_dep_all_packages() uses tools::CRAN_package_db() which fails. Check Internet connection.")
+    } else {
+        df0 <- as.data.frame(db0, stringsAsFactors = FALSE)
+        pkgnames <- df0$Package
+        df1 <- dplyr::bind_rows(
+                          `FALSE` = dplyr::bind_rows(
+                                               imports = reshape_dep(df0$Imports, pkgnames),
+                                               depends = reshape_dep(df0$Depends, pkgnames),
+                                               `linking to` = reshape_dep(df0$LinkingTo, pkgnames),
+                                               suggests = reshape_dep(df0$Suggests, pkgnames),
+                                               enhances = reshape_dep(df0$Enhances, pkgnames),
+                                               .id = "type"
+                                           ),
+                          `TRUE` = dplyr::bind_rows(
+                                              imports = reshape_dep(df0$`Reverse imports`, pkgnames),
+                                              depends = reshape_dep(df0$`Reverse depends`, pkgnames),
+                                              `linking to` = reshape_dep(df0$`Reverse linking to`, pkgnames),
+                                              suggests = reshape_dep(df0$`Reverse suggests`, pkgnames),
+                                              enhances = reshape_dep(df0$`Reverse enhances`, pkgnames),
+                                              .id = "type"
+                                          ),
+                          .id = "reverse"
+                      )
+        df2 <- data.frame(
+            from = df1$from,
+            to = df1$to,
+            type = df1$type,
+            reverse = as.logical(df1$reverse),
+            stringsAsFactors = FALSE
+        )
+        df2 <- df2[!is.na(df2$to),]
+        df2 <- df2[df2$to != "",] # there are rows with "" - may need to fix from source get_dep_vec()
+        return(unique(df2))
+    }
 }
