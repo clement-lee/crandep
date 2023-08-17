@@ -52,41 +52,37 @@ library(igraph)
 ## Overview
 The functions and example dataset can be divided into the following categories:
 
-1. For obtaining data frames of package dependencies, use `get_dep()`, `get_dep_df()`, `get_dep_all_packages()`.
+1. For obtaining data frames of package dependencies, use `get_dep()`, `get_dep_all_packages()`.
 2. For obtaining igraph objects of package dependencies, use `get_graph_all_packages()` and `df_to_graph()`.
-3. For modelling the number of dependencies, use `*upp()` and `*mix()`.
+3. For modelling the number of dependencies, use `*pol()` and `*mix2()`.
 4. There is also an example data set `cran_dependencies`.
 
 
 
 
 
-## One kind of dependencies 
-To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep()` which takes the package name and the type of dependencies as the first and second arguments, respectively. Currently, the second argument accepts `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Reverse_depends`, `Reverse_imports`, `Reverse_linking_to`, and `Reverse_suggests`, or any variations in their letter cases, or if the underscore "_" is replaced by a space.
+## One or multiple types of dependencies
+To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep()` which takes the package name and the type of dependencies as the first and second arguments, respectively. Currently, the second argument accepts a character vector of one or more of the following words: `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Enhances`, `Reverse_depends`, `Reverse_imports`, `Reverse_linking_to`, `Reverse_suggests`, and `Reverse_enhances`, or any variations in their letter cases, or if the underscore "_" is replaced by a space.
 
 ```{r}
 get_dep("dplyr", "Imports")
-get_dep("MASS", "depends")
+get_dep("MASS", c("depends", "suggests"))
 ```
 
-We only consider the 4 most common types of dependencies in R packages, namely `Imports`, `Depends`, `Suggests` and `LinkingTo`, and their reverse counterparts. For more information on different types of dependencies, see [the official guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies) and [https://r-pkgs.org/description.html](https://r-pkgs.org/description.html).
+For more information on different types of dependencies, see [the official guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies) and [https://r-pkgs.org/description.html](https://r-pkgs.org/description.html).
 
-
-
-
-
-## Multiple kind of dependencies
-As the information all dependencies of one package are on the same page on CRAN, to avoid scraping the same multiple times, we can use `get_dep_df()` instead of  `get_dep()`. The output will be a data frame instead of a character vector.
+In the output, the column `type` is the type of the dependency converted to lower case. Also, `LinkingTo` is now converted to `linking to` for consistency.
 
 ```{r}
-get_dep_df("dplyr", c("imports", "LinkingTo"))
+get_dep("xts", "LinkingTo")
+get_dep("xts", "linking to")
 ```
-The column `type` is the type of the dependency converted to lower case. Also, `LinkingTo` is now converted to `linking to` for consistency. For the four reverse dependencies, the substring `"reverse_"` will not be shown in `type`; instead the `reverse` column will be `TRUE`. This can be illustrated by the following:
+
+For the reverse dependencies, the substring `"reverse_"` will not be shown in `type`; instead the `reverse` column will be `TRUE`. This can be illustrated by the following:
 
 ```{r}
-get_dep("abc", "depends")
-get_dep("abc", "reverse_depends")
-get_dep_df("abc", c("depends", "reverse_depends"))
+get_dep("abc", c("depends", "reverse_depends"))
+get_dep("xts", c("linking to", "reverse linking to"))
 ```
 Theoretically, for each forward dependency
 ```{r, echo=FALSE}
@@ -98,21 +94,23 @@ data.frame(from = "B", to = "A", type = "c", reverse = TRUE)
 ```
 Aligning the `type` in the forward dependency and the reverse dependency enables this to be checked easily.
 
-To obtain all 8 types of dependencies, we can use `"all"` in the second argument, instead of typing a character vector of all 8 words:
+To obtain all types of dependencies, we can use `"all"` in the second argument, instead of typing a character vector of all words:
 
 ```{r}
-df0.abc <- get_dep_df("abc", "all")
+df0.abc <- get_dep("abc", "all")
 df0.abc
-df0.rstan <- get_dep_df("rstan", "all")
-dplyr::count(df0.rstan, type, reverse) # all 8 types
+df0.rstan <- get_dep("rstan", "all") # too many rows to display
+dplyr::count(df0.rstan, type, reverse) # hence the summary using count()
 ```
 
 ```{r,echo=FALSE}
 df0.all <- get_dep_all_packages()
-v0.all <- df0.all %>% group_by(from) %>% count(a = n_distinct(type, reverse)) %>% filter(a == 8L)
+df1.all <- df0.all |> dplyr::count(from, type, reverse) |> dplyr::count(from)
+v9.all <- dplyr::filter(df1.all, n == 9L)$from
+v0.all <- dplyr::filter(df1.all, n == 10L)$from
 ```
 
-As of `r Sys.Date()`, the packages that have all 8 types of dependencies are `r paste(v0.all$from, collapse = ", ")`.
+As of `r Sys.Date()`, there are `r length(v0.all)` packages that have all 10 types of dependencies, and `r length(v9.all)` packages that have 9 types of dependencies: `r paste(v9.all, collapse = ", ")`.
 
 
 
@@ -123,14 +121,14 @@ To build a dependency network, we have to obtain the dependencies for multiple p
 
 ```{r}
 df0.imports <- rbind(
-    get_dep_df("ggplot2", "Imports"),
-    get_dep_df("dplyr", "Imports"),
-    get_dep_df("tidyr", "Imports"),
-    get_dep_df("readr", "Imports"),
-    get_dep_df("purrr", "Imports"),
-    get_dep_df("tibble", "Imports"),
-    get_dep_df("stringr", "Imports"),
-    get_dep_df("forcats", "Imports")
+  get_dep("ggplot2", "Imports"),
+  get_dep("dplyr", "Imports"),
+  get_dep("tidyr", "Imports"),
+  get_dep("readr", "Imports"),
+  get_dep("purrr", "Imports"),
+  get_dep("tibble", "Imports"),
+  get_dep("stringr", "Imports"),
+  get_dep("forcats", "Imports")
 )
 head(df0.imports)
 tail(df0.imports)
@@ -161,22 +159,23 @@ dplyr::count(df0.cran, type, reverse) # numbers in general larger than above
 
 ## Network of one type of dependencies, as an igraph object
 We can build dependency network using `get_graph_all_packages()`. Furthermore, we can verify that the forward and reverse dependency networks are (almost) the same, by looking at their size (number of edges) and order (number of nodes).
-```{r}
+```{r get_graph_all_packages}
 g0.depends <- get_graph_all_packages(type = "depends")
-g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
 g0.depends
+```
+
+We could obtain essentially the same graph, but with the direction of the edges reversed, by specifying `type = "reverse depends"`:
+```{r get_graph_all_packages_rev, eval = FALSE}
+# Not run
+g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
 g0.rev_depends
 ```
-The dependency words accepted by the argument `type` is the same as in `get_dep()` and `get_dep_df()`. The two networks' size and order should be very close if not identical to each other. Because of the dependency direction, their edge lists should be the same but with the column names `from` and `to` swapped.
+The dependency words accepted by the argument `type` is the same as in `get_dep()`. The two networks' size and order should be very close if not identical to each other. Because of the dependency direction, their edge lists should be the same but with the column names `from` and `to` swapped.
 
 For verification, the exact same graphs can be obtained by filtering the data frame for the required dependency and applying `df_to_graph()`:
-```{r}
-g1.depends <- df0.cran %>%
-    dplyr::filter(type == "depends" & !reverse) %>%
-    df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
-g1.rev_depends <- df0.cran %>%
-    dplyr::filter(type == "depends" & reverse) %>%
-    df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
+```{r forward_equivalent}
+g1.depends <- df0.cran |>
+  dplyr::filter(type == "depends" & !reverse) |>
+  df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
 g1.depends # same as g0.depends
-g1.rev_depends # same as g0.rev_depends
 ```

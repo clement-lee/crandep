@@ -1,3 +1,17 @@
+# crandep 0.3.2 (2023-08-17)
+
+## Functions
+- `dupp()` and `mcmc_upp()` are replaced by `dpol()` and `mcmc_pol()`, respectively, to facilitate a generalisation of the discrete power law, namely the Zipf-polylog distribution.
+- `dmix()` and `mcmc_mix()` are replaced by `dmix2()` and `mcmc_mix2()`, respectively, with a new parametrisation, for the 2-component mixture distribution.
+- `dmix3()` and `mcmc_mix3()` are added for the 3-component mixture distribution.
+
+## Dependencies
+- RcppGSL is no longer needed as a LinkingTo dependency.
+
+## Vignettes and README
+- The vignettes and README are updated according to the above changes.
+- Also, the previous pipe operator "%>%" is replaced by the native one "|>" throughout the vignettes and README.
+
 # crandep 0.3.1 (2022-06-02)
 
 ## Functions

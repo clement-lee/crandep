@@ -1,6 +1,6 @@
 ---
 title: "The dependency network of all CRAN packages"
-date: "2021-05-10"
+date: "2023-08-17"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{The dependency network of all CRAN packages}
@@ -65,18 +65,18 @@ The dependency words accepted by the argument `type` is the same as in `get_dep(
 
 For verification, the exact same graphs can be obtained by filtering the data frame for the required dependency and applying `df_to_graph()`:
 ```{r forward_equivalent}
-g1.depends <- df0.cran %>%
-    dplyr::filter(type == "depends" & !reverse) %>%
-    df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
+g1.depends <- df0.cran |>
+  dplyr::filter(type == "depends" & !reverse) |>
+  df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
 g1.depends # same as g0.depends
 ```
 
 If we extract the equivalent graph of reverse dependencies, we should obtain the same graph as before (had it been extracted above):
 ```{r reverse_equivalent, eval = FALSE}
 # Not run
-g1.rev_depends <- df0.cran %>%
-    dplyr::filter(type == "depends" & reverse) %>%
-    df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
+g1.rev_depends <- df0.cran |>
+  dplyr::filter(type == "depends" & reverse) |>
+  df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
 g1.rev_depends # should be same as g0.rev_depends
 ```
 
@@ -93,27 +93,27 @@ igraph::is_dag(g1.depends)
 ## External reverse dependencies & defunct packages
 One may notice that there are external reverse dependencies which won't be appear in the forward dependencies if the scraping is limited to CRAN packages. We can find these external reverse dependencies by `nodelist = NULL` in `df_to_graph()`:
 ```{r external_rev_defunct}
-df1.rev_depends <- df0.cran %>%
-    dplyr::filter(type == "depends" & reverse) %>%
-    df_to_graph(nodelist = NULL, gc = FALSE) %>%
-    igraph::as_data_frame() # to obtain the edge list
-df1.depends <- df0.cran %>%
-    dplyr::filter(type == "depends" & !reverse) %>%
-    df_to_graph(nodelist = NULL, gc = FALSE) %>%
-    igraph::as_data_frame()
+df1.rev_depends <- df0.cran |>
+  dplyr::filter(type == "depends" & reverse) |>
+  df_to_graph(nodelist = NULL, gc = FALSE) |>
+  igraph::as_data_frame() # to obtain the edge list
+df1.depends <- df0.cran |>
+  dplyr::filter(type == "depends" & !reverse) |>
+  df_to_graph(nodelist = NULL, gc = FALSE) |>
+  igraph::as_data_frame()
 dfa.diff.depends <- dplyr::anti_join(
-    df1.rev_depends,
-    df1.depends,
-    c("from" = "to", "to" = "from")
+  df1.rev_depends,
+  df1.depends,
+  c("from" = "to", "to" = "from")
 )
 head(dfa.diff.depends)
 ```
 This means we are extracting the reverse dependencies of which the forward equivalents are not listed. The column `to` shows the packages external to CRAN. On the other hand, if we apply `dplyr::anti_join()` by switching the order of two edge lists,
 ```{r external_rev_defunct_again}
 dfb.diff.depends <- dplyr::anti_join(
-    df1.depends,
-    df1.rev_depends,
-    c("from" = "to", "to" = "from")
+  df1.depends,
+  df1.rev_depends,
+  c("from" = "to", "to" = "from")
 )
 head(dfb.diff.depends)
 ```
@@ -131,24 +131,24 @@ head(df0.summary)
 ```
 We can look at the "winner" in each of the reverse dependencies:
 ```{r tops}
-df0.summary %>%
-    dplyr::filter(reverse) %>%
-    dplyr::group_by(type) %>%
-    dplyr::top_n(1, n)
+df0.summary |>
+  dplyr::filter(reverse) |>
+  dplyr::group_by(type) |>
+  dplyr::top_n(1, n)
 ```
 This is not surprising given the nature of each package. To take the summarisation one step further, we can obtain the frequencies of the degrees, and visualise the empirical degree distribution neatly on the log-log scale:
 ```{r summary_plot, out.width="660px", out.height="660px", fig.width=9, fig.height=9}
-df1.summary <- df0.summary %>%
-    dplyr::count(type, reverse, n)
-gg0.summary <- df1.summary %>%
-    dplyr::mutate(reverse = ifelse(reverse, "reverse", "forward")) %>%
-    ggplot2::ggplot() +
-    ggplot2::geom_point(ggplot2::aes(n, nn)) +
-    ggplot2::facet_grid(type ~ reverse) +
-    ggplot2::scale_x_log10() +
-    ggplot2::scale_y_log10() +
-    ggplot2::labs(x = "Degree", y = "Number of packages") +
-    ggplot2::theme_bw(20)
+df1.summary <- df0.summary |>
+  dplyr::count(type, reverse, n)
+gg0.summary <- df1.summary |>
+  dplyr::mutate(reverse = ifelse(reverse, "reverse", "forward")) |>
+  ggplot2::ggplot() +
+  ggplot2::geom_point(ggplot2::aes(n, nn)) +
+  ggplot2::facet_grid(type ~ reverse) +
+  ggplot2::scale_x_log10() +
+  ggplot2::scale_y_log10() +
+  ggplot2::labs(x = "Degree", y = "Number of packages") +
+  ggplot2::theme_bw(20)
 gg0.summary
 ```
 This shows the reverse dependencies, in particular `Reverse_depends` and `Reverse_imports`, follow the [power law](https://en.wikipedia.org/wiki/Power-law), which is empirically observed in various academic fields.
@@ -163,8 +163,8 @@ We can now visualise (the giant component of) the CRAN network of `Depends`, usi
 ```{r visualise}
 prefix <- "http://CRAN.R-project.org/package=" # canonical form
 degrees <- igraph::degree(g0.depends)
-df0.nodes <- data.frame(id = names(degrees), value = degrees) %>%
-    dplyr::mutate(title = paste0('<a href=\"', prefix, id, '\">', id, '</a>'))
+df0.nodes <- data.frame(id = names(degrees), value = degrees) |>
+  dplyr::mutate(title = paste0('<a href=\"', prefix, id, '\">', id, '</a>'))
 df0.edges <- igraph::as_data_frame(g0.depends, what = "edges")
 ```
 
@@ -174,11 +174,11 @@ By adding the column `title` in `df0.nodes`, we enable clicking the nodes and be
 
 ```{r visNetwork}
 set.seed(2345L)
-vis0 <- visNetwork::visNetwork(df0.nodes, df0.edges, width = "100%", height = "720px") %>%
-    visNetwork::visOptions(highlightNearest = TRUE) %>%
-	visNetwork::visEdges(arrows = "to", color = list(opacity = 0.5)) %>%
-	visNetwork::visNodes(fixed = TRUE) %>%
-	visNetwork::visIgraphLayout(layout = "layout_with_drl")
+vis0 <- visNetwork::visNetwork(df0.nodes, df0.edges, width = "100%", height = "720px") |>
+  visNetwork::visOptions(highlightNearest = TRUE) |>
+  visNetwork::visEdges(arrows = "to", color = list(opacity = 0.5)) |>
+  visNetwork::visNodes(fixed = TRUE) |>
+  visNetwork::visIgraphLayout(layout = "layout_with_drl")
 vis0
 ```
 

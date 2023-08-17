@@ -1,8 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::depends(RcppGSL)]]
-#include <RcppArmadillo.h>
-#include <RcppGSL.h>
-#include <gsl/gsl_sf_zeta.h>
+#include <RcppArmadilloExtensions/sample.h>
 using namespace Rcpp;
 using namespace std;
 using namespace arma;
@@ -20,7 +17,8 @@ const double lr1() {
   return log(runif(1)[0]);
 }
 
-const NumericVector tv(const double x) {
+template <class T>
+const NumericVector tv(T x) {
   return NumericVector::create(x);
 }
 
@@ -28,9 +26,33 @@ const IntegerVector ti(const int x) {
   return IntegerVector::create(x);
 }
 
+const LogicalVector tl(const bool x) {
+  return LogicalVector::create(x);
+}
+
+const double ldnorm(const double x, const double mean, const double sd) {
+  return dnorm(tv(x), mean, sd, true)[0];
+}
+
+const double ldgamma(const double x, const double shape, const double rate) {
+  return dgamma(tv(x), shape, 1.0 / rate, true)[0];
+}
+
+const NumericVector lpgamma(const NumericVector x, const double shape, const double rate) {
+  return pgamma(x, shape, 1.0 / rate, true, true);
+}
+
+const double ldbeta(const double x, const double a, const double b) {
+  return dbeta(tv(x), a, b, true)[0];
+}
+
+const double ldunif(const double x, const double a, const double b) {
+  return dunif(tv(x), a, b, true)[0];
+}
+
 template <class T>
-void update(T & par_curr, T par_prop, double & lpost_curr, const double lpost_prop, double & s, const int i, const int burnin, const double factor = 10.0) {
-  const double lalpha = lpost_prop - lpost_curr;
+void update(T & par_curr, T par_prop, double & lpost_curr, const double lpost_prop, double & s, const int i, const int burnin, const double invt = 1.0, const double factor = 10.0) {
+  const double lalpha = invt * (lpost_prop - lpost_curr);
   const bool accept_reject = lalpha > lr1();
   par_curr = accept_reject ? par_prop : par_curr;
   lpost_curr = accept_reject ? lpost_prop : lpost_curr;
@@ -47,596 +69,2004 @@ const double cor_curr(const vec x, const vec y, const int i) {
   return as_scalar(cor(x.head(i), y.head(i)));
 }
 
-const double lq(const int from, const int to, const double s) {
+const int sample_w(const IntegerVector seq, const NumericVector weights) {
+  // sample 1 value from seq with weights
+  return Rcpp::RcppArmadillo::sample(seq, 1, true, weights)[0];
+}
+
+const double lse(const NumericVector x) {
+  return log(sum(exp(x)));
+}
+
+DataFrame df_scalars(const int iter,
+                     const int thin,
+                     const int burn,
+                     const int freq,
+                     const bool mc3) {
+  return
+    DataFrame::create(Named("iter") = ti(iter),
+                      Named("thin") = ti(thin),
+                      Named("burn") = ti(burn),
+                      Named("freq") = ti(freq),
+                      Named("mc3") = tl(mc3));
+}
+
+const IntegerVector for_Smix(const int u, const int xmin) {
+  const uvec x0 = regspace<uvec>(1, 9);
+  uvec x(x0);
+  x = join_cols(x, x0 * pow(10, 1));
+  x = join_cols(x, x0 * pow(10, 2));
+  x = join_cols(x, x0 * pow(10, 3));
+  x = join_cols(x, x0 * pow(10, 4));
+  x = join_cols(x, x0 * pow(10, 5));
+  IntegerVector x1 = wrap(x);
+  x1 = x1[(x1 <= u) & (x1 >= xmin)];
+  x1.insert(x1.end(), u);
+  return x1;
+}
+
+const bool ispm1(const double x, const double precision = 1.0e-10) {
+  // TRUE if x=+/-1.0 up to floating-point prec
+  return abs(abs(x) - 1.0) < precision;
+}
+
+const double sqrt1mx2(const double x) {
+  // sqrt(1 - x^2)
+  return ispm1(x) ? 0.0 : sqrt(1.0 - x * x);
+}
+
+const double intdiv(const int a, const int b) {
+  return (double) a / (double) b;
+}
+
+const double odds(const double p) {
+  return p / (1.0 - p);
+}
+
+
+
+
+// 01) polylogarithm only
+const double lnc_pol(const double alpha,
+                     const double gamma,
+                     const int xmin,
+                     const int xmax) {
+  // log of normalising constant for polylog
+  // gamma & xmin have to be +ve
+  const IntegerVector y0 = tail(seq_len(xmax), xmax - xmin + 1); // xmin:xmax
+  const NumericVector y(y0), ly = log(y);
   const double
-    lower = log((to + 0.0) / (from + 0.0)),
-    upper = log((to + 1.0) / (from + 0.0));
-  return log(pnorm(tv(upper), 0.0, s)[0] - pnorm(tv(lower), 0.0, s)[0]);
+    xs(xmin), // x_star: (approx) x w/ max value
+    lxs = log(xs),
+    lnc = lse(- alpha * (ly - lxs) - gamma * (y - xs))
+    - alpha * lxs - gamma * xs;
+  return lnc;
 }
 
-
-
-
-
-// 01) Component dists: discrete power laws & GPD
-void hzeta_check(const double alpha, const int u) {
+//' Probability mass function (PMF) of Zipf-polylog distribution
+//'
+//' \code{dpol} returns the PMF at x for the Zipf-polylog distribution with parameters (alpha, theta). The distribution is reduced to the discrete power law when theta = 1.
+//'
+//' The PMF is proportional to x^(-alpha) * theta^x. It is normalised in order to be a proper PMF.
+//' @param x Vector of positive integers
+//' @param alpha Real number greater than 1
+//' @param theta Real number in (0, 1]
+//' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+//' @return A numeric vector of the same length as x
+//' @examples
+//' dpol(c(1,2,3,4,5), 1.2, 0.5)
+//' @seealso \code{\link{Spol}} for the corresponding survival function, \code{\link{dmix2}} and \code{\link{dmix3}} for the PMFs of the 2-component and 3-component discrete extreme value mixture distributions, respectively.
+//' @export
+// [[Rcpp::export]]
+const NumericVector dpol(const IntegerVector x,
+                         const double alpha,
+                         const double theta,
+                         const int xmax = 100000) {
+  // density for polylogarithm
+  // x are desired values, not data
+  if (is_true(any(x <= 0))) {
+    stop("dpol: all of x has to be +ve integers.");
+  }
   if (alpha <= 1.0) {
-    stop("hzeta_check: 1st argument of gsl_sf_hzeta() (exponent of power-law) has to be strictly greater than 1.0.");
+    stop("dpol: alpha has to be greater than 1.0.");
   }
-  if (u <= 0) {
-    stop("hzeta_check: 2nd argument of gsl_sf_hzeta() has to be a positive integer.");
+  if (theta <= 0.0 || theta > 1.0) {
+    stop("dpol: theta has to be in (0.0, 1.0].");
   }
+  const double gamma = -log(theta);
+  const NumericVector x0(x),
+    l = - alpha * log(x0) - x0 * gamma
+    - lnc_pol(alpha, gamma, min(x), xmax);
+  return exp(l);
 }
 
-//' Probability mass function (PMF) of discrete power law
+//' Survival function of Zipf-polylog distribution
 //'
-//' \code{dupp} returns the PMF at x for the discrete power law with exponent (1.0 / xi1 + 1.0), for values greater than or equal to u. 
+//' \code{Spol} returns the survival function at x for the Zipf-polylog distribution with parameters (alpha, theta). The distribution is reduced to the discrete power law when theta = 1.
 //'
-//' The PMF is proportional to x^(-alpha), where alpha = 1.0 / xi1 + 1.0. To be a proper PMF, it is normalised by 1/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... Any values below u will have PMF equal to 0.0. That xi1 is used instead of alpha is for alignment with the parametrisation in \code{dmix}, \code{Smix} and \code{mcmc_mix}.
 //' @param x Vector of positive integers
-//' @param u Scalar, non-negative integer threshold
-//' @param xi1 Scalar, a positive real number representing the shape parameter
-//' @param log Boolean (default 'FALSE'), whether the PMF should be returned on the log scale.
+//' @param alpha Real number greater than 1
+//' @param theta Real number in (0, 1]
+//' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
 //' @return A numeric vector of the same length as x
 //' @examples
-//' dupp(c(10,20,30,40,50), 12, 2.0, FALSE)
-//' dupp(c(10,20,30,40,50), 12, 2.0, TRUE)
-//' @seealso \code{\link{Supp}} for the corresponding survival function, \code{\link{dmix}} for the PMF of the discrete extreme value mixture distribution.
+//' Spol(c(1,2,3,4,5), 1.2, 0.5)
+//' @seealso \code{\link{dpol}} for the corresponding probability mass function, \code{\link{Smix2}} and \code{\link{Smix3}} for the survival functions of the 2-component and 3-component discrete extreme value mixture distributions, respectively.
 //' @export
 // [[Rcpp::export]]
-const NumericVector dupp(const NumericVector x, const int u, const double xi1, const bool log = false) {
-  // density f() of discrete power law >= u
-  const int n = x.size();
-  NumericVector v(n);
-  const double alpha = 1.0 / xi1 + 1.0;
-  hzeta_check(alpha, u);
-  const double log_denom = std::log(gsl_sf_hzeta(alpha, u));
-  for (int i = 0; i < n; i++) {
-    v[i] = -alpha * std::log(x[i]) - log_denom;
+const NumericVector Spol(const IntegerVector x,
+                         const double alpha,
+                         const double theta,
+                         const int xmax = 100000) {
+  // survival for polylogarithm
+  // x are the desired values, not data
+  if (is_true(any(x <= 0))) {
+    stop("Spol: all of x has to be +ve integers.");
   }
-  v = ifelse(x < u, -INFINITY, v);
-  NumericVector output;
-  if (log) {
-	output = v;
+  if (alpha <= 1.0) {
+    stop("Spol: alpha has to be greater than 1.0.");
   }
-  else {
-	output = exp(v);
+  if (theta <= 0.0 || theta > 1.0) {
+    stop("Spol: theta has to be in (0.0, 1.0].");
   }
-  return output;
+  const int xmin = min(x);
+  const double gamma = -log(theta);
+  const NumericVector x0(x);
+  IntegerVector seq1 = seq_len(xmax); // 1 to xmax
+  seq1 = tail(seq1, xmax - xmin + 1); // xmin to xmax
+  const NumericVector
+    x1(seq1), // xmin to xmax
+    l1 = - alpha * log(x1) - x1 * gamma
+    - lnc_pol(alpha, gamma, xmin, xmax),
+    cf1 = cumsum(exp(l1));
+  NumericVector S(x.size());
+  for (int i = 0; i < x.size(); i++) {
+    S[i] = 1.0 - cf1[x[i] - xmin] / cf1[xmax - xmin];
+  }
+  return S;
 }
 
-//' Survival function of discrete power law
-//'
-//' \code{Supp} returns the survival function at x for the discrete power law with exponent (1.0 / xi1 + 1.0), for values greater than or equal to u.
-//'
-//' The survival function used is S(x) = Pr(X >= x), where X is a random variable following the discrete power law. The inclusion of x in the sum means S(x) may not necessarily equal to Pr(X > x) as the distribution is discrete. In the case of discrete power law, it can be shown that S(x) = hzeta(alpha, x)/hzeta(alpha, u), where hzeta is the Hurwitz zeta function i.e. hzeta(y, z) = z^(-y) + (z+1)^(-y) + (z+2)^(-y) + ... and alpha = 1.0 / xi1 + 1.0. That xi1 is used instead of alpha is for alignment with the parametrisation in \code{dmix}, \code{Smix} and \code{mcmc_mix}.
-//' @param x Vector of positive integers
-//' @param u Scalar, non-negative integer threshold
-//' @param xi1 Scalar, a positive real number representing the shape parameter
-//' @param log Boolean (default 'FALSE'), whether the survival function should be returned on the log scale.
-//' @return A numeric vector of the same length as x
-//' @examples
-//' Supp(c(10,20,30,40,50), 12, 2.0)
-//' @seealso \code{\link{dupp}} for the corresponding probability mass function, \code{\link{Smix}} for the survival function of the discrete extreme value mixture distribution.
-//' @export
-// [[Rcpp::export]]
-const NumericVector Supp(const NumericVector x, const int u, const double xi1, const bool log = false) {
-  // survival f() of discrete power law >= u
-  const int n = x.size();
-  NumericVector v(n);
-  const double alpha = 1.0 / xi1 + 1.0;
-  hzeta_check(alpha, u);
-  const double log_denom = std::log(gsl_sf_hzeta(alpha, u));
-  for (int i = 0; i < n; i++) {
-    v[i] = std::log(gsl_sf_hzeta(alpha, x[i])) - log_denom;
+const double llik_pol(const NumericVector par,
+                      const IntegerVector x,
+                      const IntegerVector count,
+                      const bool powerlaw,
+                      const int xmax) {
+  // polylogarithm for the whole data
+  // x are the unique values (> 1) w/ freq count
+  if (x.size() != count.size()) {
+    stop("llik_pol: lengths of x & count have to be equal.");
   }
-  if (log) {
-    v = ifelse(x < u, 0.0, v);
+  if (is_true(any(x <= 0))) {
+    stop("llik_pol: all of x has to be +ve integers.");
   }
-  else {
-	v = ifelse(x < u, 1.0, exp(v));
-  }
-  return v;
-}
-
-const double llik_upp(const NumericVector par, const NumericVector x, const int u) {
-  // discrete power law >= u
-  if (par.size() != 1) {
-    stop("llik_upp: length of par has to be 1.");
-  }
-  const double xi1 = par[0], alpha = 1.0 / xi1 + 1.0;
-  double l;
-  const NumericVector xu = x[x >= u];
-  const double nu(xu.size());
-  if (xi1 <= 0.0 || u <= 0) {
-    l = -INFINITY;
-  }
-  else {
-    gsl_set_error_handler_off();
-    gsl_sf_result result;
-    int status = gsl_sf_hzeta_e(alpha, u, &result);
-    if (status != GSL_SUCCESS) {
-      l = -INFINITY;
-    }
-    else {
-      l = -alpha * sum(log(xu)) - nu * log(result.val);
-    }
-  }
-  return lnan(l);
-}
-
-const double lpost_upp(const NumericVector x, const int u, const double xi1, const double a_xi1, const double b_xi1) {
-  const NumericVector par = tv(xi1);
-  const double l = llik_upp(par, x, u) + dunif(par, a_xi1, b_xi1, true)[0];
-  return lnan(l);
-}
-
-//' Markov chain Monte Carlo for discrete power law
-//'
-//' \code{mcmc_upp} returns the samples from the posterior of xi1, for fitting the discrete power law to the data x. The samples are obtained using Markov chain Monte Carlo (MCMC).
-//'
-//' In the MCMC, a componentwise Metropolis-Hastings algorithm is used. Unlike \code{mcmc_mix}, the threshold u is treated as fixed in \code{mcmc_upp}.
-//' @param x Vector of positive integers, representing the data
-//' @param u Scalar, non-negative integer threshold
-//' @param xi1 Scalar, initial value of the shape parameter
-//' @param a_xi1 Scalar, lower bound of the uniform distribution as the prior of xi1
-//' @param b_xi1 Scalar, upper bound of the uniform distribution as the prior of xi1
-//' @param N Scalar, positive integer representing the length of the output chain i.e. the number of rows in the returned data frame
-//' @param thin Scalar, positive integer representing the thinning in the MCMC
-//' @param burnin Scalar, non-negative integer representing the burn-in of the MCMC
-//' @param print_freq Scalar, positive integer representing the frequency of printing the sampled values
-//' @return A data frame containing N rows and 2 columns which represent xi1 and the log-posterior density (lpost)
-//' @seealso \code{\link{mcmc_mix}} for MCMC for the discrete extreme value mixture distribution.
-//' @export
-// [[Rcpp::export]]
-DataFrame mcmc_upp(const NumericVector x, const int u, const double xi1, const double a_xi1, const double b_xi1, const int N = 20000, const int thin = 10, const int burnin = 20000, const int print_freq = 10000) {
-  double xi1_curr = xi1, xi1_prop, lpost_curr = lpost_upp(x, u, xi1_curr, a_xi1, b_xi1), lpost_prop, sd_xi1 = 0.1;
-  Rcout << "Iteration 0: Log-posterior = " << lpost_curr << endl;
-  NumericVector xi1_vec(N), lpost_vec(N);
-  int s, t;
-  for (t = 0; t < N * thin + burnin; t++){
-	xi1_prop = rnorm(1, xi1_curr, sd_xi1)[0];
-	lpost_prop = lpost_upp(x, u, xi1_prop, a_xi1, b_xi1);
-	update(xi1_curr, xi1_prop, lpost_curr, lpost_prop, sd_xi1, t, burnin);
-	if ((t + 1) % print_freq == 0) {
-	  Rcout << "Iteration " << t + 1;
-	  Rcout << ": Log-posterior = " << lpost_curr;
-	  Rcout << endl;
-	  if (t < burnin) {
-		Rcout << "xi1 = " << xi1_curr << " (" << sd_xi1 << ")" << endl;
-	  }
-	}
-	if (t >= burnin) {
-	  s = t - burnin + 1;
-	  if (s % thin == 0) {
-		s = s / thin - 1;
-		xi1_vec[s] = xi1_curr;
-		lpost_vec[s] = lpost_curr;
-	  }
-	}
-  }
-  Rcout << "Final check: ldiff = " << lpost_upp(x, u, xi1_curr, a_xi1, b_xi1) - lpost_curr << endl << endl;
-  DataFrame output = DataFrame::create(Named("xi1") = xi1_vec,
-									   Named("lpost") = lpost_vec);
-  return output;
-}
-
-const double diff_hzeta(const double alpha, const int u) {
-  double d;
-  gsl_set_error_handler_off();
-  gsl_sf_result result1, result2;
-  int status1 = gsl_sf_hzeta_e(alpha, 1, &result1),
-    status2 = gsl_sf_hzeta_e(alpha, u+1, &result2);
-  if (status1 != GSL_SUCCESS || status2 != GSL_SUCCESS) {
-    d = nan("");
-  }
-  else {
-    d = result1.val - result2.val;
-  }
-  return d;
-}
-
-const double llik_low(const NumericVector par, const NumericVector x, const int u, const double phi) {
-  // discrete power law <= u
-  if (par.size() != 1) {
-    stop("llik_low: length of par has to be 1.");
-  }
-  const double xi1 = par[0], alpha = 1.0 / xi1 + 1.0;
-  double l;
-  const NumericVector xl = x[x <= u];
-  const double nl(xl.size());
-  if (xi1 <= 0.0 || u <= 0) {
-    l = -INFINITY;
-  }
-  else {
-    l = -alpha * sum(log(xl)) - nl * log(diff_hzeta(alpha, u));
-  }
-  l += nl * log(1.0 - phi);
-  return lnan(l);
-}
-
-const double llik_geo(const NumericVector par, const NumericVector x, const int u, const double phi) {
-  // geometric <= u
-  if (par.size() != 1) {
-    stop("llik_geo: length of par has to be 1.");
-  }
-  const double xi1 = par[0],
-    p = 1.0 - exp(-1.0 / xi1), q = 1.0 - p;
-  double l;
-  const NumericVector xl = x[x <= u];
-  const double nl(xl.size());
-  if (xi1 <= 0.0 || u <= 0) {
-    l = -INFINITY;
-  }
-  else {
-    l = sum(xl) * log(q) + nl * (log(p) - log(q) - log(1.0 - pow(q, u))) ;
-  }
-  l += nl * log(1.0 - phi);
-  return lnan(l);
-}
-
-const double llik_gpd(const NumericVector par, const NumericVector x, const int u, const double phi) {
   if (par.size() != 2) {
-    stop("llik_gpd: length of par has to be 2.");
+    stop("llik_pol: length of par has to be 2.");
   }
-  const double xi2 = par[0],
-    sig = par[1],
-    sigu = sig + xi2 * u;
+  const double
+    alpha = par[0], theta = powerlaw ? 1.0 : par[1],
+    gamma = -log(theta), n(sum(count));
+  const int xmin = min(x);
+  const NumericVector x0(x), c0(count);
   double l;
-  if (sig <= 0.0 || sigu <= 0.0) {
+  if (theta <= 0.0 || theta > 1.0 ||
+      (powerlaw && (alpha <= 1.0))) {
     l = -INFINITY;
   }
   else {
-    const NumericVector xu = x[x > u];
-    const double nu(xu.size());
+    l = - alpha * sum(c0 * log(x0))
+    - gamma * sum(c0 * x0)
+    - n * lnc_pol(alpha, gamma, xmin, xmax);
+  }
+  return lnan(l);
+}
+
+const double lpost_pol(const IntegerVector x,
+                       const IntegerVector count,
+                       const double alpha,
+                       const double theta,
+                       const double a_alpha,
+                       const double b_alpha,
+                       const double a_theta,
+                       const double b_theta,
+                       const double powerlaw,
+                       const int xmax) {
+  // checks in llik_pol
+  double l;
+  if (theta <= 0.0 || theta > 1.0 ||
+      (powerlaw && (alpha <= 1.0))) {
+    l = -INFINITY;
+  }
+  else {
+    const NumericVector par = NumericVector::create(alpha, theta);
+    l = llik_pol(par, x, count, powerlaw, xmax) +
+      ldnorm(alpha, a_alpha, b_alpha) +
+      (powerlaw ? 0.0 : ldbeta(theta, a_theta, b_theta));
+  }
+  return lnan(l);
+}
+
+//' Markov chain Monte Carlo for Zipf-polylog distribution
+//'
+//' \code{mcmc_pol} returns the samples from the posterior of alpha and theta, for fitting the Zipf-polylog distribution to the data x. The samples are obtained using Markov chain Monte Carlo (MCMC). In the MCMC, a Metropolis-Hastings algorithm is used.
+//' @param x Vector of the unique values (positive integers) of the data
+//' @param count Vector of the same length as x that contains the counts of each unique value in the full data, which is essentially rep(x, count)
+//' @param alpha Real number greater than 1, initial value of the parameter
+//' @param theta Real number in (0, 1], initial value of the parameter
+//' @param a_alpha Real number, mean of the prior normal distribution for alpha
+//' @param b_alpha Positive real number, standard deviation of the prior normal distribution for alpha
+//' @param a_theta Positive real number, first parameter of the prior beta distribution for theta; ignored if pr_power = 1.0
+//' @param b_theta Positive real number, second parameter of the prior beta distribution for theta; ignored if pr_power = 1.0
+//' @param a_pseudo Positive real number, first parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
+//' @param b_pseudo Positive real number, second parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
+//' @param pr_power Real number in [0, 1], prior probability of the discrete power law
+//' @param iter Positive integer representing the length of the MCMC output
+//' @param thin Positive integer representing the thinning in the MCMC
+//' @param burn Non-negative integer representing the burn-in of the MCMC
+//' @param freq Positive integer representing the frequency of the sampled values being printed
+//' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC; default c(1.0) i.e. no Metropolis-coupling
+//' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+//' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
+//' @seealso \code{\link{mcmc_mix2}} and \code{\link{mcmc_mix3}} for MCMC for the 2-component and 3-component discrete extreme value mixture distributions, respectively.
+//' @export
+// [[Rcpp::export]]
+List mcmc_pol(const IntegerVector x,
+              const IntegerVector count,
+              double alpha,
+              double theta,
+              const double a_alpha,
+              const double b_alpha,
+              const double a_theta,
+              const double b_theta,
+              const double a_pseudo,
+              const double b_pseudo,
+              const double pr_power, // prior prob of power law
+              const int iter,
+              const int thin,
+              const int burn,
+              const int freq,
+              const NumericVector invt,
+              const int xmax = 100000) { // should be enough
+  // -01) save
+  DataFrame
+    data =
+    DataFrame::create(Named("x") = x,
+                      Named("count") = count),
+    init =
+    DataFrame::create(Named("alpha") = tv(alpha),
+                      Named("theta") = tv(theta)),
+    hyperpars =
+    DataFrame::create(Named("a_alpha") = tv(a_alpha),
+                      Named("b_alpha") = tv(b_alpha),
+                      Named("a_theta") = tv(a_theta),
+                      Named("b_theta") = tv(b_theta)),
+    gvs_quants =
+    DataFrame::create(Named("a_pseudo") = tv(a_pseudo),
+                      Named("b_pseudo") = tv(b_pseudo),
+                      Named("pr_power") = tv(pr_power)),
+    scalars = df_scalars(iter, thin, burn, freq, invt.size() != 1);
+  // 00) checks
+  // x are the unique values (> 1) w/ freq count
+  if (is_true(any(x <= 0))) {
+    stop("mcmc_pol: all of x has to be +ve integers.");
+  }
+  if (invt.at(0) != 1.0) {
+    stop("mcmc_pol: 1st element of inverse temperatures (invt) has to be 1.0.");
+  }
+  if (is_true(any(invt > 1.0)) || is_true(any(invt <= 0.0))) {
+    stop("mcmc_pol: all elements of invt must be in (0.0, 1.0].");
+  }
+  NumericVector invt0 = clone(invt);
+  std::reverse(invt0.begin(), invt0.end());
+  if (!std::is_sorted(invt0.begin(), invt0.end())) {
+    stop("mcmc_pol: invt has to be in decreasing order.");
+  }
+  // 01) dimensions const to invt.size()
+  int k;
+  const int K = invt.size();
+  //  const double sd0 = 0.001 / sqrt(2.0), sd1 = 2.38 / sqrt(2.0); // see Roberts & Rosenthal (2008)
+  double ldiff;
+  vec swap_accept(K-1, fill::zeros), swap_count(K-1, fill::zeros);
+  bool powl;
+  if (pr_power == 1.0) { // power law
+    powl = true; // & stay true
+    theta = 1.0; // & stay 1.0
+  }
+  else if (pr_power == 0.0) { // polylog
+    powl = false; // & stay false
+  }
+  else { // model selection
+    powl = false;
+  }
+  // for model selection
+  double theta_pseudo, ak, bk, logA_powl, logA_poly;
+  running_stat<double> powl_stat;
+  // 02) dimensions increase w/ K
+  NumericVector
+    alpha_curr(K, alpha), alpha_prop(K),
+    theta_curr(K, theta), theta_prop(K),
+    lpost_curr(K), lpost_prop(K);
+  LogicalVector powl_curr(K, powl);
+  auto lpost =
+    [x, count, a_alpha, b_alpha, a_theta, b_theta, xmax]
+    (const double alpha, const double theta, const bool powerlaw) {
+      return
+        lpost_pol(x, count, alpha, theta,
+                  a_alpha, b_alpha,
+                  a_theta, b_theta,
+                  powerlaw, xmax);
+    };
+  for (int k = 0; k < K; k++) {
+    lpost_curr.at(k) = lpost(alpha_curr.at(k), theta_curr.at(k), powl_curr.at(k));
+  }
+  Rcout << "Iteration 0: Log-posterior = " << lpost_curr << endl;
+  mat alpha_burn(burn, K), theta_burn(burn, K);
+  NumericVector sd_alpha(K, 0.1), sd_theta(K, 0.1), cor1(K, 0.1);
+  const IntegerVector seqKm1 = seq_len(K - 1) - 1;
+  // 03) for saving, dimensions const to K
+  IntegerVector powl_vec(iter);
+  NumericVector alpha_vec(iter), theta_vec(iter), lpost_vec(iter);
+  const int xmin = min(x);
+  IntegerVector x0 = for_Smix(max(x) - 1, xmin);
+  const int n0 = x0.size();
+  NumericVector f0(n0), S0(n0); // fitted
+  mat f0_mat(iter, n0), S0_mat(iter, n0);
+  // 04) run
+  int s, t, l;
+  for (t = 0; t < iter * thin + burn; t++) {
+    for (k = 0; k < K; k++) {
+      // alpha & theta
+      alpha_prop.at(k) = rnorm(1, alpha_curr.at(k), sd_alpha.at(k))[0];
+      lpost_prop.at(k) = lpost(alpha_prop.at(k), theta_curr.at(k), powl_curr.at(k));
+      update(alpha_curr.at(k), alpha_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha.at(k), t, burn, invt.at(k));
+      if (!powl_curr.at(k)) {
+        theta_prop.at(k) = rnorm(1, theta_curr.at(k), sd_theta.at(k))[0];
+        lpost_prop.at(k) = lpost(alpha_curr.at(k), theta_prop.at(k), powl_curr.at(k));
+        update(theta_curr.at(k), theta_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_theta.at(k), t, burn, 1.0);
+      }
+      // model selection
+      if (pr_power != 0.0 && pr_power != 1.0 && t >= burn) {
+        // only model select after burn-in
+        ak = invt.at(k) * (a_pseudo - 1.0) + 1.0;
+        bk = invt.at(k) * (b_pseudo - 1.0) + 1.0;
+        if (powl_curr.at(k)) { // currently power law
+          theta_pseudo = rbeta(1, ak, bk)[0]; // sim from pseudoprior
+          logA_powl =
+            lpost_curr.at(k) +
+            ldbeta(theta_pseudo, ak, bk) +
+            log(pr_power);
+          logA_poly =
+            lpost(alpha_curr.at(k), theta_pseudo, false) +
+            log(1.0 - pr_power);
+          if (lr1() > -log(1.0 + exp(logA_poly - logA_powl))) { // switch to polylog
+            powl_curr.at(k) = false;
+            theta_curr.at(k) = theta_pseudo;
+            lpost_curr.at(k) = logA_poly - log(1.0 - pr_power);
+          }
+        }
+        else { // currently polylog
+          logA_powl =
+            lpost(alpha_curr.at(k), theta_curr.at(k), true) +
+            ldbeta(theta_curr.at(k), ak, bk) +
+            log(pr_power);
+          logA_poly =
+            lpost_curr.at(k) + log(1.0 - pr_power);
+          if (lr1() < -log(1.0 + exp(logA_poly - logA_powl))) { // switch to power law
+            powl_curr.at(k) = true;
+            theta_curr.at(k) = 1.0;
+            lpost_curr.at(k) = logA_powl - ldbeta(theta_curr.at(k), ak, bk) - log(pr_power);
+          }
+        }
+        if (k == 0) {
+          powl_stat((double) powl_curr.at(k));
+        }
+      }
+    } // loop over k completes
+    // 05) Metropolis coupling
+    if (K > 1) {
+      k = Rcpp::RcppArmadillo::sample(seqKm1, 1, false)[0];
+      l = k + 1;
+      ldiff = (lpost_curr.at(k) - lpost_curr.at(l)) * (invt.at(l) - invt.at(k));
+      if (lr1() < ldiff) {
+        swap(alpha_curr.at(k), alpha_curr.at(l));
+        swap(theta_curr.at(k), theta_curr.at(l));
+        swap(powl_curr.at(k), powl_curr.at(l));
+        swap_accept.at(k) += 1.0;
+      }
+      swap_count.at(k) += 1.0;
+    }
+    // 06) update cor for printing
+    // in case we decide to change to update simultaneously
+    for (k = 0; k < K; k++) {
+      if (t < burn) {
+        if (!powl_curr.at(k)) {
+          alpha_burn(t, k) = alpha_curr.at(k);
+          theta_burn(t, k) = theta_curr.at(k);
+          cor1 = cor_curr(alpha_burn.col(k), theta_burn.col(k), t+1);
+        }
+      }
+    }
+    // 07) print
+    if ((t + 1) % freq == 0) {
+      Rcout << "Iteration " << t + 1;
+      Rcout << ": Log-posterior = " << std::setprecision(6) << lpost_curr.at(0) << endl;
+      if (t < burn) {
+        Rcout << "alpha = " << alpha_curr.at(0) << " (" << sd_alpha.at(0) << ")" << endl;
+        Rcout << "theta = " << theta_curr.at(0);
+        if (!powl_curr.at(0)) {
+          Rcout << " (" << sd_theta.at(0) << ")" << endl;
+          Rcout << "cor(alpha, theta) = " << cor1.at(0) << endl;
+        }
+        else {
+          Rcout << endl;
+        }
+      }
+      else {
+        Rcout << "alpha = " << alpha_curr.at(0) << endl;
+        Rcout << "theta = " << theta_curr.at(0) << endl;
+        if (pr_power != 0.0 && pr_power != 1.0) {
+          // only print after burn-in & w/ model selection
+          Rcout << "power law = " << (powl_curr.at(0) ? "true" : "false") << endl;
+          Rcout << "average   = " << powl_stat.mean() << endl;
+        }
+      }
+      if (K > 1) {
+        Rcout << "swap rates: " << endl;
+        for (k = 0; k < K-1; k++) {
+          Rcout << "  b/w inv temp " << std::setprecision(3) << invt.at(k);
+          Rcout << " & " << invt.at(k+1) << ": " << swap_accept.at(k) / swap_count.at(k) << endl;
+        }
+      }
+      Rcout << endl;
+    }
+    // 08) save
+    if (t >= burn) {
+      s = t - burn + 1;
+      if (s % thin == 0) {
+        s = s / thin - 1;
+        alpha = alpha_curr.at(0);
+        theta = theta_curr.at(0);
+        alpha_vec[s] = alpha;
+        theta_vec[s] = theta;
+        powl_vec[s] = (int) powl_curr.at(0);
+        lpost_vec[s] = lpost_curr.at(0);
+        // prob mass & survival functions
+        f0 = dpol(x0, alpha, theta, xmax);
+        f0_mat.row(s) = as<rowvec>(f0);
+        S0 = Spol(x0, alpha, theta, xmax);
+        S0_mat.row(s) = as<rowvec>(S0);
+      }
+    }
+  }
+  // 08) output
+  const vec p1 = { 0.025, 0.50, 0.975 };
+  const mat
+    f0_q = quantile(f0_mat, p1, 0),
+    S0_q = quantile(S0_mat, p1, 0);
+  const double
+    po_power = mean((NumericVector) powl_vec),
+    bf = odds(po_power) / odds(pr_power);
+  gvs_quants["bf"] = tv(bf);
+  DataFrame
+    pars =
+    DataFrame::create(Named("alpha") = alpha_vec,
+                      Named("theta") = theta_vec,
+                      Named("powl") = powl_vec,
+                      Named("lpost") = lpost_vec),
+    fitted =
+    DataFrame::create(Named("x") = x0,
+                      Named("f_025") = wrap(f0_q.row(0)),
+                      Named("f_med") = wrap(f0_q.row(1)),
+                      Named("f_975") = wrap(f0_q.row(2)),
+                      Named("S_025") = wrap(S0_q.row(0)),
+                      Named("S_med") = wrap(S0_q.row(1)),
+                      Named("S_975") = wrap(S0_q.row(2)));
+  List output =
+    List::create(Named("pars") = pars,
+                 Named("fitted") = fitted,
+                 Named("data") = data,
+                 Named("init") = init,
+                 Named("hyperpars") = hyperpars,
+                 Named("gvs_quants") = gvs_quants,
+                 Named("scalars") = scalars,
+                 Named("swap_rates") = swap_accept / swap_count,
+                 Named("invt") = invt);
+  return output;
+}
+
+
+
+
+
+// 02) bulk: polylogarithm
+// [[Rcpp::export]]
+const double llik_bulk(const NumericVector par,
+                       const IntegerVector x,
+                       const IntegerVector count,
+                       const int v,
+                       const int u,
+                       const double phil,
+                       const bool powerlaw,
+                       const bool positive) {
+  // polylogarithm b/w v (exclusive) & u (inclusive)
+  // x are the unique values (> 1) w/ freq count
+  if (x.size() != count.size()) {
+    stop("llik_bulk: lengths of x & count have to be equal.");
+  }
+  if (is_true(any(x <= 0))) {
+    stop("llik_bulk: all of x has to be +ve integers.");
+  }
+  if (par.size() != 2) {
+    stop("llik_bulk: length of par has to be 2.");
+  }
+  const double
+    alpha = par[0], theta = powerlaw ? 1.0 : par[1],
+    gamma = -log(theta);
+  const LogicalVector
+    between = (x > v) & (x <= u);
+  const NumericVector
+    xl(x[between]), cl(count[between]);
+  const double nl(sum(cl));
+  double l;
+  if (v >= u || u >= max(x) ||
+      phil <= 0.0 || phil >= 1.0 ||
+      //      (powerlaw && (alpha <= 1.0)) ||
+      (positive && (alpha <= 0.0)) ||
+      theta <= 0.0 || theta > 1.0) {
+    // v >= min(x) not included for 3-comp mix
+    l = -INFINITY;
+  }
+  else {
+    l =
+      nl * log(phil) -
+      alpha * sum(cl * log(xl)) - gamma * sum(cl * xl)
+      - nl * lnc_pol(alpha, gamma, v + 1, u);
+  }
+  return lnan(l);
+}
+
+// [[Rcpp::export]]
+const double lpost_bulk(const NumericVector par,
+                        const IntegerVector x,
+                        const IntegerVector count,
+                        const int v,
+                        const int u,
+                        const double phil,
+                        const double a_alpha,
+                        const double b_alpha,
+                        const double a_theta,
+                        const double b_theta,
+                        const bool powerlaw,
+                        const bool positive) {
+  // checks in llik_bulk
+  const double
+    alpha = par[0], theta = powerlaw ? 1.0 : par[1];
+  double l;
+  if (v >= u || u >= max(x) ||
+      phil <= 0.0 || phil >= 1.0 ||
+      //      (powerlaw && (alpha <= 1.0)) ||
+      (positive && (alpha <= 0.0)) ||
+      theta <= 0.0 || theta > 1.0) {
+    // v >= min(x) not included for 3-comp mix
+    // necessary for standalone optim() use
+    l = -INFINITY;
+  }
+  else {
+    l =
+      llik_bulk(par, x, count, v, u, phil, powerlaw, positive) +
+      (powerlaw ? 0.0 : ldbeta(theta, a_theta, b_theta)) +
+      ldnorm(alpha, a_alpha, b_alpha);
+  }
+  return lnan(l);
+}
+
+
+
+
+
+// 03) IGPD only
+// [[Rcpp::export]]
+const double llik_igpd(const NumericVector par,
+                       const IntegerVector x,
+                       const IntegerVector count,
+                       const int u,
+                       const double phiu) {
+  // x are the unique values (> 1) w/ freq count
+  if (x.size() != count.size()) {
+    stop("llik_igp: lengths of x & count have to be equal.");
+  }
+  if (is_true(any(x <= 0))) {
+    stop("llik_igpd: all of x has to be +ve integers.");
+  }
+  if (par.size() != 2) {
+    stop("llik_igpd: length of par has to be 2.");
+  }
+  const double shape = par[0],
+    sigma = par[1],
+    sigmau = sigma + shape * u;
+  const LogicalVector above = x > u;
+  const NumericVector
+    xu(x[above]), cu(count[above]);
+  const double nu(sum(cu));
+  double l;
+  if (u <= 1 || u <= min(x) || u >= max(x) ||
+      sigma <= 0.0 || sigmau <= 0.0) {
+    l = -INFINITY;
+  }
+  else {
     NumericVector yu, zu;
-    if (xi2 != 0.0) {
-      yu = 1.0 + xi2 / sigu * (xu - 1.0 - u);
-      zu = 1.0 + xi2 / (sigu + xi2 * (xu - 1.0 - u));
+    if (shape != 0.0) {
+      yu = 1.0 + shape / sigmau * (xu - 1.0 - u);
+      zu = 1.0 + shape / (sigmau + shape * (xu - 1.0 - u));
       if (is_true(any(yu <= 0.0))) {
         l = -INFINITY;
       }
       else {
-        l = sum(log(1.0 - pow(zu, -1.0 / xi2))) - 1.0 / xi2 * sum(log(yu));
+        l = sum(cu * log(1.0 - pow(zu, -1.0 / shape))) - 1.0 / shape * sum(cu * log(yu));
       }
     }
     else {
-      yu = (xu - 1.0 - u) / sigu;
-      l = nu * log(1.0 - exp(-1.0 / sigu)) - sum(yu);
+      yu = (xu - 1.0 - u) / sigmau;
+      l = nu * log(1.0 - exp(-1.0 / sigmau)) - sum(cu * yu);
     }
-    l += nu * log(phi);
+    l += nu * log(phiu);
   }
   return lnan(l);
 }
 
-
-
-
-
-// 02) Mixture
-const double par2phi(const int u,
-					 const double xi1,
-					 const double xi2,
-					 const double sig,
-					 const bool geo) {
-  const double
-    sigu = sig + xi2 * u,
-    denu1 = (xi2 == 0.0) ? (1.0 - exp(-1.0 / sigu)) : (1.0 - pow(1.0 + xi2 / sigu, -1.0 / xi2)),
-    alpha = 1.0 / xi1 + 1.0,
-    p = 1.0 - exp(-1.0 / xi1), q = 1.0 - p;
-  double denom, phi;
-  if (geo) {
-    denom = 1.0 - pow(q, u);
-    phi = 1.0 / (1.0 + xi1 * denom / sigu / pow(q, u));
-  }
-  else {
-    denom = diff_hzeta(alpha, u);
-    phi = 1.0 / (1.0 + denu1 * denom * pow(u + 1.0, alpha));
-  }
-  return phi;
-}
-
-//' Probability mass function (PMF) of discrete extreme value mixture distribution
-//'
-//' \code{dmix} returns the PMF at x for the discrete extreme value mixture distribution.
-//' @param x Vector of positive integers
-//' @param u Scalar, positive integer threshold
-//' @param xi1 Scalar, shape parameter for values below or equal to u
-//' @param xi2 Scalar, shape parameter of integer generalised Pareto distribution (IGPD), for values above u
-//' @param sig Scalar, scale parameter of IGPD, for values above u
-//' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
-//' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
-//' @param log Boolean (default 'FALSE'), whether the PMF should be returned on the log scale.
-//' @return A numeric vector of the same length as x
-//' @examples
-//' dmix(10:15, 12, 2.0, 0.5, 1.0, TRUE, 0.2)
-//' dmix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2)
-//' dmix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2, TRUE)
-//' @seealso \code{\link{Smix}} for the corresponding survival function, \code{\link{dupp}} for the probability mass function of the discrete power law.
-//' @export
 // [[Rcpp::export]]
-const NumericVector dmix(const NumericVector x,
-						 const int u,
-						 const double xi1,
-						 const double xi2,
-						 const double sig,
-						 const bool geo,
-						 const double phi,
-						 const bool log = false) {
-  const double
-    sigu = sig + xi2 * u,
-    alpha = 1.0 / xi1 + 1.0,
-    p = 1.0 - exp(-1.0 / xi1), q = 1.0 - p;
-  NumericVector fl; double denom;
-  if (geo) {
-    denom = 1.0 - pow(q, u);
-    fl = std::log(p) + (x - 1.0) * std::log(q) + std::log(1.0 - phi);
+const double lpost_igpd(const NumericVector par,
+                        const IntegerVector x,
+                        const IntegerVector count,
+                        const int u,
+                        const double m_shape,
+                        const double s_shape,
+                        const double a_sigma,
+                        const double b_sigma,
+                        const double phiu) {
+  if (x.size() != count.size()) {
+    stop("lpost_igpd: lengths of x & count have to be equal.");
   }
-  else {
-    hzeta_check(alpha, u);
-    denom = diff_hzeta(alpha, u);
-    fl = - alpha * Rcpp::log(x) - std::log(denom) + std::log(1.0 - phi);
-  }
-  const NumericVector
-    y = 1.0 + xi2 / sigu * (x - 1.0 - u),
-    z = 1.0 + xi2 / (sigu + xi2 * (x - 1.0 - u)),
-    fu = Rcpp::log(1.0 - pow(z, -1.0 / xi2)) - 1.0 / xi2 * Rcpp::log(y) + std::log(phi),
-    ld = ifelse(x <= u, fl, fu);
-  NumericVector output;
-  if (log) {
-    output = ld;
-  }
-  else {
-    output = exp(ld);
-  }
-  return output;
-}
-
-//' Survival function of discrete extreme value mixture distribution
-//'
-//' \code{Smix} returns the survival function at x for the discrete extreme value mixture distribution.
-//' @param x Vector of positive integers
-//' @param u Scalar, positive integer threshold
-//' @param xi1 Scalar, shape parameter for values below or equal to u
-//' @param xi2 Scalar, shape parameter of integer generalised Pareto distribution (IGPD), for values above u
-//' @param sig Scalar, scale parameter of IGPD, for values above u
-//' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
-//' @param phi Scalar, exceedance probability of u, between 0.0 and 1.0 exclusive
-//' @param log Boolean (default 'FALSE'), whether the survival function should be returned on the log scale.
-//' @return A numeric vector of the same length as x
-//' @examples
-//' Smix(10:15, 12, 2.0, 0.5, 1.0, TRUE, 0.2)
-//' Smix(10:15, 12, 2.0, 0.5, 1.0, FALSE, 0.2)
-//' @seealso \code{\link{dmix}} for the corresponding probability mass function, \code{\link{Supp}} for the survival function of the discrete power law.
-//' @export
-// [[Rcpp::export]]
-const NumericVector Smix(const NumericVector x,
-						 const int u,
-						 const double xi1,
-						 const double xi2,
-						 const double sig,
-						 const bool geo,
-						 const double phi,
-						 const bool log = false) {
-  const double
-    sigu = sig + xi2 * u,
-    alpha = 1.0 / xi1 + 1.0,
-    p = 1.0 - exp(-1.0 / xi1), q = 1.0 - p;
-  NumericVector cP(x.size()); double denom;
-  if (geo) {
-    denom = 1.0 - pow(q, u);
-    cP = 1.0 - exp((x - 1.0) * std::log(q));
-  }
-  else {
-    hzeta_check(alpha, u);
-    denom = diff_hzeta(alpha, u);
-    for (int i = 0; i < x.size(); i++) {
-      cP[i] = diff_hzeta(alpha, x[i] - 1);
-    }
-  }
-  const NumericVector
-    y = 1.0 + xi2 / sigu * (x - 1.0 - u),
-    Sl = phi + (1.0 - phi) * (1.0 - cP / denom),
-    Su = pow(y, -1.0 / xi2) * phi,
-    S = ifelse(x <= u, Sl, Su);
-  NumericVector T = S;
-  if (log) {
-	T = Rcpp::log(S);
-  }
-  return T;
-}
-
-const double lpost_mix(const NumericVector x,
-                       const int u,
-                       const double xi1,
-                       const double xi2,
-                       const double sig,
-                       const bool geo,
-                       const bool cont,
-                       const double a_phi,
-                       const double b_phi,
-                       const double a_xi1,
-                       const double b_xi1,
-                       const double m_xi2,
-                       const double s_xi2,
-                       const double a_sig,
-                       const double b_sig,
-                       const double pcont) {
-  //// check x are in fact +ve integers?
-  const NumericVector xu = x[x > u],
-    par1 = NumericVector::create(xi1),
-    par2 = NumericVector::create(xi2, sig);
-  const double nu(xu.size()), n(x.size());
+  const double shape = par[0], sigma = par[1];
   double l;
-  if (u <= 1 || u <= min(x) || u > max(x)) {
+  if (u <= 1 || u <= min(x) || u >= max(x) ||
+      sigma <= 0.0) {
     l = -INFINITY;
   }
   else {
-    const double phi = cont ? par2phi(u, xi1, xi2, sig, geo) : (nu / n);
     l =
-      (geo ?
-       llik_geo(par1, x, u, phi) :
-       llik_low(par1, x, u, phi)) +
-      llik_gpd(par2, x, u, phi) +
-      dunif(tv(phi), a_phi, b_phi, true)[0] +
-      dunif(tv(xi1), a_xi1, b_xi1, true)[0] +
-      dnorm(tv(xi2), m_xi2, s_xi2, true)[0] +
-      dgamma(tv(sig), a_sig, 1.0 / b_sig, true)[0] +
-      dbinom(ti((int) cont), 1, pcont, true)[0];
+      llik_igpd(par, x, count, u, phiu) +
+      ldnorm(shape, m_shape, s_shape) +
+      ldgamma(sigma, a_sigma, b_sigma);
   }
   return lnan(l);
 }
 
-//' Markov chain Monte Carlo for discrete extreme value mixture distribution
+
+
+
+
+// 04) 2-component mixture distribution
+//' Probability mass function (PMF) of 2-component discrete extreme value mixture distribution
 //'
-//' \code{mcmc_mix} returns the samples from the joint posterior of the parameters (u, xi1, xi2, sig), for fitting the discrete extreme value mixture distribution (DEVMD) to the data x. The samples are obtained using Markov chain Monte Carlo (MCMC).
-//'
-//' In the MCMC, a componentwise Metropolis-Hastings algorithm is used. Unlike \code{mcmc_upp}, the threshold u is treated as a parameter in \code{mcmc_mix} and therefore inferred. The 8 hyperparameters are used in the following priors: u is such that the implied exceedance probability phi ~ Uniform(a_phi, b_phi); xi1 ~ Uniform(a_xi1, b_xi1); xi2 ~ Normal(mean = m_xi2, sd = s_xi2); sig ~ Gamma(shape = a_sig, rate = b_sig). If pcont = 0.0, only the unconstrained version of the DEVMD is fitted; if pcont = 1.0, only the continuity constrained version is fitted. Setting pcont between 0.0 and 1.0 allows both versions to be fitted, if model selection between the two is of interest.
-//' @param x Vector of positive integers, representing the data
-//' @param u Scalar, initial value of the positive integer threshold
-//' @param xi1 Scalar, initial value of the parameter for values below or equal to u
-//' @param xi2 Scalar, initial value of the shape parameter of the integer generalised Pareto distribution (IGPD), for values above u
-//' @param sig Scalar, initial value of the scale parameter of IGPD, for values above u
-//' @param geo Boolean. If 'TRUE', the geometric distribution is used for the values below u. If 'FALSE', the discrete power law is used.
-//' @param cont Boolean, whether the continuity constraint is imposed at u
-//' @param a_phi,b_phi,a_xi1,b_xi1,m_xi2,s_xi2,a_sig,b_sig Scalars, representing the hyperparameters of the prior distributions of the respective parameters. See details for the specification of the priors.
-//' @param pcont Scalar, between 0.0 and 1.0, representing the prior probability of the continuity constrained version, for model selection.
-//' @param N Scalar, positive integer representing the length of the output chain i.e. the number of rows in the returned data frame
-//' @param thin Scalar, positive integer representing the thinning in the MCMC
-//' @param burnin Scalar, non-negative integer representing the burn-in of the MCMC
-//' @param print_freq Scalar, positive integer representing the frequency of printing the sampled values
-//' @return A data frame containing N rows and 7 columns which represent (in this order) the 4 parameters (u, xi1, xi2, sig), the implied exceedance probability (phi), the log-posterior density (lpost), and whether the continuity constraint is imposed (cont).
-//' @seealso \code{\link{mcmc_upp}} for MCMC for the discrete power law.
+//' \code{dmix2} returns the PMF at x for the 2-component discrete extreme value mixture distribution. The components below and above the threshold u are the (truncated) Zipf-polylog(alpha,theta) and the generalised Pareto(shape, sigma) distributions, respectively.
+//' @param x Vector of positive integers
+//' @param u Positive integer representing the threshold
+//' @param alpha Real number, first parameter of the Zipf-polylog component
+//' @param theta Real number in (0, 1], second parameter of the Zipf-polylog component
+//' @param shape Real number, shape parameter of the generalised Pareto component
+//' @param sigma Real number, scale parameter of the generalised Pareto component
+//' @param phiu Real number in (0, 1), exceedance rate of the threshold u
+//' @return A numeric vector of the same length as x
+//' @seealso \code{\link{Smix2}} for the corresponding survival function, \code{\link{dpol}} and \code{\link{dmix3}} for the PMFs of the Zipf-polylog and 3-component discrete extreme value mixture distributions, respectively.
 //' @export
 // [[Rcpp::export]]
-DataFrame mcmc_mix(const NumericVector x,
-                   const int u,
-                   const double xi1,
-                   const double xi2,
-                   const double sig,
-                   const bool geo,
-                   const bool cont,
-                   const double a_phi,
-                   const double b_phi,
-                   const double a_xi1,
-                   const double b_xi1,
-                   const double m_xi2,
-                   const double s_xi2,
-                   const double a_sig,
-                   const double b_sig,
-                   const double pcont,
-                   const int N = 20000,
-                   const int thin = 100,
-                   const int burnin = 20000,
-                   const int print_freq = 10000) {
-  //// check x are in fact +ve integers?
-  int u_curr = u, u_prop;
-  double
-    xi1_curr = xi1, xi1_prop,
-    xi2_curr = xi2, xi2_prop,
-    sig_curr = sig, sig_prop,
-    lpost_curr, lpost_prop, lprob;
-  bool cont_curr = (pcont == 0.0) ? false : (pcont == 1.0) ? true : cont;
-  auto lpost = [x, geo, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont](const double u, const double xi1, const double xi2, const double sig, const bool cont) {
-    return lpost_mix(x, u, xi1, xi2, sig, geo, cont, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont);
-  };
-  lpost_curr = lpost(u_curr, xi1_curr, xi2_curr, sig_curr, cont_curr);
-  Rcout << "Iteration 0: Log-posterior = " << lpost_curr << endl;
-  const double n(x.size());
-  IntegerVector u_vec(N);
-  NumericVector xu, xi1_vec(N), xi2_vec(N), sig_vec(N), phi_vec(N), lpost_vec(N);
-  LogicalVector cont_vec(N);
+const NumericVector dmix2(const IntegerVector x,
+                          const int u,
+                          const double alpha,
+                          const double theta,
+                          const double shape,
+                          const double sigma,
+                          const double phiu) {
+  // density for 2-component mixture
+  // x are desired values, not data
+  // v is required for the dist.
+  if (is_true(any(x <= 0))) {
+    stop("dmix2: all of x has to be +ve integers.");
+  }
+  if (theta <= 0.0 || theta > 1.0) {
+    stop("dmix2: theta has to be in (0.0, 1.0].");
+  }
+  if (sigma <= 0.0) {
+    stop("dmix2: sigma has to be positive.");
+  }
+  if (phiu <= 0.0 || phiu >= 1.0) {
+    stop("dmix2: phiu has to be in (0.0, 1.0).");
+  }
+  const int v = min(x) - 1;
+  const double sigu = sigma + shape * u;
+  const NumericVector
+    x0(x),
+    y1 = 1.0 + shape / sigu * (x0 - 1.0 - u),
+    z1 = 1.0 + shape / (sigu + shape * (x0 - 1.0 - u)),
+    fu = exp(log(1.0 - pow(z1, -1.0 / shape)) - 1.0 / shape * log(y1) + log(phiu));
+  IntegerVector seq2 = seq_len(u); // 1 to u
+  seq2 = tail(seq2, u - v); // (v+1) to u
+  const NumericVector x2(seq2); // (v+1) to u
+  NumericVector l2 = - alpha * log(x2) + x2 * log(theta);
+  l2 = l2 - max(l2);
+  const NumericVector cf2 = cumsum(exp(l2));
+  NumericVector fl(x.size(), NA_REAL);
+  for (int i = 0; i < x.size(); i++) {
+    if (x[i] >= (v+1) && x[i] <= u) {
+      fl[i] = exp(log(1.0 - phiu) + l2[x[i]-(v+1)] - log(cf2[u-(v+1)]));
+    }
+  }
+  const NumericVector f = ifelse(x <= u, fl, fu);
+  return f;
+}
+
+//' Survival function of 2-component discrete extreme value mixture distribution
+//'
+//' \code{Smix2} returns the survival function at x for the 2-component discrete extreme value mixture distribution. The components below and above the threshold u are the (truncated) Zipf-polylog(alpha,theta) and the generalised Pareto(shape, sigma) distributions, respectively.
+//' @param x Vector of positive integers
+//' @param u Positive integer representing the threshold
+//' @param alpha Real number, first parameter of the Zipf-polylog component
+//' @param theta Real number in (0, 1], second parameter of the Zipf-polylog component
+//' @param shape Real number, shape parameter of the generalised Pareto component
+//' @param sigma Real number, scale parameter of the generalised Pareto component
+//' @param phiu Real number in (0, 1), exceedance rate of the threshold u
+//' @return A numeric vector of the same length as x
+//' @seealso \code{\link{dmix2}} for the corresponding probability mass function, \code{\link{Spol}} and \code{\link{Smix3}} for the survival functions of the Zipf-polylog and 3-component discrete extreme value mixture distributions, respectively.
+//' @export
+// [[Rcpp::export]]
+const NumericVector Smix2(const IntegerVector x,
+                          const int u,
+                          const double alpha,
+                          const double theta,
+                          const double shape,
+                          const double sigma,
+                          const double phiu) {
+  // survival for 2-component mixture
+  // x are the desired values, not data
+  // v is required for the dist.
+  if (is_true(any(x <= 0))) {
+    stop("Smix2: all of x has to be +ve integers.");
+  }
+  if (theta <= 0.0 || theta > 1.0) {
+    stop("Smix2: theta has to be in (0.0, 1.0].");
+  }
+  if (sigma <= 0.0) {
+    stop("Smix2: sigma has to be positive.");
+  }
+  if (phiu <= 0.0 || phiu >= 1.0) {
+    stop("Smix2: phiu has to be in (0.0, 1.0).");
+  }
+  const int v = min(x) - 1;
+  const double sigu = sigma + shape * u;
+  const NumericVector x0(x);
+  NumericVector y = 1.0 + shape / sigu * (x0 - u);
+  y = ifelse(y < 0.0, 0.0, y);
+  const NumericVector Su = pow(y, -1.0 / shape) * phiu;
+  IntegerVector seq2 = seq_len(u); // 1 to u
+  seq2 = tail(seq2, u - v); // (v+1) to u
+  const NumericVector x2(seq2); // (v+1) to u
+  NumericVector l2 = - alpha * log(x2) + x2 * log(theta);
+  l2 = l2 - max(l2);
+  const NumericVector cf2 = cumsum(exp(l2));
+  NumericVector Sl(x.size());
+  for (int i = 0; i < x.size(); i++) {
+    if (x[i] >= (v+1) && x[i] < u) {
+      Sl[i] = phiu + (1.0 - phiu) * (1.0 - cf2[x[i]-(v+1)] / cf2[u-(v+1)]);
+    }
+    else if (x[i] == u) {
+      Sl[i] = phiu;
+    }
+    else {
+      Sl[i] = NA_REAL;
+    }
+  }
+  const NumericVector S = ifelse(x <= u, Sl, Su);
+  return S;
+}
+
+// [[Rcpp::export]]
+const double lpost_mix2(const IntegerVector x,
+                        const IntegerVector count,
+                        const int u,
+                        const double alpha,
+                        const double theta,
+                        const double shape,
+                        const double sigma,
+                        const double a_psiu,
+                        const double b_psiu,
+                        const double a_alpha,
+                        const double b_alpha,
+                        const double a_theta,
+                        const double b_theta,
+                        const double m_shape,
+                        const double s_shape,
+                        const double a_sigma,
+                        const double b_sigma,
+                        const bool powerlaw,
+                        const bool positive) { // alpha bound to be positive?
+  if (x.size() != count.size()) {
+    stop("lpost_mix2: lengths of x & count have to be equal.");
+  }
+  const int v = min(x) - 1;
+  const LogicalVector above = x > u;
+  const NumericVector
+    xu(x[above]), cu(count[above]),
+    par1 = NumericVector::create(alpha, theta),
+    par2 = NumericVector::create(shape, sigma);
   const double
-    sd0 = 0.1 / sqrt(2.0),
-    sd1 = 2.34 / sqrt(2.0);
-  vec u_burn(burnin), xi1_burn(burnin), xi2_burn(burnin), sig_burn(burnin);
-  double sd_u = 1.0, sd_xi1 = 0.1, sd_xi2 = 0.1, sd_sig = 0.1, cor2 = 0.1, factor = 10.0, lalpha;
-  running_stat<double> cont_stat;
-  int s, t;
-  for (t = 0; t < N * thin + burnin; t++) {
-    // u
-    u_prop = (int) (u_curr * exp(rnorm(1, 0.0, sd_u)[0])); // (int) rounds down
-    lpost_prop = lpost(u_prop, xi1_curr, xi2_curr, sig_curr, cont_curr);
-    lalpha = lpost_prop - lpost_curr +
-      lq(u_prop, u_curr, sd_u) - lq(u_curr, u_prop, sd_u);
-    if (lalpha > lr1()) {
-      u_curr = u_prop;
-      lpost_curr = lpost_prop;
-      if (t < burnin) {
-        sd_u = sqrt(sd_u * sd_u + 3.0 * sd_u * sd_u / factor / sqrt(t + 1.0));
+    phiu = intdiv(sum(cu), sum(count)),
+    phil = 1.0 - phiu,
+    psiu = intdiv(cu.size(), count.size());
+  double l;
+  if (u <= 1 || u <= min(x) || u >= max(x)) {
+    l = -INFINITY;
+  }
+  else {
+    l =
+      llik_bulk(par1, x, count, v, u, phil, powerlaw, positive) +
+      llik_igpd(par2, x, count, u, phiu) +
+      ldunif(psiu, a_psiu, b_psiu) +
+      (powerlaw ? 0.0 : ldbeta(theta, a_theta, b_theta)) +
+      ldnorm(shape, m_shape, s_shape) +
+      ldgamma(sigma, a_sigma, b_sigma) +
+      ldnorm(alpha, a_alpha, b_alpha);
+  }
+  return lnan(l);
+}
+
+//' Markov chain Monte Carlo for 2-component discrete extreme value mixture distribution
+//'
+//' \code{mcmc_mix2} returns the posterior samples of the parameters, for fitting the 2-component discrete extreme value mixture distribution. The samples are obtained using Markov chain Monte Carlo (MCMC).
+//'
+//' In the MCMC, a componentwise Metropolis-Hastings algorithm is used. The threshold u is treated as a parameter and therefore sampled. The hyperparameters are used in the following priors: u is such that the implied unique exceedance probability psiu ~ Uniform(a_psi, b_psi); alpha ~ Normal(mean = a_alpha, sd = b_alpha); theta ~ Beta(a_theta, b_theta); shape ~ Normal(mean = m_shape, sd = s_shape); sigma ~ Gamma(a_sigma, scale = b_sigma). If pr_power = 1.0, the discrete power law (below u) is assumed, and the samples of theta will be all 1.0. If pr_power is in (0.0, 1.0), model selection between the polylog distribution and the discrete power law will be performed within the MCMC.
+//' @param x Vector of the unique values (positive integers) of the data
+//' @param count Vector of the same length as x that contains the counts of each unique value in the full data, which is essentially rep(x, count)
+//' @param u_set Positive integer vector of the values u will be sampled from
+//' @param u Positive integer, initial value of the threshold
+//' @param alpha Real number greater than 1, initial value of the parameter
+//' @param theta Real number in (0, 1], initial value of the parameter
+//' @param shape Real number, initial value of the parameter
+//' @param sigma Positive real number, initial value of the parameter
+//' @param a_psiu,b_psiu,a_alpha,b_alpha,a_theta,b_theta,m_shape,s_shape,a_sigma,b_sigma Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
+//' @param positive Boolean, is alpha positive (TRUE) or unbounded (FALSE)?
+//' @param a_pseudo Positive real number, first parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
+//' @param b_pseudo Positive real number, second parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
+//' @param pr_power Real number in [0, 1], prior probability of the discrete power law (below u)
+//' @param iter Positive integer representing the length of the MCMC output
+//' @param thin Positive integer representing the thinning in the MCMC
+//' @param burn Non-negative integer representing the burn-in of the MCMC
+//' @param freq Positive integer representing the frequency of the sampled values being printed
+//' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC; default c(1.0) i.e. no Metropolis-coupling
+//' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
+//' @seealso \code{\link{mcmc_pol}} and \code{\link{mcmc_mix3}} for MCMC for the Zipf-polylog and 3-component discrete extreme value mixture distributions, respectively.
+//' @export
+// [[Rcpp::export]]
+List mcmc_mix2(const IntegerVector x,
+               const IntegerVector count,
+               const IntegerVector u_set,
+               int u,
+               double alpha,
+               double theta,
+               double shape,
+               double sigma,
+               const double a_psiu,
+               const double b_psiu,
+               const double a_alpha,
+               const double b_alpha,
+               const double a_theta,
+               const double b_theta,
+               const double m_shape,
+               const double s_shape,
+               const double a_sigma,
+               const double b_sigma,
+               const bool positive, // alpha +ve / unbound?
+               const double a_pseudo,
+               const double b_pseudo,
+               const double pr_power, // prior prob of power law
+               const int iter,
+               const int thin,
+               const int burn,
+               const int freq,
+               const NumericVector invt) {
+  // -01) save
+  DataFrame
+    data =
+    DataFrame::create(Named("x") = x,
+                      Named("count") = count),
+    init =
+    DataFrame::create(Named("u") = ti(u),
+                      Named("alpha") = tv(alpha),
+                      Named("theta") = tv(theta),
+                      Named("shape") = tv(shape),
+                      Named("sigma") = tv(sigma)),
+    hyperpars =
+    DataFrame::create(Named("a_psiu") = tv(a_psiu),
+                      Named("b_psiu") = tv(b_psiu),
+                      Named("a_alpha") = tv(a_alpha),
+                      Named("b_alpha") = tv(b_alpha),
+                      Named("a_theta") = tv(a_theta),
+                      Named("b_theta") = tv(b_theta),
+                      Named("m_shape") = tv(m_shape),
+                      Named("s_shape") = tv(s_shape),
+                      Named("a_sigma") = tv(a_sigma),
+                      Named("b_sigma") = tv(b_sigma),
+                      Named("positive") = tl(positive)),
+    gvs_quants =
+    DataFrame::create(Named("a_pseudo") = tv(a_pseudo),
+                      Named("b_pseudo") = tv(b_pseudo),
+                      Named("pr_power") = tv(pr_power)),
+    scalars = df_scalars(iter, thin, burn, freq, invt.size() != 1);
+  // 00) checks
+  // x are the unique values (> 1) w/ freq count
+  if (is_true(any(x <= 0))) {
+    stop("mcmc_mix2: all of x has to be +ve integers.");
+  }
+  if (is_true(all(u_set != u))) {
+    stop("mcmc_mix2: u must be in u_set.");
+  }
+  if (invt.at(0) != 1.0) {
+    stop("mcmc_mix2: 1st element of inverse temperatures (invt) has to be 1.0.");
+  }
+  if (is_true(any(invt > 1.0)) || is_true(any(invt <= 0.0))) {
+    stop("mcmc_mix2: all elements of invt must be in (0.0, 1.0].");
+  }
+  NumericVector invt0 = clone(invt);
+  std::reverse(invt0.begin(), invt0.end());
+  if (!std::is_sorted(invt0.begin(), invt0.end())) {
+    stop("mcmc_mix2: invt has to be in decreasing order.");
+  }
+  // 01) dimensions const to invt.size()
+  int k;
+  const int K = invt.size(), m = u_set.size();
+  const IntegerVector seqm = seq_len(m) - 1;
+  NumericVector w(m), w1(m);
+  const double sd0 = 0.001 / sqrt(2.0), sd1 = 2.38 / sqrt(2.0); // see Roberts & Rosenthal (2008)
+  double ldiff;
+  vec swap_accept(K-1, fill::zeros), swap_count(K-1, fill::zeros);
+  bool powl;
+  if (pr_power == 1.0) { // power law
+    powl = true; // & stay true
+    theta = 1.0; // & stay 1.0
+  }
+  else if (pr_power == 0.0) { // polylog
+    powl = false; // & stay false
+  }
+  else { // model selection
+    powl = false;
+  }
+  // for model selection
+  double theta_pseudo, ak, bk, logA_powl, logA_poly;
+  running_stat<double> powl_stat;
+  // 02) dimensions increase w/ K
+  IntegerVector u_curr(K, u);
+  NumericVector
+    alpha_curr(K, alpha), alpha_prop(K),
+    theta_curr(K, theta), theta_prop(K),
+    shape_curr(K, shape), shape_prop(K),
+    sigma_curr(K, sigma), sigma_prop(K),
+    lpost_curr(K), lpost_prop(K);
+  LogicalVector powl_curr(K, powl);
+  auto lpost =
+    [x, count, a_psiu, b_psiu,
+     a_alpha, b_alpha, a_theta, b_theta,
+     m_shape, s_shape, a_sigma, b_sigma,
+     positive]
+    (const int u,
+     const double alpha, const double theta,
+     const double shape, const double sigma,
+     const bool powerlaw) {
+      return lpost_mix2(x, count, u,
+                        alpha, theta, shape, sigma,
+                        a_psiu, b_psiu,
+                        a_alpha, b_alpha, a_theta, b_theta,
+                        m_shape, s_shape, a_sigma, b_sigma,
+                        powerlaw, positive);
+    };
+  for (int k = 0; k < K; k++) {
+    lpost_curr.at(k) = lpost(u_curr.at(k), alpha_curr.at(k), theta_curr.at(k), shape_curr.at(k), sigma_curr.at(k), powl_curr.at(k));
+  }
+  Rcout << "Iteration 0: Log-posterior = " << lpost_curr << endl;
+  mat alpha_burn(burn, K), theta_burn(burn, K), shape_burn(burn, K), sigma_burn(burn, K);
+  NumericVector sd_alpha(K, 0.1), sd_theta(K, 0.1), sd_shape(K, 0.1), sd_sigma(K, 0.1), cor1(K, 0.1), cor2(K, 0.1);
+  // these sds & cors not as influential as sd0
+  const IntegerVector seqKm1 = seq_len(K - 1) - 1;
+  // 03) for saving, dimensions const to K
+  IntegerVector u_vec(iter), powl_vec(iter);
+  NumericVector alpha_vec(iter), theta_vec(iter), shape_vec(iter), sigma_vec(iter), phiu_vec(iter), lpost_vec(iter);
+  const int n = sum(count);
+  double phiu;
+  const int xmin = min(x);
+  IntegerVector x0 = for_Smix(max(x) - 1, xmin), cu;
+  const int n0 = x0.size();
+  NumericVector f0(n0), S0(n0); // fitted
+  mat f0_mat(iter, n0), S0_mat(iter, n0);
+  // 04) run
+  int s, t, l;
+  for (t = 0; t < iter * thin + burn; t++) {
+    for (k = 0; k < K; k++) {
+      // u
+      std::fill(w.begin(), w.end(), NA_REAL);
+      for (s = 0; s < u_set.size(); s++) {
+        w[s] = lpost(u_set[s], alpha_curr.at(k), theta_curr.at(k), shape_curr.at(k), sigma_curr.at(k), powl_curr.at(k));
+      }
+      w1 = exp(invt.at(k) * (w - max(w)));
+      s = sample_w(seqm, w1); // reused as loop done
+      u_curr.at(k) = u_set[s];
+      lpost_curr.at(k) = w[s];
+      // alpha & theta
+      if (powl_curr.at(k)) {
+        alpha_prop.at(k) = rnorm(1, alpha_curr.at(k), sd_alpha.at(k))[0];
+        lpost_prop.at(k) = lpost(u_curr.at(k), alpha_prop.at(k), theta_curr.at(k), shape_curr.at(k), sigma_curr.at(k), powl_curr.at(k));
+        update(alpha_curr.at(k), alpha_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha.at(k), t, burn, invt.at(k));
+      }
+      else {
+        if (t < burn &&
+            (isnan(cor1.at(k)) || ispm1(cor1.at(k)) ||
+             isnan(sd_alpha.at(k)) || isnan(sd_theta.at(k)) || lr1() < log(0.05))) {
+          alpha_prop.at(k) = rnorm(1, alpha_curr.at(k), sd0)[0];
+          theta_prop.at(k) = rnorm(1, theta_curr.at(k), sd0)[0];
+        }
+        else {
+          alpha_prop.at(k) = rnorm(1, alpha_curr.at(k), sd1 * sd_alpha.at(k))[0];
+          theta_prop.at(k) = rnorm(1, theta_curr.at(k) + sd_theta.at(k) / sd_alpha.at(k) * cor1.at(k) * (alpha_prop.at(k) - alpha_curr.at(k)), sd1 * sqrt1mx2(cor1.at(k)) * sd_theta.at(k))[0];
+        }
+        lpost_prop.at(k) = lpost(u_curr.at(k), alpha_prop.at(k), theta_prop.at(k), shape_curr.at(k), sigma_curr.at(k), powl_curr.at(k));
+        if (invt.at(k) * (lpost_prop.at(k) - lpost_curr.at(k)) > lr1()) {
+          alpha_curr.at(k) = alpha_prop.at(k);
+          theta_curr.at(k) = theta_prop.at(k);
+          lpost_curr.at(k) = lpost_prop.at(k);
+        }
+      }
+      // shape & sigma
+      if (t < burn &&
+          (isnan(cor2.at(k)) || ispm1(cor2.at(k)) ||
+           isnan(sd_shape.at(k)) || isnan(sd_sigma.at(k)) || lr1() < log(0.05))) {
+        shape_prop.at(k) = rnorm(1, shape_curr.at(k), sd0)[0];
+        sigma_prop.at(k) = rnorm(1, sigma_curr.at(k), sd0)[0];
+      }
+      else {
+        shape_prop.at(k) = rnorm(1, shape_curr.at(k), sd1 * sd_shape.at(k))[0];
+        sigma_prop.at(k) = rnorm(1, sigma_curr.at(k) + sd_sigma.at(k) / sd_shape.at(k) * cor2.at(k) * (shape_prop.at(k) - shape_curr.at(k)), sd1 * sqrt1mx2(cor2.at(k)) * sd_sigma.at(k))[0];
+      }
+      lpost_prop.at(k) = lpost(u_curr.at(k), alpha_curr.at(k), theta_curr.at(k), shape_prop.at(k), sigma_prop.at(k), powl_curr.at(k));
+      if (invt.at(k) * (lpost_prop.at(k) - lpost_curr.at(k)) > lr1()) {
+        shape_curr.at(k) = shape_prop.at(k);
+        sigma_curr.at(k) = sigma_prop.at(k);
+        lpost_curr.at(k) = lpost_prop.at(k);
+      }
+      // model selection
+      if (pr_power != 0.0 && pr_power != 1.0 && t >= burn) {
+        // only model select after burn-in
+        ak = invt.at(k) * (a_pseudo - 1.0) + 1.0;
+        bk = invt.at(k) * (b_pseudo - 1.0) + 1.0;
+        if (powl_curr.at(k)) { // currently power law
+          theta_pseudo = rbeta(1, ak, bk)[0]; // sim from pseudoprior
+          logA_powl =
+            lpost_curr.at(k) +
+            ldbeta(theta_pseudo, ak, bk) +
+            log(pr_power);
+          logA_poly =
+            lpost(u_curr.at(k), alpha_curr.at(k), theta_pseudo, shape_curr.at(k), sigma_curr.at(k), false) +
+            log(1.0 - pr_power);
+          if (lr1() > -log(1.0 + exp(logA_poly - logA_powl))) { // switch to polylog
+            powl_curr.at(k) = false;
+            theta_curr.at(k) = theta_pseudo;
+            lpost_curr.at(k) = logA_poly - log(1.0 - pr_power);
+          }
+        }
+        else { // currently polylog
+          logA_powl =
+            lpost(u_curr.at(k), alpha_curr.at(k), theta_curr.at(k), shape_curr.at(k), sigma_curr.at(k), true) +
+            ldbeta(theta_curr.at(k), ak, bk) +
+            log(pr_power);
+          logA_poly =
+            lpost_curr.at(k) +
+            log(1.0 - pr_power);
+          if (lr1() < -log(1.0 + exp(logA_poly - logA_powl))) { // switch to power law
+            powl_curr.at(k) = true;
+            theta_curr.at(k) = 1.0;
+            lpost_curr.at(k) = logA_powl - ldbeta(theta_curr.at(k), ak, bk) - log(pr_power);
+          }
+        }
+        if (k == 0) {
+          powl_stat((double) powl_curr.at(k)); // only track cold chain
+        }
+      }
+    } // loop over k completes
+    // 05) Metropolis coupling
+    if (K > 1) {
+      k = Rcpp::RcppArmadillo::sample(seqKm1, 1, false)[0];
+      l = k + 1;
+      ldiff = (lpost_curr.at(k) - lpost_curr.at(l)) * (invt.at(l) - invt.at(k));
+      if (lr1() < ldiff) {
+        swap(u_curr.at(k), u_curr.at(l));
+        swap(alpha_curr.at(k), alpha_curr.at(l));
+        swap(theta_curr.at(k), theta_curr.at(l));
+        swap(shape_curr.at(k), shape_curr.at(l));
+        swap(sigma_curr.at(k), sigma_curr.at(l));
+        swap(lpost_curr.at(k), lpost_curr.at(l));
+        swap(powl_curr.at(k), powl_curr.at(l));
+        swap_accept.at(k) += 1.0;
+      }
+      swap_count.at(k) += 1.0;
+    }
+    // 06) adaptive update sds after chain swap
+    for (k = 0; k < K; k++) {
+      if (t < burn) {
+        if (!powl_curr.at(k)) {
+          alpha_burn(t, k) = alpha_curr.at(k);
+          theta_burn(t, k) = theta_curr.at(k);
+          sd_alpha.at(k) = sd_curr(alpha_burn.col(k), t+1);
+          sd_theta.at(k) = sd_curr(theta_burn.col(k), t+1);
+          cor1.at(k) = cor_curr(alpha_burn.col(k), theta_burn.col(k), t+1);
+        }
+        shape_burn(t, k) = shape_curr.at(k);
+        sigma_burn(t, k) = sigma_curr.at(k);
+        sd_shape.at(k) = sd_curr(shape_burn.col(k), t+1);
+        sd_sigma.at(k) = sd_curr(sigma_burn.col(k), t+1);
+        cor2.at(k) = cor_curr(shape_burn.col(k), sigma_burn.col(k), t+1);
       }
     }
-    else {
-      if (t < burnin) {
-        sd_u = sqrt(sd_u * sd_u - 1.0 * sd_u * sd_u / factor / sqrt(t + 1.0));
-      }
-    }
-    // xi1
-    xi1_prop = rnorm(1, xi1_curr, sd_xi1)[0];
-    lpost_prop = lpost(u_curr, xi1_prop, xi2_curr, sig_curr, cont_curr);
-    update(xi1_curr, xi1_prop, lpost_curr, lpost_prop, sd_xi1, t, burnin, factor);
-    // xi2 & sigma
-    if (t < burnin / 2 || lr1() < log(0.05)) {
-      xi2_prop = rnorm(1, xi2_curr, sd0)[0];
-      sig_prop = rnorm(1, sig_curr, sd0)[0];
-    }
-    else {
-      xi2_prop = rnorm(1, xi2_curr, sd1 * sd_xi2)[0];
-      sig_prop = rnorm(1, sig_curr + sd_sig / sd_xi2 * cor2 * (xi2_prop - xi2_curr), sd1 * sqrt(1.0 - cor2 * cor2) * sd_sig)[0];
-    }
-    lpost_prop = lpost(u_curr, xi1_curr, xi2_prop, sig_prop, cont_curr);
-    if (lpost_prop - lpost_curr > lr1()) {
-      xi2_curr = xi2_prop;
-      sig_curr = sig_prop;
-      lpost_curr = lpost_prop;
-    }
-    // cont
-    lprob = -log(1.0 + exp(lpost(u_curr, xi1_curr, xi2_curr, sig_curr, false) - lpost(u_curr, xi1_curr, xi2_curr, sig_curr, true)));
-    cont_curr = (lr1() < lprob);
-    cont_stat((double) cont_curr);
-    lpost_curr = lpost(u_curr, xi1_curr, xi2_curr, sig_curr, cont_curr);
-    // update
-    if (t < burnin) {
-      xi2_burn[t] = xi2_curr;
-      sig_burn[t] = sig_curr;
-      sd_xi2 = sd_curr(xi2_burn, t+1);
-      sd_sig = sd_curr(sig_burn, t+1);
-      cor2 = cor_curr(xi2_burn, sig_burn, t+1);
-    }
-    if ((t + 1) % print_freq == 0) {
+    // 07) print
+    if ((t + 1) % freq == 0) {
       Rcout << "Iteration " << t + 1;
-      Rcout << ": Log-posterior = " << lpost_curr;
-      Rcout << endl;
-      if (t < burnin) {
-        Rcout << "u = " << u_curr << " (" << sd_u << ")" << endl;
-        Rcout << "xi1 = " << xi1_curr << " (" << sd_xi1 << ")" << endl;
-        Rcout << "xi2 = " << xi2_curr << " (" << sd_xi2 << ")" << endl;
-        Rcout << "sig = " << sig_curr << " (" << sd_sig << ")" << endl;
-        Rcout << "cont = " << cont_stat.mean() << endl;
+      Rcout << ": Log-posterior = " << std::setprecision(6) << lpost_curr.at(0) << endl;
+      Rcout << "  u   = " << u_curr.at(0) << endl;
+      if (t < burn) {
+        Rcout << "alpha = " << alpha_curr.at(0) << " (" << sd_alpha.at(0) << ")" << endl;
+        Rcout << "theta = " << theta_curr.at(0);
+        if (!powl_curr.at(0)) {
+          Rcout << " (" << sd_theta.at(0) << ")" << endl;
+          Rcout << "cor(alpha, theta) = " << cor1.at(0) << endl;
+        }
+        else {
+          Rcout << endl;
+        }
+        Rcout << "shape = " << shape_curr.at(0) << " (" << sd_shape.at(0) << ")" << endl;
+        Rcout << "sigma = " << sigma_curr.at(0) << " (" << sd_sigma.at(0) << ")" << endl;
+        Rcout << "cor(shape, sigma) = " << cor2.at(0) << endl;
       }
+      else {
+        Rcout << "alpha = " << alpha_curr.at(0) << endl;
+        Rcout << "theta = " << theta_curr.at(0) << endl;
+        Rcout << "shape = " << shape_curr.at(0) << endl;
+        Rcout << "sigma = " << sigma_curr.at(0) << endl;
+        if (pr_power != 0.0 && pr_power != 1.0) {
+          // only print after burn-in & w/ model selection
+          Rcout << "power law = " << (powl_curr.at(0) ? "true" : "false") << endl;
+          Rcout << "average   = " << powl_stat.mean() << endl;
+        }
+      }
+      if (K > 1) {
+        Rcout << "swap rates: " << endl;
+        for (k = 0; k < K-1; k++) {
+          Rcout << "  b/w inv temp " << std::setprecision(3) << invt.at(k);
+          Rcout << " & " << invt.at(k+1) << ": " << swap_accept.at(k) / swap_count.at(k) << endl;
+        }
+      }
+      Rcout << endl;
     }
-    if (t >= burnin) {
-      s = t - burnin + 1;
+    // 08) save
+    if (t >= burn) {
+      s = t - burn + 1;
       if (s % thin == 0) {
         s = s / thin - 1;
-        u_vec[s] = u_curr;
-        xi1_vec[s] = xi1_curr;
-        xi2_vec[s] = xi2_curr;
-        sig_vec[s] = sig_curr;
-        xu = x[x > u_curr];
-        phi_vec[s] = cont_curr ? par2phi(u_curr, xi1_curr, xi2_curr, sig_curr, geo) : (xu.size() / n);
-        lpost_vec[s] = lpost_curr;
-        cont_vec[s] = cont_curr;
+        u = u_curr.at(0);
+        alpha = alpha_curr.at(0);
+        theta = theta_curr.at(0);
+        shape = shape_curr.at(0);
+        sigma = sigma_curr.at(0);
+        cu = count[x > u];
+        phiu = intdiv(sum(cu), n);
+        u_vec[s] = u;
+        alpha_vec[s] = alpha;
+        theta_vec[s] = theta;
+        shape_vec[s] = shape;
+        sigma_vec[s] = sigma;
+        powl_vec[s] = (int) powl_curr.at(0);
+        phiu_vec[s] = phiu;
+        lpost_vec[s] = lpost_curr.at(0);
+        // prob mass & survival functions
+        f0 = dmix2(x0, u, alpha, theta, shape, sigma, phiu);
+        f0_mat.row(s) = as<rowvec>(f0);
+        S0 = Smix2(x0, u, alpha, theta, shape, sigma, phiu);
+        S0_mat.row(s) = as<rowvec>(S0);
       }
     }
   }
-  Rcout << "Final check: ldiff = " << lpost(u_curr, xi1_curr, xi2_curr, sig_curr, cont_curr) - lpost_curr << endl << endl;
-  DataFrame output = DataFrame::create(Named("u") = u_vec,
-                                       Named("xi1") = xi1_vec,
-                                       Named("xi2") = xi2_vec,
-                                       Named("sig") = sig_vec,
-                                       Named("phi") = phi_vec,
-                                       Named("lpost") = lpost_vec,
-                                       Named("cont") = cont_vec);
+  // 09) output
+  const vec p1 = { 0.025, 0.50, 0.975 };
+  const mat
+    f0_q = quantile(f0_mat, p1, 0), // 3 x n0
+    S0_q = quantile(S0_mat, p1, 0); // 3 x n0
+  const double
+    po_power = mean((NumericVector) powl_vec),
+    bf = odds(po_power) / odds(pr_power);
+  gvs_quants["bf"] = tv(bf);
+  DataFrame
+    pars =
+    DataFrame::create(Named("u") = u_vec,
+                      Named("alpha") = alpha_vec,
+                      Named("theta") = theta_vec,
+                      Named("shape") = shape_vec,
+                      Named("sigma") = sigma_vec,
+                      Named("powl") = powl_vec,
+                      Named("phiu") = phiu_vec,
+                      Named("lpost") = lpost_vec),
+    fitted =
+    DataFrame::create(Named("x") = x0,
+                      Named("f_025") = wrap(f0_q.row(0)),
+                      Named("f_med") = wrap(f0_q.row(1)),
+                      Named("f_975") = wrap(f0_q.row(2)),
+                      Named("S_025") = wrap(S0_q.row(0)),
+                      Named("S_med") = wrap(S0_q.row(1)),
+                      Named("S_975") = wrap(S0_q.row(2)));
+  List output =
+    List::create(Named("pars") = pars,
+                 Named("fitted") = fitted,
+                 Named("data") = data,
+                 Named("u_set") = u_set,
+                 Named("init") = init,
+                 Named("hyperpars") = hyperpars,
+                 Named("gvs_quants") = gvs_quants,
+                 Named("scalars") = scalars,
+                 Named("swap_rates") = swap_accept / swap_count,
+                 Named("invt") = invt);
+  return output;
+}
+
+
+
+
+
+// 05) 3-component mixture distribution
+//' Probability mass function (PMF) of 3-component discrete extreme value mixture distribution
+//'
+//' \code{dmix3} returns the PMF at x for the 3-component discrete extreme value mixture distribution. The component below v is the (truncated) Zipf-polylog(alpha1,theta1) distribution, between v & u the (truncated) Zipf-polylog(alpha2,theta2) distribution, and above u the generalised Pareto(shape, sigma) distribution.
+//' @param x Vector of positive integers
+//' @param v Positive integer representing the lower threshold
+//' @param u Positive integer representing the upper threshold
+//' @param alpha1 Real number, first parameter of the Zipf-polylog component below v
+//' @param theta1 Real number in (0, 1], second parameter of the Zipf-polylog component below v
+//' @param alpha2 Real number, first parameter of the Zipf-polylog component between v & u
+//' @param theta2 Real number in (0, 1], second parameter of the Zipf-polylog component between v & u
+//' @param shape Real number, shape parameter of the generalised Pareto component
+//' @param sigma Real number, scale parameter of the generalised Pareto component
+//' @param phi1 Real number in (0, 1), proportion of values below v
+//' @param phi2 Real number in (0, 1), proportion of values between v & u
+//' @param phiu Real number in (0, 1), exceedance rate of the threshold u
+//' @return A numeric vector of the same length as x
+//' @seealso \code{\link{Smix3}} for the corresponding survival function, \code{\link{dpol}} and \code{\link{dmix2}} for the PMFs of the Zipf-polylog and 2-component discrete extreme value mixture distributions, respectively.
+//' @export
+// [[Rcpp::export]]
+const NumericVector dmix3(const IntegerVector x,
+                          const int v,
+                          const int u,
+                          const double alpha1,
+                          const double theta1,
+                          const double alpha2,
+                          const double theta2,
+                          const double shape,
+                          const double sigma,
+                          const double phi1,
+                          const double phi2,
+                          const double phiu) {
+  // density for 3-component mixture
+  const int w = min(x) - 1;
+  const double sigu = sigma + shape * u;
+  const NumericVector
+    x0(x),
+    y1 = 1.0 + shape / sigu * (x0 - 1.0 - u),
+    z1 = 1.0 + shape / (sigu + shape * (x0 - 1.0 - u)),
+    fu = exp(log(1.0 - pow(z1, -1.0 / shape)) - 1.0 / shape * log(y1) + log(phiu));
+  const IntegerVector
+    seqv = seq_len(v), sequ = seq_len(u), // 1 to v, 1 to u
+    seq1 = tail(seqv, v - w), // (w+1) to v
+    seq2 = tail(sequ, u - v); // (v+1) to u
+  const NumericVector
+    x1(seq1), x2(seq2); // (w+1) to v, (v+1) to u
+  NumericVector
+    l1 = - alpha1 * log(x1) + x1 * log(theta1),
+    l2 = - alpha2 * log(x2) + x2 * log(theta2);
+  l1 = l1 - max(l1);
+  l2 = l2 - max(l2);
+  const NumericVector cf1 = cumsum(exp(l1)), cf2 = cumsum(exp(l2));
+  NumericVector fl(x.size(), NA_REAL);
+  for (int i = 0; i < x.size(); i++) {
+    if (x[i] <= v) {
+      fl[i] = exp(log(phi1) + l1[x[i]-(w+1)] - log(cf1[v-(w+1)]));
+    }
+    else if (x[i] <= u) {
+      fl[i] = exp(log(phi2) + l2[x[i]-(v+1)] - log(cf2[u-(v+1)]));
+    }
+  }
+  const NumericVector f = ifelse(x <= u, fl, fu);
+  return f;
+}
+
+//' Survival function of 3-component discrete extreme value mixture distribution
+//'
+//' \code{Smix3} returns the survival function at x for the 3-component discrete extreme value mixture distribution. The component below v is the (truncated) Zipf-polylog(alpha1,theta1) distribution, between v & u the (truncated) Zipf-polylog(alpha2,theta2) distribution, and above u the generalised Pareto(shape, sigma) distribution.
+//' @param x Vector of positive integers
+//' @param v Positive integer representing the lower threshold
+//' @param u Positive integer representing the upper threshold
+//' @param alpha1 Real number, first parameter of the Zipf-polylog component below v
+//' @param theta1 Real number in (0, 1], second parameter of the Zipf-polylog component below v
+//' @param alpha2 Real number, first parameter of the Zipf-polylog component between v & u
+//' @param theta2 Real number in (0, 1], second parameter of the Zipf-polylog component between v & u
+//' @param shape Real number, shape parameter of the generalised Pareto component
+//' @param sigma Real number, scale parameter of the generalised Pareto component
+//' @param phi1 Real number in (0, 1), proportion of values below v
+//' @param phi2 Real number in (0, 1), proportion of values between v & u
+//' @param phiu Real number in (0, 1), exceedance rate of the threshold u
+//' @return A numeric vector of the same length as x
+//' @seealso \code{\link{dmix3}} for the corresponding probability mass function, \code{\link{Spol}} and \code{\link{Smix2}} for the survival functions of the Zipf-polylog and 2-component discrete extreme value mixture distributions, respectively.
+//' @export
+// [[Rcpp::export]]
+const NumericVector Smix3(const IntegerVector x,
+                          const int v,
+                          const int u,
+                          const double alpha1,
+                          const double theta1,
+                          const double alpha2,
+                          const double theta2,
+                          const double shape,
+                          const double sigma,
+                          const double phi1,
+                          const double phi2,
+                          const double phiu) {
+  // survival for 3-component mixture
+  const int w = min(x) - 1;
+  const double sigu = sigma + shape * u;
+  const NumericVector x0(x);
+  NumericVector y = 1.0 + shape / sigu * (x0 - u);
+  y = ifelse(y < 0.0, 0.0, y);
+  const NumericVector Su = pow(y, -1.0 / shape) * phiu;
+  const IntegerVector
+    seqv = seq_len(v), sequ = seq_len(u), // 1 to v, 1 to u
+    seq1 = tail(seqv, v - w), // (w+1) to v
+    seq2 = tail(sequ, u - v); // (v+1) to u
+  const NumericVector
+    x1(seq1), x2(seq2); // (w+1) to v, (v+1) to u
+  NumericVector
+    l1 = - alpha1 * log(x1) + x1 * log(theta1),
+    l2 = - alpha2 * log(x2) + x2 * log(theta2);
+  l1 = l1 - max(l1);
+  l2 = l2 - max(l2);
+  const NumericVector cf1 = cumsum(exp(l1)), cf2 = cumsum(exp(l2));
+  NumericVector Sl(x.size());
+  for (int i = 0; i < x.size(); i++) {
+    if (x[i] >= (w+1) && x[i] < v) {
+      Sl[i] = phiu + phi2 + phi1 * (1.0 - cf1[x[i]-(w+1)] / cf1[v-(w+1)]);
+    }
+    else if (x[i] >= v && x[i] < u) {
+      Sl[i] = phiu + phi2 * (1.0 - cf2[x[i]-(v+1)] / cf2[u-(v+1)]);
+    }
+    else if (x[i] == u) {
+      Sl[i] = phiu;
+    }
+    else {
+      Sl[i] = NA_REAL;
+    }
+  }
+  const NumericVector S = ifelse(x <= u, Sl, Su);
+  return S;
+}
+
+// [[Rcpp::export]]
+const double lpost_mix3(const IntegerVector x,
+                        const IntegerVector count,
+                        const int v,
+                        const int u,
+                        const double alpha1,
+                        const double theta1,
+                        const double alpha2,
+                        const double theta2,
+                        const double shape,
+                        const double sigma,
+                        const double a_psi1,
+                        const double a_psi2,
+                        const double a_psiu,
+                        const double b_psiu,
+                        const double a_alpha1,
+                        const double b_alpha1,
+                        const double a_theta1,
+                        const double b_theta1,
+                        const double a_alpha2,
+                        const double b_alpha2,
+                        const double a_theta2,
+                        const double b_theta2,
+                        const double m_shape,
+                        const double s_shape,
+                        const double a_sigma,
+                        const double b_sigma,
+                        const bool powerlaw1,
+                        const bool powerlaw2,
+                        const bool positive1,
+                        const bool positive2) {
+  if (x.size() != count.size()) {
+    stop("lpost_mix3: lengths of x & count have to be equal.");
+  }
+  const int w = min(x) - 1;
+  const LogicalVector
+    below = x <= v, between = (x > v) & (x <= u), above = x > u;
+  const NumericVector
+    x1(x[below]), c1(count[below]),
+    x2(x[between]), c2(count[between]),
+    xu(x[above]), cu(count[above]),
+    par1 = NumericVector::create(alpha1, theta1),
+    par2 = NumericVector::create(alpha2, theta2),
+    paru = NumericVector::create(shape, sigma);
+  const int n = sum(count), m = x.size(); // m = count.size()
+  const double
+    phi1 = intdiv(sum(c1), n),
+    phi2 = intdiv(sum(c2), n),
+    phiu = intdiv(sum(cu), n),
+    psi1 = intdiv(x1.size(), m),
+    //    psi2 = intdiv(x2.size(), m),
+    psiu = intdiv(xu.size(), m);
+  double l;
+  if (v <= min(x) || v >= u || u >= max(x)) {
+    l = -INFINITY;
+  }
+  else {
+    l =
+      llik_bulk(par1, x, count, w, v, phi1, powerlaw1, positive1) +
+      llik_bulk(par2, x, count, v, u, phi2, powerlaw2, positive2) +
+      llik_igpd(paru, x, count, u, phiu) +
+      ldbeta(psi1 / (1.0 - psiu), a_psi1, a_psi2) +
+      ldunif(psiu, a_psiu, b_psiu) +
+      (powerlaw1 ? 0.0 : ldbeta(theta1, a_theta1, b_theta1)) +
+      (powerlaw2 ? 0.0 : ldbeta(theta2, a_theta2, b_theta2)) +
+      ldnorm(shape, m_shape, s_shape) +
+      ldgamma(sigma, a_sigma, b_sigma) +
+      ldnorm(alpha1, a_alpha1, b_alpha1) +
+      ldnorm(alpha2, a_alpha2, b_alpha2);
+  }
+  return lnan(l);
+}
+
+//' Markov chain Monte Carlo for 3-component discrete extreme value mixture distribution
+//'
+//' \code{mcmc_mix3} returns the posterior samples of the parameters, for fitting the 3-component discrete extreme value mixture distribution. The samples are obtained using Markov chain Monte Carlo (MCMC).
+//'
+//' In the MCMC, a componentwise Metropolis-Hastings algorithm is used. The thresholds v and u are treated as parameters and therefore sampled. The hyperparameters are used in the following priors: psi1 / (1.0 - psiu) ~ Beta(a_psi1, a_psi2); u is such that the implied unique exceedance probability psiu ~ Uniform(a_psi, b_psi); alpha1 ~ Normal(mean = a_alpha1, sd = b_alpha1); theta1 ~ Beta(a_theta1, b_theta1); alpha2 ~ Normal(mean = a_alpha2, sd = b_alpha2); theta2 ~ Beta(a_theta2, b_theta2); shape ~ Normal(mean = m_shape, sd = s_shape); sigma ~ Gamma(a_sigma, scale = b_sigma). If pr_power2 = 1.0, the discrete power law (between v and u) is assumed, and the samples of theta2 will be all 1.0. If pr_power2 is in (0.0, 1.0), model selection between the polylog distribution and the discrete power law will be performed within the MCMC.
+//' @param x Vector of the unique values (positive integers) of the data
+//' @param count Vector of the same length as x that contains the counts of each unique value in the full data, which is essentially rep(x, count)
+//' @param v_set Positive integer vector of the values v will be sampled from
+//' @param u_set Positive integer vector of the values u will be sampled from
+//' @param v Positive integer, initial value of the lower threshold
+//' @param u Positive integer, initial value of the upper threshold
+//' @param alpha1 Real number greater than 1, initial value of the parameter
+//' @param theta1 Real number in (0, 1], initial value of the parameter
+//' @param alpha2 Real number greater than 1, initial value of the parameter
+//' @param theta2 Real number in (0, 1], initial value of the parameter
+//' @param shape Real number, initial value of the parameter
+//' @param sigma Positive real number, initial value of the parameter
+//' @param a_psi1,a_psi2,a_psiu,b_psiu,a_alpha1,b_alpha1,a_theta1,b_theta1,a_alpha2,b_alpha2,a_theta2,b_theta2,m_shape,s_shape,a_sigma,b_sigma Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
+//' @param powerlaw1 Boolean, is the discrete power law assumed for below v?
+//' @param positive1 Boolean, is alpha1 positive (TRUE) or unbounded (FALSE)?
+//' @param positive2 Boolean, is alpha2 positive (TRUE) or unbounded (FALSE)?
+//' @param a_pseudo Positive real number, first parameter of the pseudoprior beta distribution for theta2 in model selection; ignored if pr_power2 = 1.0
+//' @param b_pseudo Positive real number, second parameter of the pseudoprior beta distribution for theta2 in model selection; ignored if pr_power2 = 1.0
+//' @param pr_power2 Real number in [0, 1], prior probability of the discrete power law (between v and u)
+//' @param iter Positive integer representing the length of the MCMC output
+//' @param thin Positive integer representing the thinning in the MCMC
+//' @param burn Non-negative integer representing the burn-in of the MCMC
+//' @param freq Positive integer representing the frequency of the sampled values being printed
+//' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC; default c(1.0) i.e. no Metropolis-coupling
+//' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
+//' @seealso \code{\link{mcmc_pol}} and \code{\link{mcmc_mix2}} for MCMC for the Zipf-polylog and 2-component discrete extreme value mixture distributions, respectively.
+//' @export
+// [[Rcpp::export]]
+List mcmc_mix3(const IntegerVector x,
+               const IntegerVector count,
+               const IntegerVector v_set,
+               const IntegerVector u_set,
+               int v,
+               int u,
+               double alpha1,
+               double theta1,
+               double alpha2,
+               double theta2,
+               double shape,
+               double sigma,
+               const double a_psi1,
+               const double a_psi2,
+               const double a_psiu,
+               const double b_psiu,
+               const double a_alpha1,
+               const double b_alpha1,
+               const double a_theta1,
+               const double b_theta1,
+               const double a_alpha2,
+               const double b_alpha2,
+               const double a_theta2,
+               const double b_theta2,
+               const double m_shape,
+               const double s_shape,
+               const double a_sigma,
+               const double b_sigma,
+               const bool powerlaw1, // power law for left component
+               const bool positive1, // alpha1 +ve / unbounded
+               const bool positive2, // alpha2 +ve / unbounded
+               const double a_pseudo,
+               const double b_pseudo,
+               const double pr_power2, // prior prob of power law for middle component
+               const int iter,
+               const int thin,
+               const int burn,
+               const int freq,
+               const NumericVector invt) {
+  // -01) save
+  DataFrame
+    data =
+    DataFrame::create(Named("x") = x,
+                      Named("count") = count),
+    init =
+    DataFrame::create(Named("v") = ti(v),
+                      Named("u") = ti(u),
+                      Named("alpha1") = tv(alpha1),
+                      Named("theta1") = tv(theta1),
+                      Named("alpha2") = tv(alpha2),
+                      Named("theta2") = tv(theta2),
+                      Named("shape") = tv(shape),
+                      Named("sigma") = tv(sigma)),
+    hyperpars =
+    DataFrame::create(Named("a_psi1") = tv(a_psi1),
+                      Named("a_psi2") = tv(a_psi2),
+                      Named("a_psiu") = tv(a_psiu),
+                      Named("b_psiu") = tv(b_psiu),
+                      Named("a_alpha1") = tv(a_alpha1),
+                      Named("b_alpha1") = tv(b_alpha1),
+                      Named("a_theta1") = tv(a_theta1),
+                      Named("b_theta1") = tv(b_theta1),
+                      Named("a_alpha2") = tv(a_alpha2),
+                      Named("b_alpha2") = tv(b_alpha2),
+                      Named("a_theta2") = tv(a_theta2),
+                      Named("b_theta2") = tv(b_theta2),
+                      Named("m_shape") = tv(m_shape),
+                      Named("s_shape") = tv(s_shape),
+                      Named("a_sigma") = tv(a_sigma),
+                      Named("b_sigma") = tv(b_sigma),
+                      Named("powerlaw1") = tl(powerlaw1),
+                      Named("positive1") = tl(positive1),
+                      Named("positive2") = tl(positive2)),
+    gvs_quants =
+    DataFrame::create(Named("a_pseudo") = tv(a_pseudo),
+                      Named("b_pseudo") = tv(b_pseudo),
+                      Named("pr_power2") = tv(pr_power2)),
+    scalars = df_scalars(iter, thin, burn, freq, invt.size() != 1);
+  // 00) checks
+  // x are the unique values (> 1) w/ freq count
+  if (is_true(any(x <= 0))) {
+    stop("mcmc_mix3: all of x has to be +ve integers.");
+  }
+  if (is_true(all(v_set != v))) {
+    stop("mcmc_mix3: v must be in v_set.");
+  }
+  if (is_true(all(u_set != u))) {
+    stop("mcmc_mix3: u must be in u_set.");
+  }
+  if (invt.at(0) != 1.0) {
+    stop("mcmc_mix3: 1st element of inverse temperatures (invt) has to be 1.0.");
+  }
+  if (is_true(any(invt > 1.0)) || is_true(any(invt <= 0.0))) {
+    stop("mcmc_mix3: all elements of invt must be in (0.0, 1.0].");
+  }
+  NumericVector invt0 = clone(invt);
+  std::reverse(invt0.begin(), invt0.end());
+  if (!std::is_sorted(invt0.begin(), invt0.end())) {
+    stop("mcmc_mix3: invt has to be in decreasing order.");
+  }
+  // 01) dimensions const to invt.size()
+  int k;
+  const int K = invt.size(), m = u_set.size();
+  const IntegerVector seqm = seq_len(m) - 1;
+  NumericVector w(m), w1(m);
+  const double sd0 = 0.001 / sqrt(2.0), sd1 = 2.38 / sqrt(2.0); // see Roberts & Rosenthal (2008)
+  double ldiff;
+  vec swap_accept(K-1, fill::zeros), swap_count(K-1, fill::zeros);
+  bool powl;
+  if (pr_power2 == 1.0) { // power law
+    powl = true; // & stay true
+    theta2 = 1.0; // & stay 1.0
+  }
+  else if (pr_power2 == 0.0) { // polylog
+    powl = false; // & stay false
+  }
+  else { // model selection
+    powl = false;
+  }
+  // for model selection
+  double theta2_pseudo, ak, bk, logA_powl, logA_poly;
+  running_stat<double> powl_stat;
+  // 02) dimensions increase w/ K
+  IntegerVector v_curr(K, v), u_curr(K, u);
+  NumericVector
+    alpha1_curr(K, alpha1), alpha1_prop(K),
+    theta1_curr(K, theta1), theta1_prop(K),
+    alpha2_curr(K, alpha2), alpha2_prop(K),
+    theta2_curr(K, theta2), theta2_prop(K),
+    shape_curr(K, shape), shape_prop(K),
+    sigma_curr(K, sigma), sigma_prop(K),
+    lpost_curr(K), lpost_prop(K);
+  LogicalVector powl_curr(K, powl);
+  auto lpost =
+    [x, count,
+     a_psi1, a_psi2, a_psiu, b_psiu,
+     a_alpha1, b_alpha1, a_theta1, b_theta1,
+     a_alpha2, b_alpha2, a_theta2, b_theta2,
+     m_shape, s_shape, a_sigma, b_sigma,
+     powerlaw1, positive1, positive2]
+    (const int v, const int u,
+     const double alpha1, const double theta1,
+     const double alpha2, const double theta2,
+     const double shape, const double sigma,
+     const bool powerlaw2) {
+      return lpost_mix3(x, count, v, u,
+                        alpha1, theta1, alpha2, theta2,
+                        shape, sigma,
+                        a_psi1, a_psi2, a_psiu, b_psiu,
+                        a_alpha1, b_alpha1, a_theta1, b_theta1,
+                        a_alpha2, b_alpha2, a_theta2, b_theta2,
+                        m_shape, s_shape, a_sigma, b_sigma,
+                        powerlaw1, powerlaw2,
+                        positive1, positive2);
+    };
+  for (int k = 0; k < K; k++) {
+    lpost_curr.at(k) = lpost(v_curr.at(k), u_curr.at(k),
+                             alpha1_curr.at(k), theta1_curr.at(k),
+                             alpha2_curr.at(k), theta2_curr.at(k),
+                             shape_curr.at(k), sigma_curr.at(k),
+                             powl_curr.at(k));
+  }
+  Rcout << "Iteration 0: Log-posterior = " << lpost_curr << endl;
+  mat
+    alpha1_burn(burn, K), theta1_burn(burn, K),
+    alpha2_burn(burn, K), theta2_burn(burn, K),
+    shape_burn(burn, K), sigma_burn(burn, K);
+  NumericVector
+    sd_alpha1(K, 0.1), sd_theta1(K, 0.1),
+    sd_alpha2(K, 0.1), sd_theta2(K, 0.1),
+    sd_shape(K, 0.1), sd_sigma(K, 0.1),
+    cor1(K, 0.1), cor2(K, 0.1), cor3(K, 0.1);
+  // these sds & cors not as influential as sd0
+  const IntegerVector seqKm1 = seq_len(K - 1) - 1;
+  // 03) for saving, dimensions const to K
+  IntegerVector
+    v_vec(iter), u_vec(iter), powl_vec(iter);
+  NumericVector
+    alpha1_vec(iter), theta1_vec(iter),
+    alpha2_vec(iter), theta2_vec(iter),
+    shape_vec(iter), sigma_vec(iter),
+    phi1_vec(iter), phi2_vec(iter),
+    phiu_vec(iter), lpost_vec(iter);
+  const int n = sum(count);
+  double phi1, phi2, phiu;
+  const int xmin = min(x);
+  IntegerVector x0 = for_Smix(max(x) - 1, xmin), c1, c2, cu;
+  const int n0 = x0.size();
+  NumericVector f0(n0), S0(n0); // fitted
+  mat f0_mat(iter, n0), S0_mat(iter, n0);
+  // 04) run
+  int s, t, l;
+  for (t = 0; t < iter * thin + burn; t++) {
+    for (k = 0; k < K; k++) {
+      // v, u
+      std::fill(w.begin(), w.end(), NA_REAL);
+      for (s = 0; s < u_set.size(); s++) {
+        w[s] = lpost(v_set[s], u_set[s],
+                     alpha1_curr.at(k), theta1_curr.at(k),
+                     alpha2_curr.at(k), theta2_curr.at(k),
+                     shape_curr.at(k), sigma_curr.at(k),
+                     powl_curr.at(k));
+      }
+      w1 = exp(invt.at(k) * (w - max(w)));
+      s = sample_w(seqm, w1); // reused as loop done
+      v_curr.at(k) = v_set[s];
+      u_curr.at(k) = u_set[s];
+      lpost_curr.at(k) = w[s];
+      // alpha1 & theta1
+      if (t < burn &&
+          (isnan(cor1.at(k)) || ispm1(cor1.at(k)) ||
+           isnan(sd_alpha1.at(k)) || isnan(sd_theta1.at(k)) || lr1() < log(0.05))) {
+        alpha1_prop.at(k) = rnorm(1, alpha1_curr.at(k), sd0)[0];
+        theta1_prop.at(k) = rnorm(1, theta1_curr.at(k), sd0)[0];
+      }
+      else {
+        alpha1_prop.at(k) = rnorm(1, alpha1_curr.at(k), sd1 * sd_alpha1.at(k))[0];
+        theta1_prop.at(k) = rnorm(1, theta1_curr.at(k) + sd_theta1.at(k) / sd_alpha1.at(k) * cor1.at(k) * (alpha1_prop.at(k) - alpha1_curr.at(k)), sd1 * sqrt1mx2(cor1.at(k)) * sd_theta1.at(k))[0];
+      }
+      lpost_prop.at(k) = lpost(v_curr.at(k), u_curr.at(k),
+                               alpha1_prop.at(k), theta1_prop.at(k),
+                               alpha2_curr.at(k), theta2_curr.at(k),
+                               shape_curr.at(k), sigma_curr.at(k),
+                               powl_curr.at(k));
+      if (invt.at(k) * (lpost_prop.at(k) - lpost_curr.at(k)) > lr1()) {
+        alpha1_curr.at(k) = alpha1_prop.at(k);
+        theta1_curr.at(k) = theta1_prop.at(k);
+        lpost_curr.at(k) = lpost_prop.at(k);
+      }
+      // alpha2 & theta2
+      if (powl_curr.at(k)) {
+        alpha2_prop.at(k) = rnorm(1, alpha2_curr.at(k), sd_alpha2.at(k))[0];
+        lpost_prop.at(k) = lpost(v_curr.at(k), u_curr.at(k),
+                                 alpha1_curr.at(k), theta1_curr.at(k),
+                                 alpha2_prop.at(k), theta2_curr.at(k),
+                                 shape_curr.at(k), sigma_curr.at(k),
+                                 powl_curr.at(k));
+        update(alpha2_curr.at(k), alpha2_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha2.at(k), t, burn, invt.at(k));
+      }
+      else {
+        if (t < burn &&
+            (isnan(cor2.at(k)) || ispm1(cor2.at(k)) ||
+             isnan(sd_alpha2.at(k)) || isnan(sd_theta2.at(k)) || lr1() < log(0.05))) {
+          alpha2_prop.at(k) = rnorm(1, alpha2_curr.at(k), sd0)[0];
+          theta2_prop.at(k) = rnorm(1, theta2_curr.at(k), sd0)[0];
+        }
+        else {
+          alpha2_prop.at(k) = rnorm(1, alpha2_curr.at(k), sd1 * sd_alpha2.at(k))[0];
+          theta2_prop.at(k) = rnorm(1, theta2_curr.at(k) + sd_theta2.at(k) / sd_alpha2.at(k) * cor2.at(k) * (alpha2_prop.at(k) - alpha2_curr.at(k)), sd1 * sqrt1mx2(cor2.at(k)) * sd_theta2.at(k))[0];
+        }
+        lpost_prop.at(k) = lpost(v_curr.at(k), u_curr.at(k),
+                                 alpha1_curr.at(k), theta1_curr.at(k),
+                                 alpha2_prop.at(k), theta2_prop.at(k),
+                                 shape_curr.at(k), sigma_curr.at(k),
+                                 powl_curr.at(k));
+        if (invt.at(k) * (lpost_prop.at(k) - lpost_curr.at(k)) > lr1()) {
+          alpha2_curr.at(k) = alpha2_prop.at(k);
+          theta2_curr.at(k) = theta2_prop.at(k);
+          lpost_curr.at(k) = lpost_prop.at(k);
+        }
+      }
+      // shape & sigma
+      if (t < burn &&
+          (isnan(cor3.at(k)) || ispm1(cor3.at(k)) ||
+           isnan(sd_shape.at(k)) || isnan(sd_sigma.at(k)) || lr1() < log(0.05))) {
+        shape_prop.at(k) = rnorm(1, shape_curr.at(k), sd0)[0];
+        sigma_prop.at(k) = rnorm(1, sigma_curr.at(k), sd0)[0];
+      }
+      else {
+        shape_prop.at(k) = rnorm(1, shape_curr.at(k), sd1 * sd_shape.at(k))[0];
+        sigma_prop.at(k) = rnorm(1, sigma_curr.at(k) + sd_sigma.at(k) / sd_shape.at(k) * cor3.at(k) * (shape_prop.at(k) - shape_curr.at(k)), sd1 * sqrt1mx2(cor3.at(k)) * sd_sigma.at(k))[0];
+      }
+      lpost_prop.at(k) = lpost(v_curr.at(k), u_curr.at(k),
+                               alpha1_curr.at(k), theta1_curr.at(k),
+                               alpha2_curr.at(k), theta2_curr.at(k),
+                               shape_prop.at(k), sigma_prop.at(k),
+                               powl_curr.at(k));
+      if (invt.at(k) * (lpost_prop.at(k) - lpost_curr.at(k)) > lr1()) {
+        shape_curr.at(k) = shape_prop.at(k);
+        sigma_curr.at(k) = sigma_prop.at(k);
+        lpost_curr.at(k) = lpost_prop.at(k);
+      }
+      // model selection
+      if (pr_power2 != 0.0 && pr_power2 != 1.0 && t >= burn) {
+        // only model select after burn-in
+        ak = invt.at(k) * (a_pseudo - 1.0) + 1.0;
+        bk = invt.at(k) * (b_pseudo - 1.0) + 1.0;
+        if (powl_curr.at(k)) { // currently power law
+          theta2_pseudo = rbeta(1, ak, bk)[0]; // sim from pseudoprior
+          logA_powl =
+            lpost_curr.at(k) +
+            ldbeta(theta2_pseudo, ak, bk) +
+            log(pr_power2);
+          logA_poly =
+            lpost(v_curr.at(k), u_curr.at(k),
+                  alpha1_curr.at(k), theta1_curr.at(k),
+                  alpha2_curr.at(k), theta2_pseudo,
+                  shape_curr.at(k), sigma_curr.at(k),
+                  false) +
+            log(1.0 - pr_power2);
+          if (lr1() > -log(1.0 + exp(logA_poly - logA_powl))) { // switch to polylog
+            powl_curr.at(k) = false;
+            theta2_curr.at(k) = theta2_pseudo;
+            lpost_curr.at(k) = logA_poly - log(1.0 - pr_power2);
+          }
+        }
+        else { // currently polylog
+          logA_powl =
+            lpost(v_curr.at(k), u_curr.at(k),
+                  alpha1_curr.at(k), theta1_curr.at(k),
+                  alpha2_curr.at(k), theta2_curr.at(k),
+                  shape_curr.at(k), sigma_curr.at(k),
+                  true) +
+            ldbeta(theta2_curr.at(k), ak, bk) +
+            log(pr_power2);
+          logA_poly =
+            lpost_curr.at(k) +
+            log(1.0 - pr_power2);
+          if (lr1() < -log(1.0 + exp(logA_poly - logA_powl))) { // switch to power law
+            powl_curr.at(k) = true;
+            theta2_curr.at(k) = 1.0;
+            lpost_curr.at(k) = logA_powl - ldbeta(theta2_curr.at(k), ak, bk) - log(pr_power2);
+          }
+        }
+        if (k == 0) {
+          powl_stat((double) powl_curr.at(k)); // only track cold chain
+        }
+      }
+    } // loop over k completes
+    // 05) Metropolis coupling
+    if (K > 1) {
+      k = Rcpp::RcppArmadillo::sample(seqKm1, 1, false)[0];
+      l = k + 1;
+      ldiff = (lpost_curr.at(k) - lpost_curr.at(l)) * (invt.at(l) - invt.at(k));
+      if (lr1() < ldiff) {
+        swap(v_curr.at(k), v_curr.at(l));
+        swap(u_curr.at(k), u_curr.at(l));
+        swap(alpha1_curr.at(k), alpha1_curr.at(l));
+        swap(theta1_curr.at(k), theta1_curr.at(l));
+        swap(alpha2_curr.at(k), alpha2_curr.at(l));
+        swap(theta2_curr.at(k), theta2_curr.at(l));
+        swap(shape_curr.at(k), shape_curr.at(l));
+        swap(sigma_curr.at(k), sigma_curr.at(l));
+        swap(lpost_curr.at(k), lpost_curr.at(l));
+        swap(powl_curr.at(k), powl_curr.at(l));
+        swap_accept.at(k) += 1.0;
+      }
+      swap_count.at(k) += 1.0;
+    }
+    // 06) adaptive update sds after chain swap
+    for (k = 0; k < K; k++) {
+      if (t < burn) {
+        alpha1_burn(t, k) = alpha1_curr.at(k);
+        theta1_burn(t, k) = theta1_curr.at(k);
+        sd_alpha1.at(k) = sd_curr(alpha1_burn.col(k), t+1);
+        sd_theta1.at(k) = sd_curr(theta1_burn.col(k), t+1);
+        cor1.at(k) = cor_curr(alpha1_burn.col(k), theta1_burn.col(k), t+1);
+        if (!powl_curr.at(k)) {
+          alpha2_burn(t, k) = alpha2_curr.at(k);
+          theta2_burn(t, k) = theta2_curr.at(k);
+          sd_alpha2.at(k) = sd_curr(alpha2_burn.col(k), t+1);
+          sd_theta2.at(k) = sd_curr(theta2_burn.col(k), t+1);
+          cor2.at(k) = cor_curr(alpha2_burn.col(k), theta2_burn.col(k), t+1);
+        }
+        shape_burn(t, k) = shape_curr.at(k);
+        sigma_burn(t, k) = sigma_curr.at(k);
+        sd_shape.at(k) = sd_curr(shape_burn.col(k), t+1);
+        sd_sigma.at(k) = sd_curr(sigma_burn.col(k), t+1);
+        cor3.at(k) = cor_curr(shape_burn.col(k), sigma_burn.col(k), t+1);
+      }
+    }
+    // 07) print
+    if ((t + 1) % freq == 0) {
+      Rcout << "Iteration " << t + 1;
+      Rcout << ": Log-posterior = " << std::setprecision(6) << lpost_curr.at(0) << endl;
+      Rcout << "   v   = " << v_curr.at(0) << endl;
+      Rcout << "   u   = " << u_curr.at(0) << endl;
+      if (t < burn) {
+        Rcout << "alpha1 = " << alpha1_curr.at(0) << " (" << sd_alpha1.at(0) << ")" << endl;
+        Rcout << "theta1 = " << theta1_curr.at(0);
+        Rcout << " (" << sd_theta1.at(0) << ")" << endl;
+        Rcout << "cor(alpha1, theta1) = " << cor1.at(0) << endl;
+        Rcout << "alpha2 = " << alpha2_curr.at(0) << " (" << sd_alpha2.at(0) << ")" << endl;
+        Rcout << "theta2 = " << theta2_curr.at(0);
+        if (!powl_curr.at(0)) {
+          Rcout << " (" << sd_theta2.at(0) << ")" << endl;
+          Rcout << "cor(alpha2, theta2) = " << cor2.at(0) << endl;
+        }
+        else {
+          Rcout << endl;
+        }
+        Rcout << "shape  = " << shape_curr.at(0) << " (" << sd_shape.at(0) << ")" << endl;
+        Rcout << "sigma  = " << sigma_curr.at(0) << " (" << sd_sigma.at(0) << ")" << endl;
+        Rcout << "cor(shape, sigma) = " << cor3.at(0) << endl;
+      }
+      else {
+        Rcout << "alpha1 = " << alpha1_curr.at(0) << endl;
+        Rcout << "theta1 = " << theta1_curr.at(0) << endl;
+        Rcout << "alpha2 = " << alpha2_curr.at(0) << endl;
+        Rcout << "theta2 = " << theta2_curr.at(0) << endl;
+        Rcout << "shape  = " << shape_curr.at(0) << endl;
+        Rcout << "sigma  = " << sigma_curr.at(0) << endl;
+        if (pr_power2 != 0.0 && pr_power2 != 1.0) {
+          // only print after burn-in & w / model selection
+          Rcout << "power law = " << (powl_curr.at(0) ? "true" : "false") << endl;
+          Rcout << "average   = " << powl_stat.mean() << endl;
+        }
+      }
+      if (K > 1) {
+        Rcout << "swap rates: " << endl;
+        for (k = 0; k < K-1; k++) {
+          Rcout << "  b/w inv temp " << std::setprecision(3) << invt.at(k);
+          Rcout << " & " << invt.at(k+1) << ": " << swap_accept.at(k) / swap_count.at(k) << endl;
+        }
+      }
+      Rcout << endl;
+    }
+    // 08) save
+    if (t >= burn) {
+      s = t - burn + 1;
+      if (s % thin == 0) {
+        s = s / thin - 1;
+        // cold chain
+        v = v_curr.at(0);
+        u = u_curr.at(0);
+        alpha1 = alpha1_curr.at(0);
+        theta1 = theta1_curr.at(0);
+        alpha2 = alpha2_curr.at(0);
+        theta2 = theta2_curr.at(0);
+        shape = shape_curr.at(0);
+        sigma = sigma_curr.at(0);
+        // compute phis
+        c1 = count[x <= v];
+        c2 = count[(x > v) & (x <= u)];
+        cu = count[x > u];
+        phi1 = intdiv(sum(c1), n);
+        phi2 = intdiv(sum(c2), n);
+        phiu = intdiv(sum(cu), n);
+        // save
+        v_vec[s] = v;
+        u_vec[s] = u;
+        alpha1_vec[s] = alpha1;
+        theta1_vec[s] = theta1;
+        alpha2_vec[s] = alpha2;
+        theta2_vec[s] = theta2;
+        shape_vec[s] = shape;
+        sigma_vec[s] = sigma;
+        powl_vec[s] = (int) powl_curr.at(0);
+        phi1_vec[s] = phi1;
+        phi2_vec[s] = phi2;
+        phiu_vec[s] = phiu;
+        lpost_vec[s] = lpost_curr.at(0);
+        // prob mass & survival functions
+        f0 = dmix3(x0, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, phi1, phi2, phiu);
+        f0_mat.row(s) = as<rowvec>(f0);
+        S0 = Smix3(x0, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, phi1, phi2, phiu);
+        S0_mat.row(s) = as<rowvec>(S0);
+      }
+    }
+  }
+  // 09) output
+  const vec p1 = { 0.025, 0.50, 0.975 };
+  const mat
+    f0_q = quantile(f0_mat, p1, 0), // 3 x n0
+    S0_q = quantile(S0_mat, p1, 0); // 3 x n0
+  const double
+    po_power2 = mean((NumericVector) powl_vec),
+    bf = odds(po_power2) / odds(pr_power2);
+  gvs_quants["bf"] = tv(bf);
+  DataFrame
+    pars =
+    DataFrame::create(Named("v") = v_vec,
+                      Named("u") = u_vec,
+                      Named("alpha1") = alpha1_vec,
+                      Named("theta1") = theta1_vec,
+                      Named("alpha2") = alpha2_vec,
+                      Named("theta2") = theta2_vec,
+                      Named("shape") = shape_vec,
+                      Named("sigma") = sigma_vec,
+                      Named("powl") = powl_vec,
+                      Named("phi1") = phi1_vec,
+                      Named("phi2") = phi2_vec,
+                      Named("phiu") = phiu_vec,
+                      Named("lpost") = lpost_vec),
+    fitted =
+    DataFrame::create(Named("x") = x0,
+                      Named("f_025") = wrap(f0_q.row(0)),
+                      Named("f_med") = wrap(f0_q.row(1)),
+                      Named("f_975") = wrap(f0_q.row(2)),
+                      Named("S_025") = wrap(S0_q.row(0)),
+                      Named("S_med") = wrap(S0_q.row(1)),
+                      Named("S_975") = wrap(S0_q.row(2)));
+  List output =
+    List::create(Named("pars") = pars,
+                 Named("fitted") = fitted,
+                 Named("data") = data,
+                 Named("v_set") = v_set,
+                 Named("u_set") = u_set,
+                 Named("init") = init,
+                 Named("hyperpars") = hyperpars,
+                 Named("gvs_quants") = gvs_quants,
+                 Named("scalars") = scalars,
+                 Named("swap_rates") = swap_accept / swap_count,
+                 Named("invt") = invt);
   return output;
 }

@@ -32,78 +32,77 @@ The functions and example dataset can be divided into the following
 categories:
 
 1.  For obtaining data frames of package dependencies, use `get_dep()`,
-    `get_dep_df()`, `get_dep_all_packages()`.
+    `get_dep_all_packages()`.
 2.  For obtaining igraph objects of package dependencies, use
     `get_graph_all_packages()` and `df_to_graph()`.
-3.  For modelling the number of dependencies, use `*upp()` and `*mix()`.
+3.  For modelling the number of dependencies, use `*pol()` and
+    `*mix2()`.
 4.  There is also an example data set `cran_dependencies`.
 
-## One kind of dependencies
+## One or multiple types of dependencies
 
 To obtain the information about various kinds of dependencies of a
 package, we can use the function `get_dep()` which takes the package
 name and the type of dependencies as the first and second arguments,
-respectively. Currently, the second argument accepts `Depends`,
-`Imports`, `LinkingTo`, `Suggests`, `Reverse_depends`,
-`Reverse_imports`, `Reverse_linking_to`, and `Reverse_suggests`, or any
-variations in their letter cases, or if the underscore "\_" is replaced
-by a space.
+respectively. Currently, the second argument accepts a character vector
+of one or more of the following words: `Depends`, `Imports`,
+`LinkingTo`, `Suggests`, `Enhances`, `Reverse_depends`,
+`Reverse_imports`, `Reverse_linking_to`, `Reverse_suggests`, and
+`Reverse_enhances`, or any variations in their letter cases, or if the
+underscore "\_" is replaced by a space.
 
 ``` r
 get_dep("dplyr", "Imports")
-#>  [1] "ellipsis"   "generics"   "glue"      
-#>  [4] "lifecycle"  "magrittr"   "methods"   
-#>  [7] "R6"         "rlang"      "tibble"    
-#> [10] "tidyselect" "utils"      "vctrs"
-get_dep("MASS", "depends")
-#> [1] "grDevices" "graphics"  "stats"    
-#> [4] "utils"
-```
-
-We only consider the 4 most common types of dependencies in R packages,
-namely `Imports`, `Depends`, `Suggests` and `LinkingTo`, and their
-reverse counterparts. For more information on different types of
-dependencies, see [the official
-guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies)
-and <https://r-pkgs.org/description.html>.
-
-## Multiple kind of dependencies
-
-As the information all dependencies of one package are on the same page
-on CRAN, to avoid scraping the same multiple times, we can use
-`get_dep_df()` instead of `get_dep()`. The output will be a data frame
-instead of a character vector.
-
-``` r
-get_dep_df("dplyr", c("imports", "LinkingTo"))
 #>     from         to    type reverse
-#> 1  dplyr   ellipsis imports   FALSE
+#> 1  dplyr        cli imports   FALSE
 #> 2  dplyr   generics imports   FALSE
 #> 3  dplyr       glue imports   FALSE
 #> 4  dplyr  lifecycle imports   FALSE
 #> 5  dplyr   magrittr imports   FALSE
 #> 6  dplyr    methods imports   FALSE
-#> 7  dplyr         R6 imports   FALSE
-#> 8  dplyr      rlang imports   FALSE
-#> 9  dplyr     tibble imports   FALSE
-#> 10 dplyr tidyselect imports   FALSE
-#> 11 dplyr      utils imports   FALSE
-#> 12 dplyr      vctrs imports   FALSE
+#> 7  dplyr     pillar imports   FALSE
+#> 8  dplyr         R6 imports   FALSE
+#> 9  dplyr      rlang imports   FALSE
+#> 10 dplyr     tibble imports   FALSE
+#> 11 dplyr tidyselect imports   FALSE
+#> 12 dplyr      utils imports   FALSE
+#> 13 dplyr      vctrs imports   FALSE
+get_dep("MASS", c("depends", "suggests"))
+#>   from        to     type reverse
+#> 1 MASS grDevices  depends   FALSE
+#> 2 MASS  graphics  depends   FALSE
+#> 3 MASS     stats  depends   FALSE
+#> 4 MASS     utils  depends   FALSE
+#> 5 MASS   lattice suggests   FALSE
+#> 6 MASS      nlme suggests   FALSE
+#> 7 MASS      nnet suggests   FALSE
+#> 8 MASS  survival suggests   FALSE
 ```
 
-The column `type` is the type of the dependency converted to lower case.
-Also, `LinkingTo` is now converted to `linking to` for consistency. For
-the four reverse dependencies, the substring `"reverse_"` will not be
+For more information on different types of dependencies, see [the
+official
+guidelines](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies)
+and <https://r-pkgs.org/description.html>.
+
+In the output, the column `type` is the type of the dependency converted
+to lower case. Also, `LinkingTo` is now converted to `linking to` for
+consistency.
+
+``` r
+get_dep("xts", "LinkingTo")
+#>   from  to       type reverse
+#> 1  xts zoo linking to   FALSE
+get_dep("xts", "linking to")
+#>   from  to       type reverse
+#> 1  xts zoo linking to   FALSE
+```
+
+For the reverse dependencies, the substring `"reverse_"` will not be
 shown in `type`; instead the `reverse` column will be `TRUE`. This can
 be illustrated by the following:
 
 ``` r
-get_dep("abc", "depends")
-#> [1] "abc.data" "nnet"     "quantreg" "MASS"    
-#> [5] "locfit"
-get_dep("abc", "reverse_depends")
-#> [1] "abctools" "EasyABC"
-get_dep_df("abc", c("depends", "reverse_depends"))
+get_dep("abc", c("depends", "reverse_depends"))
 #>   from       to    type reverse
 #> 1  abc abc.data depends   FALSE
 #> 2  abc     nnet depends   FALSE
@@ -112,6 +111,12 @@ get_dep_df("abc", c("depends", "reverse_depends"))
 #> 5  abc   locfit depends   FALSE
 #> 6  abc abctools depends    TRUE
 #> 7  abc  EasyABC depends    TRUE
+get_dep("xts", c("linking to", "reverse linking to"))
+#>   from       to       type reverse
+#> 1  xts      zoo linking to   FALSE
+#> 2  xts ichimoku linking to    TRUE
+#> 3  xts  RcppXts linking to    TRUE
+#> 4  xts      TTR linking to    TRUE
 ```
 
 Theoretically, for each forward dependency
@@ -127,11 +132,11 @@ there should be an equivalent reverse dependency
 Aligning the `type` in the forward dependency and the reverse dependency
 enables this to be checked easily.
 
-To obtain all 8 types of dependencies, we can use `"all"` in the second
-argument, instead of typing a character vector of all 8 words:
+To obtain all types of dependencies, we can use `"all"` in the second
+argument, instead of typing a character vector of all words:
 
 ``` r
-df0.abc <- get_dep_df("abc", "all")
+df0.abc <- get_dep("abc", "all")
 df0.abc
 #>    from         to     type reverse
 #> 1   abc   abc.data  depends   FALSE
@@ -139,27 +144,27 @@ df0.abc
 #> 3   abc   quantreg  depends   FALSE
 #> 4   abc       MASS  depends   FALSE
 #> 5   abc     locfit  depends   FALSE
-#> 9   abc   abctools  depends    TRUE
-#> 10  abc    EasyABC  depends    TRUE
-#> 11  abc ecolottery  imports    TRUE
-#> 12  abc       ouxy  imports    TRUE
-#> 13  abc      poems  imports    TRUE
-#> 15  abc      coala suggests    TRUE
-df0.rstan <- get_dep_df("rstan", "all")
-dplyr::count(df0.rstan, type, reverse) # all 8 types
-#>         type reverse  n
-#> 1    depends   FALSE  2
-#> 2    depends    TRUE 24
-#> 3    imports   FALSE 10
-#> 4    imports    TRUE 79
-#> 5 linking to   FALSE  5
-#> 6 linking to    TRUE 66
-#> 7   suggests   FALSE 12
-#> 8   suggests    TRUE 17
+#> 10  abc   abctools  depends    TRUE
+#> 11  abc    EasyABC  depends    TRUE
+#> 12  abc ecolottery  imports    TRUE
+#> 14  abc      coala suggests    TRUE
+df0.rstan <- get_dep("rstan", "all") # too many rows to display
+dplyr::count(df0.rstan, type, reverse) # hence the summary using count()
+#>         type reverse   n
+#> 1    depends   FALSE   2
+#> 2    depends    TRUE  24
+#> 3   enhances    TRUE   2
+#> 4    imports   FALSE   8
+#> 5    imports    TRUE 127
+#> 6 linking to   FALSE   5
+#> 7 linking to    TRUE 113
+#> 8   suggests   FALSE  13
+#> 9   suggests    TRUE  31
 ```
 
-As of 2021-04-16, the packages that have all 8 types of dependencies are
-gRbase, quanteda, rstan, sf, xts.
+As of 2023-08-17, there are 0 packages that have all 10 types of
+dependencies, and 6 packages that have 9 types of dependencies: Matrix,
+bigmemory, miceadds, rstan, sf, xts.
 
 ## Building and visualising a dependency network
 
@@ -172,31 +177,31 @@ column. This is essentially the edge list of the dependency network.
 
 ``` r
 df0.imports <- rbind(
-    get_dep_df("ggplot2", "Imports"),
-    get_dep_df("dplyr", "Imports"),
-    get_dep_df("tidyr", "Imports"),
-    get_dep_df("readr", "Imports"),
-    get_dep_df("purrr", "Imports"),
-    get_dep_df("tibble", "Imports"),
-    get_dep_df("stringr", "Imports"),
-    get_dep_df("forcats", "Imports")
+  get_dep("ggplot2", "Imports"),
+  get_dep("dplyr", "Imports"),
+  get_dep("tidyr", "Imports"),
+  get_dep("readr", "Imports"),
+  get_dep("purrr", "Imports"),
+  get_dep("tibble", "Imports"),
+  get_dep("stringr", "Imports"),
+  get_dep("forcats", "Imports")
 )
 head(df0.imports)
 #>      from        to    type reverse
-#> 1 ggplot2    digest imports   FALSE
+#> 1 ggplot2       cli imports   FALSE
 #> 2 ggplot2      glue imports   FALSE
 #> 3 ggplot2 grDevices imports   FALSE
 #> 4 ggplot2      grid imports   FALSE
 #> 5 ggplot2    gtable imports   FALSE
 #> 6 ggplot2   isoband imports   FALSE
 tail(df0.imports)
-#>       from       to    type reverse
-#> 60 stringr magrittr imports   FALSE
-#> 61 stringr  stringi imports   FALSE
-#> 62 forcats ellipsis imports   FALSE
-#> 63 forcats magrittr imports   FALSE
-#> 64 forcats    rlang imports   FALSE
-#> 65 forcats   tibble imports   FALSE
+#>       from        to    type reverse
+#> 73 forcats       cli imports   FALSE
+#> 74 forcats      glue imports   FALSE
+#> 75 forcats lifecycle imports   FALSE
+#> 76 forcats  magrittr imports   FALSE
+#> 77 forcats     rlang imports   FALSE
+#> 78 forcats    tibble imports   FALSE
 ```
 
 ## All types of dependencies, in a data frame
@@ -207,7 +212,7 @@ The example dataset `cran_dependencies` contains all dependencies as of
 ``` r
 data(cran_dependencies)
 cran_dependencies
-#> # A tibble: 211,381 x 4
+#> # A tibble: 211,381 × 4
 #>    from  to             type     reverse
 #>    <chr> <chr>          <chr>    <lgl>  
 #>  1 A3    xtable         depends  FALSE  
@@ -220,9 +225,9 @@ cran_dependencies
 #>  8 aaSEA shinydashboard imports  FALSE  
 #>  9 aaSEA magrittr       imports  FALSE  
 #> 10 aaSEA Bios2cor       imports  FALSE  
-#> # … with 211,371 more rows
+#> # ℹ 211,371 more rows
 dplyr::count(cran_dependencies, type, reverse)
-#> # A tibble: 8 x 3
+#> # A tibble: 8 × 3
 #>   type       reverse     n
 #>   <chr>      <lgl>   <int>
 #> 1 depends    FALSE   11123
@@ -242,23 +247,25 @@ arguments:
 ``` r
 df0.cran <- get_dep_all_packages()
 head(df0.cran)
-#>    from             to    type reverse
-#> 2 aaSEA             DT imports   FALSE
-#> 3 aaSEA      networkD3 imports   FALSE
-#> 4 aaSEA          shiny imports   FALSE
-#> 5 aaSEA shinydashboard imports   FALSE
-#> 6 aaSEA       magrittr imports   FALSE
-#> 7 aaSEA       Bios2cor imports   FALSE
+#>       from         to    type reverse
+#> 3 AATtools   magrittr imports   FALSE
+#> 4 AATtools      dplyr imports   FALSE
+#> 5 AATtools doParallel imports   FALSE
+#> 6 AATtools    foreach imports   FALSE
+#> 7   ABACUS    ggplot2 imports   FALSE
+#> 8   ABACUS      shiny imports   FALSE
 dplyr::count(df0.cran, type, reverse) # numbers in general larger than above
-#>         type reverse     n
-#> 1    depends   FALSE 11363
-#> 2    depends    TRUE  9928
-#> 3    imports   FALSE 70069
-#> 4    imports    TRUE 63225
-#> 5 linking to   FALSE  4187
-#> 6 linking to    TRUE  4478
-#> 7   suggests   FALSE 43785
-#> 8   suggests    TRUE 48015
+#>          type reverse     n
+#> 1     depends   FALSE 10560
+#> 2     depends    TRUE  9157
+#> 3    enhances   FALSE   564
+#> 4    enhances    TRUE   583
+#> 5     imports   FALSE 94243
+#> 6     imports    TRUE 86459
+#> 7  linking to   FALSE  5470
+#> 8  linking to    TRUE  5859
+#> 9    suggests   FALSE 59859
+#> 10   suggests    TRUE 66261
 ```
 
 ## Network of one type of dependencies, as an igraph object
@@ -270,75 +277,54 @@ edges) and order (number of nodes).
 
 ``` r
 g0.depends <- get_graph_all_packages(type = "depends")
-g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
 g0.depends
-#> IGRAPH 9c9e289 DN-- 4932 8262 -- 
+#> IGRAPH 4bb852e DN-- 4631 7539 -- 
 #> + attr: name (v/c)
-#> + edges from 9c9e289 (vertex names):
-#>  [1] A3      ->xtable   A3      ->pbapply 
-#>  [3] abc     ->abc.data abc     ->nnet    
-#>  [5] abc     ->quantreg abc     ->MASS    
-#>  [7] abc     ->locfit   abcdeFBA->Rglpk   
-#>  [9] abcdeFBA->rgl      abcdeFBA->corrplot
-#> [11] abcdeFBA->lattice  ABCp2   ->MASS    
-#> [13] abctools->abc      abctools->abind   
-#> [15] abctools->plyr     abctools->Hmisc   
-#> + ... omitted several edges
-g0.rev_depends
-#> IGRAPH 98b169d DN-- 4932 8262 -- 
-#> + attr: name (v/c)
-#> + edges from 98b169d (vertex names):
-#>  [1] abc     ->abctools     abc     ->EasyABC     
-#>  [3] abc.data->abc          abd     ->tigerstats  
-#>  [5] abind   ->abctools     abind   ->BCBCSF      
-#>  [7] abind   ->CPMCGLM      abind   ->depth       
-#>  [9] abind   ->FactorCopula abind   ->fractaldim  
-#> [11] abind   ->funLBM       abind   ->informR     
-#> [13] abind   ->interplot    abind   ->magic       
-#> [15] abind   ->mlma         abind   ->mlogitBMA   
+#> + edges from 4bb852e (vertex names):
+#>  [1] A3          ->xtable     A3          ->pbapply    abc         ->abc.data  
+#>  [4] abc         ->nnet       abc         ->quantreg   abc         ->MASS      
+#>  [7] abc         ->locfit     ABCp2       ->MASS       abctools    ->abc       
+#> [10] abctools    ->abind      abctools    ->plyr       abctools    ->Hmisc     
+#> [13] abd         ->nlme       abd         ->lattice    abd         ->mosaic    
+#> [16] abodOutlier ->cluster    abundant    ->glasso     Ac3net      ->data.table
+#> [19] acc         ->mhsmm      accelmissing->mice       accelmissing->pscl      
+#> [22] accessrmd   ->ggplot2    accrual     ->tcltk2     accrualPlot ->lubridate 
 #> + ... omitted several edges
 ```
 
+We could obtain essentially the same graph, but with the direction of
+the edges reversed, by specifying `type = "reverse depends"`:
+
+``` r
+# Not run
+g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
+g0.rev_depends
+```
+
 The dependency words accepted by the argument `type` is the same as in
-`get_dep()` and `get_dep_df()`. The two networks’ size and order should
-be very close if not identical to each other. Because of the dependency
-direction, their edge lists should be the same but with the column names
-`from` and `to` swapped.
+`get_dep()`. The two networks’ size and order should be very close if
+not identical to each other. Because of the dependency direction, their
+edge lists should be the same but with the column names `from` and `to`
+swapped.
 
 For verification, the exact same graphs can be obtained by filtering the
 data frame for the required dependency and applying `df_to_graph()`:
 
 ``` r
-g1.depends <- df0.cran %>%
-    dplyr::filter(type == "depends" & !reverse) %>%
-    df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
-g1.rev_depends <- df0.cran %>%
-    dplyr::filter(type == "depends" & reverse) %>%
-    df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
+g1.depends <- df0.cran |>
+  dplyr::filter(type == "depends" & !reverse) |>
+  df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
 g1.depends # same as g0.depends
-#> IGRAPH 19ec2b7 DN-- 4932 8262 -- 
-#> + attr: name (v/c), type (e/c), reverse
-#> | (e/l)
-#> + edges from 19ec2b7 (vertex names):
-#>  [1] A3      ->xtable   A3      ->pbapply 
-#>  [3] abc     ->abc.data abc     ->nnet    
-#>  [5] abc     ->quantreg abc     ->MASS    
-#>  [7] abc     ->locfit   abcdeFBA->Rglpk   
-#>  [9] abcdeFBA->rgl      abcdeFBA->corrplot
-#> [11] abcdeFBA->lattice  ABCp2   ->MASS    
-#> [13] abctools->abc      abctools->abind   
-#> + ... omitted several edges
-g1.rev_depends # same as g0.rev_depends
-#> IGRAPH 16c2c3f DN-- 4932 8262 -- 
-#> + attr: name (v/c), type (e/c), reverse
-#> | (e/l)
-#> + edges from 16c2c3f (vertex names):
-#>  [1] abc     ->abctools     abc     ->EasyABC     
-#>  [3] abc.data->abc          abd     ->tigerstats  
-#>  [5] abind   ->abctools     abind   ->BCBCSF      
-#>  [7] abind   ->CPMCGLM      abind   ->depth       
-#>  [9] abind   ->FactorCopula abind   ->fractaldim  
-#> [11] abind   ->funLBM       abind   ->informR     
-#> [13] abind   ->interplot    abind   ->magic       
+#> IGRAPH 39d30f3 DN-- 4631 7539 -- 
+#> + attr: name (v/c), type (e/c), reverse (e/l)
+#> + edges from 39d30f3 (vertex names):
+#>  [1] A3          ->xtable     A3          ->pbapply    abc         ->abc.data  
+#>  [4] abc         ->nnet       abc         ->quantreg   abc         ->MASS      
+#>  [7] abc         ->locfit     ABCp2       ->MASS       abctools    ->abc       
+#> [10] abctools    ->abind      abctools    ->plyr       abctools    ->Hmisc     
+#> [13] abd         ->nlme       abd         ->lattice    abd         ->mosaic    
+#> [16] abodOutlier ->cluster    abundant    ->glasso     Ac3net      ->data.table
+#> [19] acc         ->mhsmm      accelmissing->mice       accelmissing->pscl      
+#> [22] accessrmd   ->ggplot2    accrual     ->tcltk2     accrualPlot ->lubridate 
 #> + ... omitted several edges
 ```

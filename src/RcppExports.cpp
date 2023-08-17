@@ -2,132 +2,394 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <RcppArmadillo.h>
-#include <RcppGSL.h>
 #include <Rcpp.h>
 
 using namespace Rcpp;
 
-// dupp
-const NumericVector dupp(const NumericVector x, const int u, const double xi1, const bool log);
-RcppExport SEXP _crandep_dupp(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP logSEXP) {
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
+// dpol
+const NumericVector dpol(const IntegerVector x, const double alpha, const double theta, const int xmax);
+RcppExport SEXP _crandep_dpol(SEXP xSEXP, SEXP alphaSEXP, SEXP thetaSEXP, SEXP xmaxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
-    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
-    Rcpp::traits::input_parameter< const bool >::type log(logSEXP);
-    rcpp_result_gen = Rcpp::wrap(dupp(x, u, xi1, log));
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const int >::type xmax(xmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(dpol(x, alpha, theta, xmax));
     return rcpp_result_gen;
 END_RCPP
 }
-// Supp
-const NumericVector Supp(const NumericVector x, const int u, const double xi1, const bool log);
-RcppExport SEXP _crandep_Supp(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP logSEXP) {
+// Spol
+const NumericVector Spol(const IntegerVector x, const double alpha, const double theta, const int xmax);
+RcppExport SEXP _crandep_Spol(SEXP xSEXP, SEXP alphaSEXP, SEXP thetaSEXP, SEXP xmaxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
-    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
-    Rcpp::traits::input_parameter< const bool >::type log(logSEXP);
-    rcpp_result_gen = Rcpp::wrap(Supp(x, u, xi1, log));
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const int >::type xmax(xmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(Spol(x, alpha, theta, xmax));
     return rcpp_result_gen;
 END_RCPP
 }
-// mcmc_upp
-DataFrame mcmc_upp(const NumericVector x, const int u, const double xi1, const double a_xi1, const double b_xi1, const int N, const int thin, const int burnin, const int print_freq);
-RcppExport SEXP _crandep_mcmc_upp(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP a_xi1SEXP, SEXP b_xi1SEXP, SEXP NSEXP, SEXP thinSEXP, SEXP burninSEXP, SEXP print_freqSEXP) {
+// mcmc_pol
+List mcmc_pol(const IntegerVector x, const IntegerVector count, double alpha, double theta, const double a_alpha, const double b_alpha, const double a_theta, const double b_theta, const double a_pseudo, const double b_pseudo, const double pr_power, const int iter, const int thin, const int burn, const int freq, const NumericVector invt, const int xmax);
+RcppExport SEXP _crandep_mcmc_pol(SEXP xSEXP, SEXP countSEXP, SEXP alphaSEXP, SEXP thetaSEXP, SEXP a_alphaSEXP, SEXP b_alphaSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP a_pseudoSEXP, SEXP b_pseudoSEXP, SEXP pr_powerSEXP, SEXP iterSEXP, SEXP thinSEXP, SEXP burnSEXP, SEXP freqSEXP, SEXP invtSEXP, SEXP xmaxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
-    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
-    Rcpp::traits::input_parameter< const double >::type a_xi1(a_xi1SEXP);
-    Rcpp::traits::input_parameter< const double >::type b_xi1(b_xi1SEXP);
-    Rcpp::traits::input_parameter< const int >::type N(NSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha(a_alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha(b_alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_theta(a_thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_theta(b_thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_pseudo(a_pseudoSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_pseudo(b_pseudoSEXP);
+    Rcpp::traits::input_parameter< const double >::type pr_power(pr_powerSEXP);
+    Rcpp::traits::input_parameter< const int >::type iter(iterSEXP);
     Rcpp::traits::input_parameter< const int >::type thin(thinSEXP);
-    Rcpp::traits::input_parameter< const int >::type burnin(burninSEXP);
-    Rcpp::traits::input_parameter< const int >::type print_freq(print_freqSEXP);
-    rcpp_result_gen = Rcpp::wrap(mcmc_upp(x, u, xi1, a_xi1, b_xi1, N, thin, burnin, print_freq));
+    Rcpp::traits::input_parameter< const int >::type burn(burnSEXP);
+    Rcpp::traits::input_parameter< const int >::type freq(freqSEXP);
+    Rcpp::traits::input_parameter< const NumericVector >::type invt(invtSEXP);
+    Rcpp::traits::input_parameter< const int >::type xmax(xmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(mcmc_pol(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, xmax));
     return rcpp_result_gen;
 END_RCPP
 }
-// dmix
-const NumericVector dmix(const NumericVector x, const int u, const double xi1, const double xi2, const double sig, const bool geo, const double phi, const bool log);
-RcppExport SEXP _crandep_dmix(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP xi2SEXP, SEXP sigSEXP, SEXP geoSEXP, SEXP phiSEXP, SEXP logSEXP) {
+// llik_bulk
+const double llik_bulk(const NumericVector par, const IntegerVector x, const IntegerVector count, const int v, const int u, const double phil, const bool powerlaw, const bool positive);
+RcppExport SEXP _crandep_llik_bulk(SEXP parSEXP, SEXP xSEXP, SEXP countSEXP, SEXP vSEXP, SEXP uSEXP, SEXP philSEXP, SEXP powerlawSEXP, SEXP positiveSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const NumericVector >::type par(parSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const int >::type v(vSEXP);
     Rcpp::traits::input_parameter< const int >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
-    Rcpp::traits::input_parameter< const double >::type xi2(xi2SEXP);
-    Rcpp::traits::input_parameter< const double >::type sig(sigSEXP);
-    Rcpp::traits::input_parameter< const bool >::type geo(geoSEXP);
-    Rcpp::traits::input_parameter< const double >::type phi(phiSEXP);
-    Rcpp::traits::input_parameter< const bool >::type log(logSEXP);
-    rcpp_result_gen = Rcpp::wrap(dmix(x, u, xi1, xi2, sig, geo, phi, log));
+    Rcpp::traits::input_parameter< const double >::type phil(philSEXP);
+    Rcpp::traits::input_parameter< const bool >::type powerlaw(powerlawSEXP);
+    Rcpp::traits::input_parameter< const bool >::type positive(positiveSEXP);
+    rcpp_result_gen = Rcpp::wrap(llik_bulk(par, x, count, v, u, phil, powerlaw, positive));
     return rcpp_result_gen;
 END_RCPP
 }
-// Smix
-const NumericVector Smix(const NumericVector x, const int u, const double xi1, const double xi2, const double sig, const bool geo, const double phi, const bool log);
-RcppExport SEXP _crandep_Smix(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP xi2SEXP, SEXP sigSEXP, SEXP geoSEXP, SEXP phiSEXP, SEXP logSEXP) {
+// lpost_bulk
+const double lpost_bulk(const NumericVector par, const IntegerVector x, const IntegerVector count, const int v, const int u, const double phil, const double a_alpha, const double b_alpha, const double a_theta, const double b_theta, const bool powerlaw, const bool positive);
+RcppExport SEXP _crandep_lpost_bulk(SEXP parSEXP, SEXP xSEXP, SEXP countSEXP, SEXP vSEXP, SEXP uSEXP, SEXP philSEXP, SEXP a_alphaSEXP, SEXP b_alphaSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP powerlawSEXP, SEXP positiveSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const NumericVector >::type par(parSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const int >::type v(vSEXP);
     Rcpp::traits::input_parameter< const int >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
-    Rcpp::traits::input_parameter< const double >::type xi2(xi2SEXP);
-    Rcpp::traits::input_parameter< const double >::type sig(sigSEXP);
-    Rcpp::traits::input_parameter< const bool >::type geo(geoSEXP);
-    Rcpp::traits::input_parameter< const double >::type phi(phiSEXP);
-    Rcpp::traits::input_parameter< const bool >::type log(logSEXP);
-    rcpp_result_gen = Rcpp::wrap(Smix(x, u, xi1, xi2, sig, geo, phi, log));
+    Rcpp::traits::input_parameter< const double >::type phil(philSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha(a_alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha(b_alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_theta(a_thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_theta(b_thetaSEXP);
+    Rcpp::traits::input_parameter< const bool >::type powerlaw(powerlawSEXP);
+    Rcpp::traits::input_parameter< const bool >::type positive(positiveSEXP);
+    rcpp_result_gen = Rcpp::wrap(lpost_bulk(par, x, count, v, u, phil, a_alpha, b_alpha, a_theta, b_theta, powerlaw, positive));
     return rcpp_result_gen;
 END_RCPP
 }
-// mcmc_mix
-DataFrame mcmc_mix(const NumericVector x, const int u, const double xi1, const double xi2, const double sig, const bool geo, const bool cont, const double a_phi, const double b_phi, const double a_xi1, const double b_xi1, const double m_xi2, const double s_xi2, const double a_sig, const double b_sig, const double pcont, const int N, const int thin, const int burnin, const int print_freq);
-RcppExport SEXP _crandep_mcmc_mix(SEXP xSEXP, SEXP uSEXP, SEXP xi1SEXP, SEXP xi2SEXP, SEXP sigSEXP, SEXP geoSEXP, SEXP contSEXP, SEXP a_phiSEXP, SEXP b_phiSEXP, SEXP a_xi1SEXP, SEXP b_xi1SEXP, SEXP m_xi2SEXP, SEXP s_xi2SEXP, SEXP a_sigSEXP, SEXP b_sigSEXP, SEXP pcontSEXP, SEXP NSEXP, SEXP thinSEXP, SEXP burninSEXP, SEXP print_freqSEXP) {
+// llik_igpd
+const double llik_igpd(const NumericVector par, const IntegerVector x, const IntegerVector count, const int u, const double phiu);
+RcppExport SEXP _crandep_llik_igpd(SEXP parSEXP, SEXP xSEXP, SEXP countSEXP, SEXP uSEXP, SEXP phiuSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const NumericVector >::type par(parSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
     Rcpp::traits::input_parameter< const int >::type u(uSEXP);
-    Rcpp::traits::input_parameter< const double >::type xi1(xi1SEXP);
-    Rcpp::traits::input_parameter< const double >::type xi2(xi2SEXP);
-    Rcpp::traits::input_parameter< const double >::type sig(sigSEXP);
-    Rcpp::traits::input_parameter< const bool >::type geo(geoSEXP);
-    Rcpp::traits::input_parameter< const bool >::type cont(contSEXP);
-    Rcpp::traits::input_parameter< const double >::type a_phi(a_phiSEXP);
-    Rcpp::traits::input_parameter< const double >::type b_phi(b_phiSEXP);
-    Rcpp::traits::input_parameter< const double >::type a_xi1(a_xi1SEXP);
-    Rcpp::traits::input_parameter< const double >::type b_xi1(b_xi1SEXP);
-    Rcpp::traits::input_parameter< const double >::type m_xi2(m_xi2SEXP);
-    Rcpp::traits::input_parameter< const double >::type s_xi2(s_xi2SEXP);
-    Rcpp::traits::input_parameter< const double >::type a_sig(a_sigSEXP);
-    Rcpp::traits::input_parameter< const double >::type b_sig(b_sigSEXP);
-    Rcpp::traits::input_parameter< const double >::type pcont(pcontSEXP);
-    Rcpp::traits::input_parameter< const int >::type N(NSEXP);
+    Rcpp::traits::input_parameter< const double >::type phiu(phiuSEXP);
+    rcpp_result_gen = Rcpp::wrap(llik_igpd(par, x, count, u, phiu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lpost_igpd
+const double lpost_igpd(const NumericVector par, const IntegerVector x, const IntegerVector count, const int u, const double m_shape, const double s_shape, const double a_sigma, const double b_sigma, const double phiu);
+RcppExport SEXP _crandep_lpost_igpd(SEXP parSEXP, SEXP xSEXP, SEXP countSEXP, SEXP uSEXP, SEXP m_shapeSEXP, SEXP s_shapeSEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP phiuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector >::type par(parSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const double >::type m_shape(m_shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type s_shape(s_shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_sigma(a_sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_sigma(b_sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type phiu(phiuSEXP);
+    rcpp_result_gen = Rcpp::wrap(lpost_igpd(par, x, count, u, m_shape, s_shape, a_sigma, b_sigma, phiu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dmix2
+const NumericVector dmix2(const IntegerVector x, const int u, const double alpha, const double theta, const double shape, const double sigma, const double phiu);
+RcppExport SEXP _crandep_dmix2(SEXP xSEXP, SEXP uSEXP, SEXP alphaSEXP, SEXP thetaSEXP, SEXP shapeSEXP, SEXP sigmaSEXP, SEXP phiuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type phiu(phiuSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmix2(x, u, alpha, theta, shape, sigma, phiu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// Smix2
+const NumericVector Smix2(const IntegerVector x, const int u, const double alpha, const double theta, const double shape, const double sigma, const double phiu);
+RcppExport SEXP _crandep_Smix2(SEXP xSEXP, SEXP uSEXP, SEXP alphaSEXP, SEXP thetaSEXP, SEXP shapeSEXP, SEXP sigmaSEXP, SEXP phiuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type phiu(phiuSEXP);
+    rcpp_result_gen = Rcpp::wrap(Smix2(x, u, alpha, theta, shape, sigma, phiu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lpost_mix2
+const double lpost_mix2(const IntegerVector x, const IntegerVector count, const int u, const double alpha, const double theta, const double shape, const double sigma, const double a_psiu, const double b_psiu, const double a_alpha, const double b_alpha, const double a_theta, const double b_theta, const double m_shape, const double s_shape, const double a_sigma, const double b_sigma, const bool powerlaw, const bool positive);
+RcppExport SEXP _crandep_lpost_mix2(SEXP xSEXP, SEXP countSEXP, SEXP uSEXP, SEXP alphaSEXP, SEXP thetaSEXP, SEXP shapeSEXP, SEXP sigmaSEXP, SEXP a_psiuSEXP, SEXP b_psiuSEXP, SEXP a_alphaSEXP, SEXP b_alphaSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP m_shapeSEXP, SEXP s_shapeSEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP powerlawSEXP, SEXP positiveSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_psiu(a_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_psiu(b_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha(a_alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha(b_alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_theta(a_thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_theta(b_thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type m_shape(m_shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type s_shape(s_shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_sigma(a_sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_sigma(b_sigmaSEXP);
+    Rcpp::traits::input_parameter< const bool >::type powerlaw(powerlawSEXP);
+    Rcpp::traits::input_parameter< const bool >::type positive(positiveSEXP);
+    rcpp_result_gen = Rcpp::wrap(lpost_mix2(x, count, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, powerlaw, positive));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mcmc_mix2
+List mcmc_mix2(const IntegerVector x, const IntegerVector count, const IntegerVector u_set, int u, double alpha, double theta, double shape, double sigma, const double a_psiu, const double b_psiu, const double a_alpha, const double b_alpha, const double a_theta, const double b_theta, const double m_shape, const double s_shape, const double a_sigma, const double b_sigma, const bool positive, const double a_pseudo, const double b_pseudo, const double pr_power, const int iter, const int thin, const int burn, const int freq, const NumericVector invt);
+RcppExport SEXP _crandep_mcmc_mix2(SEXP xSEXP, SEXP countSEXP, SEXP u_setSEXP, SEXP uSEXP, SEXP alphaSEXP, SEXP thetaSEXP, SEXP shapeSEXP, SEXP sigmaSEXP, SEXP a_psiuSEXP, SEXP b_psiuSEXP, SEXP a_alphaSEXP, SEXP b_alphaSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP m_shapeSEXP, SEXP s_shapeSEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP positiveSEXP, SEXP a_pseudoSEXP, SEXP b_pseudoSEXP, SEXP pr_powerSEXP, SEXP iterSEXP, SEXP thinSEXP, SEXP burnSEXP, SEXP freqSEXP, SEXP invtSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type u_set(u_setSEXP);
+    Rcpp::traits::input_parameter< int >::type u(uSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< double >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_psiu(a_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_psiu(b_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha(a_alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha(b_alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_theta(a_thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_theta(b_thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type m_shape(m_shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type s_shape(s_shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_sigma(a_sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_sigma(b_sigmaSEXP);
+    Rcpp::traits::input_parameter< const bool >::type positive(positiveSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_pseudo(a_pseudoSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_pseudo(b_pseudoSEXP);
+    Rcpp::traits::input_parameter< const double >::type pr_power(pr_powerSEXP);
+    Rcpp::traits::input_parameter< const int >::type iter(iterSEXP);
     Rcpp::traits::input_parameter< const int >::type thin(thinSEXP);
-    Rcpp::traits::input_parameter< const int >::type burnin(burninSEXP);
-    Rcpp::traits::input_parameter< const int >::type print_freq(print_freqSEXP);
-    rcpp_result_gen = Rcpp::wrap(mcmc_mix(x, u, xi1, xi2, sig, geo, cont, a_phi, b_phi, a_xi1, b_xi1, m_xi2, s_xi2, a_sig, b_sig, pcont, N, thin, burnin, print_freq));
+    Rcpp::traits::input_parameter< const int >::type burn(burnSEXP);
+    Rcpp::traits::input_parameter< const int >::type freq(freqSEXP);
+    Rcpp::traits::input_parameter< const NumericVector >::type invt(invtSEXP);
+    rcpp_result_gen = Rcpp::wrap(mcmc_mix2(x, count, u_set, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, positive, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dmix3
+const NumericVector dmix3(const IntegerVector x, const int v, const int u, const double alpha1, const double theta1, const double alpha2, const double theta2, const double shape, const double sigma, const double phi1, const double phi2, const double phiu);
+RcppExport SEXP _crandep_dmix3(SEXP xSEXP, SEXP vSEXP, SEXP uSEXP, SEXP alpha1SEXP, SEXP theta1SEXP, SEXP alpha2SEXP, SEXP theta2SEXP, SEXP shapeSEXP, SEXP sigmaSEXP, SEXP phi1SEXP, SEXP phi2SEXP, SEXP phiuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const int >::type v(vSEXP);
+    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha1(alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type theta1(theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha2(alpha2SEXP);
+    Rcpp::traits::input_parameter< const double >::type theta2(theta2SEXP);
+    Rcpp::traits::input_parameter< const double >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type phi1(phi1SEXP);
+    Rcpp::traits::input_parameter< const double >::type phi2(phi2SEXP);
+    Rcpp::traits::input_parameter< const double >::type phiu(phiuSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmix3(x, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, phi1, phi2, phiu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// Smix3
+const NumericVector Smix3(const IntegerVector x, const int v, const int u, const double alpha1, const double theta1, const double alpha2, const double theta2, const double shape, const double sigma, const double phi1, const double phi2, const double phiu);
+RcppExport SEXP _crandep_Smix3(SEXP xSEXP, SEXP vSEXP, SEXP uSEXP, SEXP alpha1SEXP, SEXP theta1SEXP, SEXP alpha2SEXP, SEXP theta2SEXP, SEXP shapeSEXP, SEXP sigmaSEXP, SEXP phi1SEXP, SEXP phi2SEXP, SEXP phiuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const int >::type v(vSEXP);
+    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha1(alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type theta1(theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha2(alpha2SEXP);
+    Rcpp::traits::input_parameter< const double >::type theta2(theta2SEXP);
+    Rcpp::traits::input_parameter< const double >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type phi1(phi1SEXP);
+    Rcpp::traits::input_parameter< const double >::type phi2(phi2SEXP);
+    Rcpp::traits::input_parameter< const double >::type phiu(phiuSEXP);
+    rcpp_result_gen = Rcpp::wrap(Smix3(x, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, phi1, phi2, phiu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lpost_mix3
+const double lpost_mix3(const IntegerVector x, const IntegerVector count, const int v, const int u, const double alpha1, const double theta1, const double alpha2, const double theta2, const double shape, const double sigma, const double a_psi1, const double a_psi2, const double a_psiu, const double b_psiu, const double a_alpha1, const double b_alpha1, const double a_theta1, const double b_theta1, const double a_alpha2, const double b_alpha2, const double a_theta2, const double b_theta2, const double m_shape, const double s_shape, const double a_sigma, const double b_sigma, const bool powerlaw1, const bool powerlaw2, const bool positive1, const bool positive2);
+RcppExport SEXP _crandep_lpost_mix3(SEXP xSEXP, SEXP countSEXP, SEXP vSEXP, SEXP uSEXP, SEXP alpha1SEXP, SEXP theta1SEXP, SEXP alpha2SEXP, SEXP theta2SEXP, SEXP shapeSEXP, SEXP sigmaSEXP, SEXP a_psi1SEXP, SEXP a_psi2SEXP, SEXP a_psiuSEXP, SEXP b_psiuSEXP, SEXP a_alpha1SEXP, SEXP b_alpha1SEXP, SEXP a_theta1SEXP, SEXP b_theta1SEXP, SEXP a_alpha2SEXP, SEXP b_alpha2SEXP, SEXP a_theta2SEXP, SEXP b_theta2SEXP, SEXP m_shapeSEXP, SEXP s_shapeSEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP powerlaw1SEXP, SEXP powerlaw2SEXP, SEXP positive1SEXP, SEXP positive2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const int >::type v(vSEXP);
+    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha1(alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type theta1(theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha2(alpha2SEXP);
+    Rcpp::traits::input_parameter< const double >::type theta2(theta2SEXP);
+    Rcpp::traits::input_parameter< const double >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_psi1(a_psi1SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_psi2(a_psi2SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_psiu(a_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_psiu(b_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha1(a_alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha1(b_alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_theta1(a_theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_theta1(b_theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha2(a_alpha2SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha2(b_alpha2SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_theta2(a_theta2SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_theta2(b_theta2SEXP);
+    Rcpp::traits::input_parameter< const double >::type m_shape(m_shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type s_shape(s_shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_sigma(a_sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_sigma(b_sigmaSEXP);
+    Rcpp::traits::input_parameter< const bool >::type powerlaw1(powerlaw1SEXP);
+    Rcpp::traits::input_parameter< const bool >::type powerlaw2(powerlaw2SEXP);
+    Rcpp::traits::input_parameter< const bool >::type positive1(positive1SEXP);
+    Rcpp::traits::input_parameter< const bool >::type positive2(positive2SEXP);
+    rcpp_result_gen = Rcpp::wrap(lpost_mix3(x, count, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, a_psi1, a_psi2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, a_theta2, b_theta2, m_shape, s_shape, a_sigma, b_sigma, powerlaw1, powerlaw2, positive1, positive2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mcmc_mix3
+List mcmc_mix3(const IntegerVector x, const IntegerVector count, const IntegerVector v_set, const IntegerVector u_set, int v, int u, double alpha1, double theta1, double alpha2, double theta2, double shape, double sigma, const double a_psi1, const double a_psi2, const double a_psiu, const double b_psiu, const double a_alpha1, const double b_alpha1, const double a_theta1, const double b_theta1, const double a_alpha2, const double b_alpha2, const double a_theta2, const double b_theta2, const double m_shape, const double s_shape, const double a_sigma, const double b_sigma, const bool powerlaw1, const bool positive1, const bool positive2, const double a_pseudo, const double b_pseudo, const double pr_power2, const int iter, const int thin, const int burn, const int freq, const NumericVector invt);
+RcppExport SEXP _crandep_mcmc_mix3(SEXP xSEXP, SEXP countSEXP, SEXP v_setSEXP, SEXP u_setSEXP, SEXP vSEXP, SEXP uSEXP, SEXP alpha1SEXP, SEXP theta1SEXP, SEXP alpha2SEXP, SEXP theta2SEXP, SEXP shapeSEXP, SEXP sigmaSEXP, SEXP a_psi1SEXP, SEXP a_psi2SEXP, SEXP a_psiuSEXP, SEXP b_psiuSEXP, SEXP a_alpha1SEXP, SEXP b_alpha1SEXP, SEXP a_theta1SEXP, SEXP b_theta1SEXP, SEXP a_alpha2SEXP, SEXP b_alpha2SEXP, SEXP a_theta2SEXP, SEXP b_theta2SEXP, SEXP m_shapeSEXP, SEXP s_shapeSEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP powerlaw1SEXP, SEXP positive1SEXP, SEXP positive2SEXP, SEXP a_pseudoSEXP, SEXP b_pseudoSEXP, SEXP pr_power2SEXP, SEXP iterSEXP, SEXP thinSEXP, SEXP burnSEXP, SEXP freqSEXP, SEXP invtSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type v_set(v_setSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type u_set(u_setSEXP);
+    Rcpp::traits::input_parameter< int >::type v(vSEXP);
+    Rcpp::traits::input_parameter< int >::type u(uSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha1(alpha1SEXP);
+    Rcpp::traits::input_parameter< double >::type theta1(theta1SEXP);
+    Rcpp::traits::input_parameter< double >::type alpha2(alpha2SEXP);
+    Rcpp::traits::input_parameter< double >::type theta2(theta2SEXP);
+    Rcpp::traits::input_parameter< double >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_psi1(a_psi1SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_psi2(a_psi2SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_psiu(a_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_psiu(b_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha1(a_alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha1(b_alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_theta1(a_theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_theta1(b_theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha2(a_alpha2SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha2(b_alpha2SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_theta2(a_theta2SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_theta2(b_theta2SEXP);
+    Rcpp::traits::input_parameter< const double >::type m_shape(m_shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type s_shape(s_shapeSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_sigma(a_sigmaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_sigma(b_sigmaSEXP);
+    Rcpp::traits::input_parameter< const bool >::type powerlaw1(powerlaw1SEXP);
+    Rcpp::traits::input_parameter< const bool >::type positive1(positive1SEXP);
+    Rcpp::traits::input_parameter< const bool >::type positive2(positive2SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_pseudo(a_pseudoSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_pseudo(b_pseudoSEXP);
+    Rcpp::traits::input_parameter< const double >::type pr_power2(pr_power2SEXP);
+    Rcpp::traits::input_parameter< const int >::type iter(iterSEXP);
+    Rcpp::traits::input_parameter< const int >::type thin(thinSEXP);
+    Rcpp::traits::input_parameter< const int >::type burn(burnSEXP);
+    Rcpp::traits::input_parameter< const int >::type freq(freqSEXP);
+    Rcpp::traits::input_parameter< const NumericVector >::type invt(invtSEXP);
+    rcpp_result_gen = Rcpp::wrap(mcmc_mix3(x, count, v_set, u_set, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, a_psi1, a_psi2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, a_theta2, b_theta2, m_shape, s_shape, a_sigma, b_sigma, powerlaw1, positive1, positive2, a_pseudo, b_pseudo, pr_power2, iter, thin, burn, freq, invt));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_crandep_dupp", (DL_FUNC) &_crandep_dupp, 4},
-    {"_crandep_Supp", (DL_FUNC) &_crandep_Supp, 4},
-    {"_crandep_mcmc_upp", (DL_FUNC) &_crandep_mcmc_upp, 9},
-    {"_crandep_dmix", (DL_FUNC) &_crandep_dmix, 8},
-    {"_crandep_Smix", (DL_FUNC) &_crandep_Smix, 8},
-    {"_crandep_mcmc_mix", (DL_FUNC) &_crandep_mcmc_mix, 20},
+    {"_crandep_dpol", (DL_FUNC) &_crandep_dpol, 4},
+    {"_crandep_Spol", (DL_FUNC) &_crandep_Spol, 4},
+    {"_crandep_mcmc_pol", (DL_FUNC) &_crandep_mcmc_pol, 17},
+    {"_crandep_llik_bulk", (DL_FUNC) &_crandep_llik_bulk, 8},
+    {"_crandep_lpost_bulk", (DL_FUNC) &_crandep_lpost_bulk, 12},
+    {"_crandep_llik_igpd", (DL_FUNC) &_crandep_llik_igpd, 5},
+    {"_crandep_lpost_igpd", (DL_FUNC) &_crandep_lpost_igpd, 9},
+    {"_crandep_dmix2", (DL_FUNC) &_crandep_dmix2, 7},
+    {"_crandep_Smix2", (DL_FUNC) &_crandep_Smix2, 7},
+    {"_crandep_lpost_mix2", (DL_FUNC) &_crandep_lpost_mix2, 19},
+    {"_crandep_mcmc_mix2", (DL_FUNC) &_crandep_mcmc_mix2, 27},
+    {"_crandep_dmix3", (DL_FUNC) &_crandep_dmix3, 12},
+    {"_crandep_Smix3", (DL_FUNC) &_crandep_Smix3, 12},
+    {"_crandep_lpost_mix3", (DL_FUNC) &_crandep_lpost_mix3, 30},
+    {"_crandep_mcmc_mix3", (DL_FUNC) &_crandep_mcmc_mix3, 39},
     {NULL, NULL, 0}
 };
 

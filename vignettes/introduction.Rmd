@@ -1,6 +1,6 @@
 ---
 title: "Introduction to crandep"
-date: "2021-06-10"
+date: "2023-08-17"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Introduction to crandep}
@@ -71,8 +71,9 @@ dplyr::count(df0.rstan, type, reverse) # hence the summary using count()
 
 ```{r,echo=FALSE}
 df0.all <- get_dep_all_packages()
-v9.all <- df0.all %>% group_by(from) %>% count(a = n_distinct(type, reverse)) %>% filter(a == 9L) %>% "[["("from")
-v0.all <- df0.all %>% group_by(from) %>% count(a = n_distinct(type, reverse)) %>% filter(a == 10L) %>% "[["("from")
+df1.all <- df0.all |> dplyr::count(from, type, reverse) |> dplyr::count(from)
+v9.all <- dplyr::filter(df1.all, n == 9L)$from
+v0.all <- dplyr::filter(df1.all, n == 10L)$from
 ```
 
 As of `r Sys.Date()`, there are `r length(v0.all)` packages that have all 10 types of dependencies, and `r length(v9.all)` packages that have 9 types of dependencies: `r paste(v9.all, collapse = ", ")`.
@@ -86,14 +87,14 @@ To build a dependency network, we have to obtain the dependencies for multiple p
 
 ```{r}
 df0.imports <- rbind(
-    get_dep("ggplot2", "Imports"),
-    get_dep("dplyr", "Imports"),
-    get_dep("tidyr", "Imports"),
-    get_dep("readr", "Imports"),
-    get_dep("purrr", "Imports"),
-    get_dep("tibble", "Imports"),
-    get_dep("stringr", "Imports"),
-    get_dep("forcats", "Imports")
+  get_dep("ggplot2", "Imports"),
+  get_dep("dplyr", "Imports"),
+  get_dep("tidyr", "Imports"),
+  get_dep("readr", "Imports"),
+  get_dep("purrr", "Imports"),
+  get_dep("tibble", "Imports"),
+  get_dep("stringr", "Imports"),
+  get_dep("forcats", "Imports")
 )
 head(df0.imports)
 tail(df0.imports)
@@ -124,7 +125,11 @@ Note that this applies to `Imports` (and `Depends`) only due to their nature. Th
 ## Boundary and giant component
 It is possible to set a boundary on the nodes to which the edges are directed, using the function `df_to_graph()`. The second argument takes in a data frame that contains the list of such nodes in the column `name`.
 ```{r, out.width="660px", out.height="660px", fig.width=12, fig.height=12, fig.show="hold"}
-df0.nodes <- data.frame(name = c("ggplot2", "dplyr", "tidyr", "readr", "purrr", "tibble", "stringr", "forcats"), stringsAsFactors = FALSE)
+df0.nodes <-
+  data.frame(
+    name = c("ggplot2", "dplyr", "tidyr", "readr", "purrr", "tibble", "stringr", "forcats"),
+    stringsAsFactors = FALSE
+  )
 g0.core <- df_to_graph(df0.imports, df0.nodes)
 set.seed(259L)
 old.par <- par(mar = rep(0.0, 4))
