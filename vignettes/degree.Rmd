@@ -137,10 +137,10 @@ mcmc0.imports <-
     a_pseudo = 10.0,
     b_pseudo = 1.0,
     pr_power = 1.0,
-    iter = 20000L,
+    iter = 2500L,
     thin = 1L,
-    burn = 1000L,
-    freq = 1000L,
+    burn = 500L,
+    freq = 500L,
     invt = 1.0
   ) # takes seconds
 ```

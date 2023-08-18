@@ -69,15 +69,6 @@ df0.rstan <- get_dep("rstan", "all") # too many rows to display
 dplyr::count(df0.rstan, type, reverse) # hence the summary using count()
 ```
 
-```{r,echo=FALSE}
-df0.all <- get_dep_all_packages()
-df1.all <- df0.all |> dplyr::count(from, type, reverse) |> dplyr::count(from)
-v9.all <- dplyr::filter(df1.all, n == 9L)$from
-v0.all <- dplyr::filter(df1.all, n == 10L)$from
-```
-
-As of `r Sys.Date()`, there are `r length(v0.all)` packages that have all 10 types of dependencies, and `r length(v9.all)` packages that have 9 types of dependencies: `r paste(v9.all, collapse = ", ")`.
-
 
 
 

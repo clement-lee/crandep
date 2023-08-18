@@ -1,4 +1,4 @@
-This is a first submission of version 0.3.2. The purpose is to replace some existing functions with a few new ones. The vignettes are updated accordingly.
+This is a resubmission of version 0.3.2. The total check time is expected to be below 10min now after speeding up some calculations in the vignettes.
 
 There are no ERRORs or WARNINGs, and possible NOTEs are explained below.
 
