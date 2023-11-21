@@ -1,3 +1,9 @@
+# crandep 0.3.3 (2023-11-21)
+
+## Functions
+- Added are `obtain_u_set_mix2()` and `obtain_u_set_mix3()`, which are functions for obtaining the profile posterior density for the 2-component and 3-component mixture models, respectively.
+- Also added thin wrappers for `mcmc_pol()`, `mcmc_mix2()` and `mcmc_mix3()`, all with the suffix `_wrapper`. Specifically, `mcmc_mix2_wrapper()` calls `obtain_u_set_mix2()` and `mcmc_mix2()`, and `mcmc_mix3_wrapper()` calls `obtain_u_set_mix3()` and `mcmc_mix3()`.
+
 # crandep 0.3.2 (2023-08-17)
 
 ## Functions

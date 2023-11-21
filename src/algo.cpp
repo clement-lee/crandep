@@ -545,6 +545,7 @@ List mcmc_pol(const IntegerVector x,
   const double
     po_power = mean((NumericVector) powl_vec),
     bf = odds(po_power) / odds(pr_power);
+  gvs_quants["po_power"] = tv(po_power);
   gvs_quants["bf"] = tv(bf);
   DataFrame
     pars =
@@ -1287,6 +1288,7 @@ List mcmc_mix2(const IntegerVector x,
   const double
     po_power = mean((NumericVector) powl_vec),
     bf = odds(po_power) / odds(pr_power);
+  gvs_quants["po_power"] = tv(po_power);
   gvs_quants["bf"] = tv(bf);
   DataFrame
     pars =
@@ -2032,6 +2034,7 @@ List mcmc_mix3(const IntegerVector x,
   const double
     po_power2 = mean((NumericVector) powl_vec),
     bf = odds(po_power2) / odds(pr_power2);
+  gvs_quants["po_power2"] = tv(po_power2);
   gvs_quants["bf"] = tv(bf);
   DataFrame
     pars =

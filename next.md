@@ -1,8 +1,4 @@
-## Fix vignettes warning in some flavours: screenshot.force=FALSE?
-
 ## Add test cases
-
-## All multiple packages in get_dep()
 
 ## Add functions for bioconductor, rdocumentation.org, rdrr.io, R-Forge, R-Hub?
 
@@ -15,3 +11,7 @@
 ## Move "reverse" to a separate parameter?
 
 ## Edit README Rmd & md
+
+## Fix "." -> "_" in obj names in optim.R functions
+
+## Fix hyperparameters: m_alpha vs a_alpha, s_alpha vs b_alpha
