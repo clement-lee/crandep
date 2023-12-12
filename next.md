@@ -12,6 +12,4 @@
 
 ## Edit README Rmd & md
 
-## Fix "." -> "_" in obj names in optim.R functions
-
 ## Fix hyperparameters: m_alpha vs a_alpha, s_alpha vs b_alpha

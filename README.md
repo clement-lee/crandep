@@ -147,24 +147,25 @@ df0.abc
 #> 10  abc   abctools  depends    TRUE
 #> 11  abc    EasyABC  depends    TRUE
 #> 12  abc ecolottery  imports    TRUE
-#> 14  abc      coala suggests    TRUE
+#> 13  abc      poems  imports    TRUE
+#> 15  abc      coala suggests    TRUE
 df0.rstan <- get_dep("rstan", "all") # too many rows to display
 dplyr::count(df0.rstan, type, reverse) # hence the summary using count()
 #>         type reverse   n
-#> 1    depends   FALSE   2
+#> 1    depends   FALSE   1
 #> 2    depends    TRUE  24
-#> 3   enhances    TRUE   2
-#> 4    imports   FALSE   8
-#> 5    imports    TRUE 127
+#> 3   enhances    TRUE   3
+#> 4    imports   FALSE  10
+#> 5    imports    TRUE 129
 #> 6 linking to   FALSE   5
-#> 7 linking to    TRUE 113
-#> 8   suggests   FALSE  13
-#> 9   suggests    TRUE  31
+#> 7 linking to    TRUE 115
+#> 8   suggests   FALSE  12
+#> 9   suggests    TRUE  30
 ```
 
-As of 2023-08-17, there are 0 packages that have all 10 types of
-dependencies, and 6 packages that have 9 types of dependencies: Matrix,
-bigmemory, miceadds, rstan, sf, xts.
+As of 2023-12-12, there are 0 packages that have all 10 types of
+dependencies, and 5 packages that have 9 types of dependencies: Matrix,
+bigmemory, miceadds, rstan, xts.
 
 ## Building and visualising a dependency network
 
@@ -256,16 +257,16 @@ head(df0.cran)
 #> 8   ABACUS      shiny imports   FALSE
 dplyr::count(df0.cran, type, reverse) # numbers in general larger than above
 #>          type reverse     n
-#> 1     depends   FALSE 10560
-#> 2     depends    TRUE  9157
-#> 3    enhances   FALSE   564
-#> 4    enhances    TRUE   583
-#> 5     imports   FALSE 94243
-#> 6     imports    TRUE 86459
-#> 7  linking to   FALSE  5470
-#> 8  linking to    TRUE  5859
-#> 9    suggests   FALSE 59859
-#> 10   suggests    TRUE 66261
+#> 1     depends   FALSE 10433
+#> 2     depends    TRUE  9022
+#> 3    enhances   FALSE   619
+#> 4    enhances    TRUE   634
+#> 5     imports   FALSE 96606
+#> 6     imports    TRUE 88776
+#> 7  linking to   FALSE  5569
+#> 8  linking to    TRUE  5969
+#> 9    suggests   FALSE 61617
+#> 10   suggests    TRUE 68095
 ```
 
 ## Network of one type of dependencies, as an igraph object
@@ -278,9 +279,9 @@ edges) and order (number of nodes).
 ``` r
 g0.depends <- get_graph_all_packages(type = "depends")
 g0.depends
-#> IGRAPH 4bb852e DN-- 4631 7539 -- 
+#> IGRAPH 79cc5b0 DN-- 4582 7423 -- 
 #> + attr: name (v/c)
-#> + edges from 4bb852e (vertex names):
+#> + edges from 79cc5b0 (vertex names):
 #>  [1] A3          ->xtable     A3          ->pbapply    abc         ->abc.data  
 #>  [4] abc         ->nnet       abc         ->quantreg   abc         ->MASS      
 #>  [7] abc         ->locfit     ABCp2       ->MASS       abctools    ->abc       
@@ -315,9 +316,9 @@ g1.depends <- df0.cran |>
   dplyr::filter(type == "depends" & !reverse) |>
   df_to_graph(nodelist = dplyr::rename(df0.cran, name = from))
 g1.depends # same as g0.depends
-#> IGRAPH 39d30f3 DN-- 4631 7539 -- 
+#> IGRAPH 720060f DN-- 4582 7423 -- 
 #> + attr: name (v/c), type (e/c), reverse (e/l)
-#> + edges from 39d30f3 (vertex names):
+#> + edges from 720060f (vertex names):
 #>  [1] A3          ->xtable     A3          ->pbapply    abc         ->abc.data  
 #>  [4] abc         ->nnet       abc         ->quantreg   abc         ->MASS      
 #>  [7] abc         ->locfit     ABCp2       ->MASS       abctools    ->abc       

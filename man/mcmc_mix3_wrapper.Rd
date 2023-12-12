@@ -12,7 +12,7 @@ mcmc_mix3_wrapper(
   a_psiu = 0.001,
   b_psiu = 0.9,
   m_alpha = 0,
-  s_alpha = 0,
+  s_alpha = 10,
   a_theta = 1,
   b_theta = 1,
   m_shape = 0,

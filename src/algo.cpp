@@ -167,11 +167,11 @@ const NumericVector dpol(const IntegerVector x,
   if (is_true(any(x <= 0))) {
     stop("dpol: all of x has to be +ve integers.");
   }
-  if (alpha <= 1.0) {
-    stop("dpol: alpha has to be greater than 1.0.");
-  }
   if (theta <= 0.0 || theta > 1.0) {
     stop("dpol: theta has to be in (0.0, 1.0].");
+  }
+  else if (theta == 1.0 && alpha <= 1.0) {
+    stop("dpol: alpha has to be greater than 1.0 when theta is 1.0.");
   }
   const double gamma = -log(theta);
   const NumericVector x0(x),
@@ -203,11 +203,11 @@ const NumericVector Spol(const IntegerVector x,
   if (is_true(any(x <= 0))) {
     stop("Spol: all of x has to be +ve integers.");
   }
-  if (alpha <= 1.0) {
-    stop("Spol: alpha has to be greater than 1.0.");
-  }
   if (theta <= 0.0 || theta > 1.0) {
     stop("Spol: theta has to be in (0.0, 1.0].");
+  }
+  else if (theta == 1.0 && alpha <= 1.0) {
+    stop("Spol: alpha has to be greater than 1.0 when theta is 1.0.");
   }
   const int xmin = min(x);
   const double gamma = -log(theta);
