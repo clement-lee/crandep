@@ -475,209 +475,214 @@ obtain_u_set_mix3 <- function(df,
       !inherits(obj_pol2, "try-error") &&
       !inherits(obj_igpd, "try-error")
     while (u < u_max && three) {
-      j <- j + 1L
       u <- u + 1L
       phi2 <- mean(y > v & y <= u)
       psi2 <- mean(x > v & x <= u)
       phiu <- mean(y > u)
       psiu <- mean(x > u)
-      if (powerlaw1) {
-        obj_pol1 <-
-          try(
-            optim(
-              2.0,
-              fn = lpost_bulk_wrapper,
-              x = x,
-              count = count,
-              v = min(x) - 1,
-              u = v,
-              a_alpha = m_alpha,
-              b_alpha = s_alpha,
-              a_theta = a_theta,
-              b_theta = b_theta,
-              phil = phi1,
-              powerlaw = TRUE,
-              positive = positive1, # overridden by TRUE powerlaw
-              control = list(fnscale = -1, maxit = 50000),
-              method = "Brent",
-              lower = 1.00001,
-              upper = 500.0
-            ),
-            silent = TRUE
-          )
+      pxis <- c(phi2, psi2, phiu, psiu)
+      if (any(pxis <= 0.0 | pxis >= 1.0)) {
+        print(paste0("u = ", u, ": boundary issue, no optimisation")) # no data between v & u
       } else {
-        obj_pol1 <-
-          try(
-            optim(
-              c(df0$alpha1, df0$theta1),
-              fn = lpost_bulk,
-              x = x,
-              count = count,
-              v = min(x) - 1,
-              u = v,
-              a_alpha = m_alpha,
-              b_alpha = s_alpha,
-              a_theta = a_theta,
-              b_theta = b_theta,
-              phil = phi1,
-              powerlaw = FALSE,
-              positive = positive1,
-              control = list(fnscale = -1, maxit = 50000)
-            ),
-            silent = TRUE
-          )
-      }
-      if (powerlaw2) {
-        obj_pol2 <-
-          try(
-            optim(
-              2.0,
-              fn = lpost_bulk_wrapper,
-              x = x,
-              count = count,
-              v = v,
-              u = u,
-              a_alpha = m_alpha,
-              b_alpha = s_alpha,
-              a_theta = a_theta,
-              b_theta = b_theta,
-              phil = phi2,
-              powerlaw = TRUE,
-              positive = positive2, # overridden by TRUE powerlaw
-              control = list(fnscale = -1, maxit = 50000),
-              method = "Brent",
-              lower = 1.00001,
-              upper = 500.0
-            ),
-            silent = TRUE
-          )
-      } else {
-        obj_pol2 <-
-          try(
-            optim(
-              c(df0$alpha2, df0$theta2),
-              fn = lpost_bulk,
-              x = x,
-              count = count,
-              v = v,
-              u = u,
-              a_alpha = m_alpha,
-              b_alpha = s_alpha,
-              a_theta = a_theta,
-              b_theta = b_theta,
-              phil = phi2,
-              powerlaw = FALSE,
-              positive = positive2,
-              control = list(fnscale = -1, maxit = 50000)
-            ),
-            silent = TRUE
-          )
-      }
-      obj_igpd <-
-        try(
-          optim(
-            c(df0$shape, df0$sigma),
-            fn = lpost_igpd,
-            x = x,
-            count = count,
-            u = u,
-            m_shape = m_shape,
-            s_shape = s_shape,
-            a_sigma = a_sigma,
-            b_sigma = b_sigma,
-            phiu = phiu,
-            control = list(fnscale = -1, maxit = 50000)
-          ),
-          silent = TRUE
-        )
-      three <-
-        !inherits(obj_pol1, "try-error") &&
-        !inherits(obj_pol2, "try-error") &&
-        !inherits(obj_igpd, "try-error")
-      if (three) {
-        la <- obj_pol1$value + obj_pol2$value + obj_igpd$value
-        par_pol1 <- obj_pol1$par
+        j <- j + 1L
         if (powerlaw1) {
-          par_pol1 <- c(par_pol1, 1.0)
+          obj_pol1 <-
+            try(
+              optim(
+                2.0,
+                fn = lpost_bulk_wrapper,
+                x = x,
+                count = count,
+                v = min(x) - 1,
+                u = v,
+                a_alpha = m_alpha,
+                b_alpha = s_alpha,
+                a_theta = a_theta,
+                b_theta = b_theta,
+                phil = phi1,
+                powerlaw = TRUE,
+                positive = positive1, # overridden by TRUE powerlaw
+                control = list(fnscale = -1, maxit = 50000),
+                method = "Brent",
+                lower = 1.00001,
+                upper = 500.0
+              ),
+              silent = TRUE
+            )
+        } else {
+          obj_pol1 <-
+            try(
+              optim(
+                c(df0$alpha1, df0$theta1),
+                fn = lpost_bulk,
+                x = x,
+                count = count,
+                v = min(x) - 1,
+                u = v,
+                a_alpha = m_alpha,
+                b_alpha = s_alpha,
+                a_theta = a_theta,
+                b_theta = b_theta,
+                phil = phi1,
+                powerlaw = FALSE,
+                positive = positive1,
+                control = list(fnscale = -1, maxit = 50000)
+              ),
+            silent = TRUE
+          )
         }
-        par_pol2 <- obj_pol2$par
         if (powerlaw2) {
-          par_pol2 <- c(par_pol2, 1.0)
+          obj_pol2 <-
+            try(
+              optim(
+                2.0,
+                fn = lpost_bulk_wrapper,
+                x = x,
+                count = count,
+                v = v,
+                u = u,
+                a_alpha = m_alpha,
+                b_alpha = s_alpha,
+                a_theta = a_theta,
+                b_theta = b_theta,
+                phil = phi2,
+                powerlaw = TRUE,
+                positive = positive2, # overridden by TRUE powerlaw
+                control = list(fnscale = -1, maxit = 50000),
+                method = "Brent",
+                lower = 1.00001,
+                upper = 500.0
+              ),
+              silent = TRUE
+            )
+        } else {
+          obj_pol2 <-
+            try(
+              optim(
+                c(df0$alpha2, df0$theta2),
+                fn = lpost_bulk,
+                x = x,
+                count = count,
+                v = v,
+                u = u,
+                a_alpha = m_alpha,
+                b_alpha = s_alpha,
+                a_theta = a_theta,
+                b_theta = b_theta,
+                phil = phi2,
+                powerlaw = FALSE,
+                positive = positive2,
+                control = list(fnscale = -1, maxit = 50000)
+              ),
+              silent = TRUE
+            )
         }
-        par_igpd <- obj_igpd$par
-        lb <-
-          lpost_mix3(
-            x, count, v, u,
-            par_pol1[1], par_pol1[2],
-            par_pol2[1], par_pol2[2],
-            par_igpd[1], par_igpd[2],
-            a_psi1, a_psi2, a_psiu, b_psiu,
-            m_alpha, s_alpha,
-            a_theta, b_theta,
-            m_alpha, s_alpha,
-            a_theta, b_theta,
-            m_shape, s_shape,
-            a_sigma, b_sigma,
-            powerlaw1 = powerlaw1,
-            powerlaw2 = powerlaw2,
-            positive1 = positive1,
-            positive2 = positive2
+        obj_igpd <-
+          try(
+            optim(
+              c(df0$shape, df0$sigma),
+              fn = lpost_igpd,
+              x = x,
+              count = count,
+              u = u,
+              m_shape = m_shape,
+              s_shape = s_shape,
+              a_sigma = a_sigma,
+              b_sigma = b_sigma,
+              phiu = phiu,
+              control = list(fnscale = -1, maxit = 50000)
+            ),
+            silent = TRUE
           )
-        lc <-
-          llik_bulk(
-            par = par_pol1,
-            x = x,
-            count = count,
-            v = min(x) - 1,
-            u = v,
-            phil = phi1,
-            powerlaw = powerlaw1,
-            positive = positive1
-          ) +
-          llik_bulk(
-            par = par_pol2,
-            x = x,
-            count = count,
-            v = v,
-            u = u,
-            phil = phi2,
-            powerlaw = powerlaw2,
-            positive = positive2
-          ) +
-          llik_igpd(
-            par = par_igpd,
-            x = x,
-            count = count,
-            u = u,
-            phiu = phiu
-          )
-        lp <-
-          la +
-          dbeta(psi1 / (1.0 - psiu), a_psi1, a_psi2, log = TRUE) +
-          dunif(psiu, a_psiu, b_psiu, log = TRUE)
-        l_check <- lb
-        ll <- lc
-        df0 <-
-          data.frame(
-            v = v,
-            u = u,
-            alpha1 = par_pol1[1],
-            theta1 = par_pol1[2],
-            alpha2 = par_pol2[1],
-            theta2 = par_pol2[2],
-            shape = par_igpd[1],
-            sigma = par_igpd[2],
-            ll = ll,
-            lp = lp,
-            l_check = l_check
-          )
-        df0$phi1 <- phi1
-        df0$phi2 <- phi2
-        df0$phiu <- phiu
-        df0$psi1 <- psi1
-        df0$psi2 <- psi2
-        df0$psiu <- psiu
-        l1[[j]] <- df0
+        three <-
+          !inherits(obj_pol1, "try-error") &&
+          !inherits(obj_pol2, "try-error") &&
+          !inherits(obj_igpd, "try-error")
+        if (three) {
+          la <- obj_pol1$value + obj_pol2$value + obj_igpd$value
+          par_pol1 <- obj_pol1$par
+          if (powerlaw1) {
+            par_pol1 <- c(par_pol1, 1.0)
+          }
+          par_pol2 <- obj_pol2$par
+          if (powerlaw2) {
+            par_pol2 <- c(par_pol2, 1.0)
+          }
+          par_igpd <- obj_igpd$par
+          lb <-
+            lpost_mix3(
+              x, count, v, u,
+              par_pol1[1], par_pol1[2],
+              par_pol2[1], par_pol2[2],
+              par_igpd[1], par_igpd[2],
+              a_psi1, a_psi2, a_psiu, b_psiu,
+              m_alpha, s_alpha,
+              a_theta, b_theta,
+              m_alpha, s_alpha,
+              a_theta, b_theta,
+              m_shape, s_shape,
+              a_sigma, b_sigma,
+              powerlaw1 = powerlaw1,
+              powerlaw2 = powerlaw2,
+              positive1 = positive1,
+              positive2 = positive2
+            )
+          lc <-
+            llik_bulk(
+              par = par_pol1,
+              x = x,
+              count = count,
+              v = min(x) - 1,
+              u = v,
+              phil = phi1,
+              powerlaw = powerlaw1,
+              positive = positive1
+            ) +
+            llik_bulk(
+              par = par_pol2,
+              x = x,
+              count = count,
+              v = v,
+              u = u,
+              phil = phi2,
+              powerlaw = powerlaw2,
+              positive = positive2
+            ) +
+            llik_igpd(
+              par = par_igpd,
+              x = x,
+              count = count,
+              u = u,
+              phiu = phiu
+            )
+          lp <-
+            la +
+            dbeta(psi1 / (1.0 - psiu), a_psi1, a_psi2, log = TRUE) +
+            dunif(psiu, a_psiu, b_psiu, log = TRUE)
+          l_check <- lb
+          ll <- lc
+          df0 <-
+            data.frame(
+              v = v,
+              u = u,
+              alpha1 = par_pol1[1],
+              theta1 = par_pol1[2],
+              alpha2 = par_pol2[1],
+              theta2 = par_pol2[2],
+              shape = par_igpd[1],
+              sigma = par_igpd[2],
+              ll = ll,
+              lp = lp,
+              l_check = l_check
+            )
+          df0$phi1 <- phi1
+          df0$phi2 <- phi2
+          df0$phiu <- phiu
+          df0$psi1 <- psi1
+          df0$psi2 <- psi2
+          df0$psiu <- psiu
+          l1[[j]] <- df0
+        }
       }
     }
   }
