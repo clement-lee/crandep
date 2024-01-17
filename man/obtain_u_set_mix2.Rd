@@ -8,7 +8,6 @@ obtain_u_set_mix2(
   df,
   powerlaw = FALSE,
   positive = FALSE,
-  name = TRUE,
   u_max = 2000L,
   log_diff_max = 11,
   alpha_init = 0.01,
@@ -33,8 +32,6 @@ obtain_u_set_mix2(
 \item{powerlaw}{Boolean, is the power law (TRUE) or polylogarithm (FALSE, default) assumed?}
 
 \item{positive}{Boolean, is alpha positive (TRUE) or unbounded (FALSE, default)?}
-
-\item{name}{Boolean; if the column \code{name} exists, are its unique values printed?}
 
 \item{u_max}{Positive integer for the maximum threshold}
 

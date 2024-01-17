@@ -1,3 +1,19 @@
+# crandep 0.3.5
+
+## Functions
+- The argument `name` has been removed in the wrapper functions as it required data frames with a specific column `name`.
+- Functions related to the mixture model mid-way of current 2-component & 3-component mixtures are added. 
+
+# crandep 0.3.4 (2023-12-19)
+
+## Functions
+- The default value of `s_alpha` in `mcmc_mix3_wrapper()` is changed from 0.0 to 10.0.
+- In `obtain_u_set_mix3()`, whether there is data between v & u is checked before optimisation. This prevents a warning when the "Brent" method is used (when only alpha is optimised as theta is fixed to 1.0), when there's no data points between v & u.
+- In `dpol()` & `Spol()`, the check for alpha <= 1.0 is made only when theta == 1.0 i.e. the power law applies.
+
+## Documentation
+- README.md is updated.
+
 # crandep 0.3.3 (2023-11-21)
 
 ## Functions

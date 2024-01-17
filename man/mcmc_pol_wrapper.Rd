@@ -21,8 +21,7 @@ mcmc_pol_wrapper(
   burn = 100000L,
   freq = 1000L,
   mc3 = FALSE,
-  invts = 0.001^((0:8)/8),
-  name = TRUE
+  invts = 0.001^((0:8)/8)
 )
 }
 \arguments{
@@ -59,8 +58,6 @@ mcmc_pol_wrapper(
 \item{mc3}{Boolean, is Metropolis-coupled MCMC to be used?}
 
 \item{invts}{Vector of the inverse temperatures for Metropolis-coupled MCMC}
-
-\item{name}{Boolean; if the column \code{name} exists, are its unique values printed?}
 }
 \value{
 A list returned by \code{mcmc_pol}

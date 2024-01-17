@@ -17,7 +17,6 @@
 #' @param freq Positive integer representing the frequency of the sampled values being printed
 #' @param mc3 Boolean, is Metropolis-coupled MCMC to be used?
 #' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC
-#' @param name Boolean; if the column \code{name} exists, are its unique values printed?
 #' @return A list returned by \code{mcmc_pol}
 #' @export
 mcmc_pol_wrapper <- function(df, seed,
@@ -35,11 +34,7 @@ mcmc_pol_wrapper <- function(df, seed,
                              burn = 1e+5L,
                              freq = 1e+3L,
                              mc3 = FALSE,
-                             invts = 0.001 ^ ((0:8)/8),
-                             name = TRUE) {
-  if (name && !is.null(df$name)) {
-    print(paste0("Data set: ", unique(as.character(df$name))))
-  }
+                             invts = 0.001 ^ ((0:8)/8)) {
   set.seed(seed)
   t0 <- system.time({
     mcmc0 <-
@@ -83,7 +78,6 @@ lpost_bulk_wrapper <- function(alpha, ...) {
 #' @param df A data frame with at least two columns, x & count
 #' @param powerlaw Boolean, is the power law (TRUE) or polylogarithm (FALSE, default) assumed?
 #' @param positive Boolean, is alpha positive (TRUE) or unbounded (FALSE, default)?
-#' @param name Boolean; if the column \code{name} exists, are its unique values printed?
 #' @param log_diff_max Positive real number, the value such that thresholds with profile posterior density not less than the maximum posterior density - \code{log_diff_max} will be kept
 #' @param u_max Positive integer for the maximum threshold
 #' @param alpha_init Scalar, initial value of alpha
@@ -99,7 +93,6 @@ lpost_bulk_wrapper <- function(alpha, ...) {
 obtain_u_set_mix2 <- function(df,
                               powerlaw = FALSE,
                               positive = FALSE,
-                              name = TRUE,
                               u_max = 2000L,
                               log_diff_max = 11.0, 
                               alpha_init = 0.01,
@@ -116,9 +109,6 @@ obtain_u_set_mix2 <- function(df,
                               s_shape = 10.0,
                               a_sigma = 1.00,
                               b_sigma = 0.01) {
-  if (name && !is.null(df$name)) {
-    print(paste0("Data set: ", unique(as.character(df$name))))
-  }
   x <- df$x
   if (any(x <= 0L)) {
     stop("df$x has to be positive integers.")
@@ -282,7 +272,6 @@ obtain_u_set_mix2 <- function(df,
   df2 <- data.frame(
     powerlaw = powerlaw,
     positive = positive,
-    name = name,
     u_max = u_max,
     log_diff_max = log_diff_max,
     alpha_init = alpha_init,
@@ -323,7 +312,6 @@ obtain_u_set_mix2 <- function(df,
 #' @param freq Positive integer representing the frequency of the sampled values being printed
 #' @param mc3 Boolean, is Metropolis-coupled MCMC to be used?
 #' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC; ignored if mc3 = FALSE
-#' @param name Boolean; if the column \code{name} exists, are its unique values printed?
 #' @return A list returned by \code{mcmc_mix2}
 #' @export
 mcmc_mix2_wrapper <- function(df, seed,
@@ -346,10 +334,11 @@ mcmc_mix2_wrapper <- function(df, seed,
                               burn = 1e+5L,
                               freq = 1e+3L,
                               mc3 = FALSE,
-                              invts = 0.001 ^ ((0:8)/8),
-                              name = TRUE) {
+                              invts = 0.001 ^ ((0:8)/8)) {
+  print("Obtaining profile")
   obj0 <-
-    obtain_u_set_mix2(df, powerlaw = (pr_power == 1.0), positive = positive, name = name)
+    obtain_u_set_mix2(df, powerlaw = (pr_power == 1.0), positive = positive)
+  print("Running MCMC")
   set.seed(seed)
   t0 <- system.time({
     mcmc0 <-
@@ -396,7 +385,6 @@ mcmc_mix2_wrapper <- function(df, seed,
 #' @param powerlaw2 Boolean, is the power law (TRUE) or polylogarithm (FALSE, default) assumed for the middle bulk?
 #' @param positive1 Boolean, is alpha positive (TRUE) or unbounded (FALSE, default) for the left tail?
 #' @param positive2 Boolean, is alpha positive (TRUE) or unbounded (FALSE, default) for the middle bulk?
-#' @param name Boolean; if the column \code{name} exists, are its unique values printed?
 #' @param log_diff_max Positive real number, the value such that thresholds with profile posterior density not less than the maximum posterior density - \code{log_diff_max} will be kept
 #' @param v_max Positive integer for the maximum lower threshold
 #' @param u_max Positive integer for the maximum upper threshold
@@ -415,7 +403,6 @@ obtain_u_set_mix3 <- function(df,
                               powerlaw2 = FALSE,
                               positive1 = FALSE,
                               positive2 = TRUE,
-                              name = TRUE,
                               log_diff_max = 11.0,
                               v_max = 100L,
                               u_max = 2000L,
@@ -435,9 +422,6 @@ obtain_u_set_mix3 <- function(df,
                               s_shape = 10.0,
                               a_sigma = 1.00,
                               b_sigma = 0.01) {
-  if (name && !is.null(df$name)) {
-    print(paste0("Data set: ", unique(as.character(df$name))))
-  }
   x <- df$x
   if (any(x <= 0L)) {
     stop("df$x has to be positive integers.")
@@ -694,7 +678,6 @@ obtain_u_set_mix3 <- function(df,
     powerlaw2 = powerlaw2,
     positive1 = positive1,
     positive2 = positive2,
-    name = name,
     log_diff_max = log_diff_max,
     v_max = v_max,
     u_max = u_max,
@@ -741,7 +724,6 @@ obtain_u_set_mix3 <- function(df,
 #' @param freq Positive integer representing the frequency of the sampled values being printed
 #' @param mc3 Boolean, is Metropolis-coupled MCMC to be used?
 #' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC; ignored if mc3 = FALSE
-#' @param name Boolean; if the column \code{name} exists, are its unique values printed?
 #' @return A list returned by \code{mcmc_mix3}
 #' @export
 mcmc_mix3_wrapper <- function(df, seed,
@@ -768,17 +750,17 @@ mcmc_mix3_wrapper <- function(df, seed,
                               burn = 1e+5L,
                               freq = 1e+3L,
                               mc3 = FALSE,
-                              invts = 0.001 ^ ((0:8)/8),
-                              name = TRUE) {
+                              invts = 0.001 ^ ((0:8)/8)) {
+  print("Obtaining profile")
   obj0 <-
     obtain_u_set_mix3(
       df,
       powerlaw1 = powerlaw1,
       powerlaw2 = (pr_power2 == 1.0),
       positive1 = positive1,
-      positive2 = positive2,
-      name = name
+      positive2 = positive2
     )
+  print("Running MCMC")
   set.seed(seed)
   t0 <- system.time({
     mcmc0 <-

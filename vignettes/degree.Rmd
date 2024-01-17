@@ -187,7 +187,7 @@ gg2 <- df1.imports |>
 gg2
 ```
 
-This shows the discrete power law doesn't fit as good as it seems according to the frequency plot. To improve the fit, we use the discrete extreme value mixture distributions introduced in [Lee and Eastoe, 2020](https://arxiv.org/abs/2008.03073). Provided in this package for such purpose are `dmix2()`, `Smix2()` and `mcmc_mix2()`. As it takes hours to run the inference algorithm using `mcmc_mix()`, we hardcode the parameter values based on their component-wise posterior median, and overlay the data by the fitted line.
+This shows the discrete power law doesn't fit as good as it seems according to the frequency plot. To improve the fit, we use the discrete extreme value mixture distributions introduced in [Lee, Eastoe and Farrell, 2024](https://arxiv.org/abs/2008.03073). Provided in this package for such purpose are `dmix2()`, `Smix2()` and `mcmc_mix2()`. As it takes hours to run the inference algorithm using `mcmc_mix()`, we hardcode the parameter values based on their component-wise posterior median, and overlay the data by the fitted line.
 
 ```{r}
 gg3 <- df1.imports |>

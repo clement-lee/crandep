@@ -10,7 +10,6 @@ obtain_u_set_mix3(
   powerlaw2 = FALSE,
   positive1 = FALSE,
   positive2 = TRUE,
-  name = TRUE,
   log_diff_max = 11,
   v_max = 100L,
   u_max = 2000L,
@@ -42,8 +41,6 @@ obtain_u_set_mix3(
 \item{positive1}{Boolean, is alpha positive (TRUE) or unbounded (FALSE, default) for the left tail?}
 
 \item{positive2}{Boolean, is alpha positive (TRUE) or unbounded (FALSE, default) for the middle bulk?}
-
-\item{name}{Boolean; if the column \code{name} exists, are its unique values printed?}
 
 \item{log_diff_max}{Positive real number, the value such that thresholds with profile posterior density not less than the maximum posterior density - \code{log_diff_max} will be kept}
 

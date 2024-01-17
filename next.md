@@ -13,3 +13,5 @@
 ## Edit README Rmd & md
 
 ## Fix hyperparameters: m_alpha vs a_alpha, s_alpha vs b_alpha
+
+## Add power posterior for marginal likelihood
