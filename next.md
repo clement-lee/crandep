@@ -15,3 +15,7 @@
 ## Fix hyperparameters: m_alpha vs a_alpha, s_alpha vs b_alpha
 
 ## Add power posterior for marginal likelihood
+
+## expand see also between profile & mcmc functions after adding TZP-power-law mixture
+
+## expand functionality (MC3, model selection) for TZP-power-law mixture

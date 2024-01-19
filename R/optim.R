@@ -1,3 +1,13 @@
+#' Wrapper of lpost_pol, assuming power law (theta = 1.0)
+#'
+#' @param alpha A scalar, positive
+#' @param ... Other arguments passed to lpost_pol
+#' @return A scalar of the log-posterior density
+#' @keywords internal
+lpost_pol_wrapper <- function(alpha, x, count, ...) {
+  lpost_pol(x, count, alpha, 1.0, ...)
+}
+
 #' Wrapper of mcmc_pol
 #'
 #' @param df A data frame with at least two columns, x & count
@@ -62,6 +72,266 @@ mcmc_pol_wrapper <- function(df, seed,
   mcmc0
 }
 
+#' Obtain set of thresholds with high posterior density for the TZP-power-law mixture model
+#'
+#' \code{obtain_u_set_mix1} computes the profile posterior density of the threshold u, and subsets the thresholds (and other parameter values) with high profile values i.e. within a certain value from the maximum posterior density. The set of u can then be used for \code{\link{mcmc_mix1}}.
+#' @param df A data frame with at least two columns, x & count
+#' @param positive Boolean, is alpha1 positive (TRUE) or unbounded (FALSE, default)?
+#' @param log_diff_max Positive real number, the value such that thresholds with profile posterior density not less than the maximum posterior density - \code{log_diff_max} will be kept
+#' @param u_max Positive integer for the maximum threshold
+#' @param alpha1_init Scalar, initial value of alpha1
+#' @param theta1_init Scalar, initial value of theta1
+#' @param alpha2_init Scalar, initial value of alpha2
+#' @param a_psiu,b_psiu,m_alpha1,s_alpha1,a_theta1,b_theta1,m_alpha2,s_alpha2 Scalars, hyperparameters of the priors for the parameters
+#' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+#' @importFrom dplyr bind_rows
+#' @importFrom stats optim dunif
+#' @return A list: \code{u_set} is the vector of thresholds with high posterior density, \code{init} is the data frame with the maximum profile posterior density and associated parameter values, \code{profile} is the data frame with all thresholds with high posterior density and associated parameter values, \code{scalars} is the data frame with all arguments (except df)
+#' @seealso \code{\link{mcmc_mix1_wrapper}} that wraps \code{obtain_u_set_mix1} and \code{\link{mcmc_mix1}}, \code{\link{obtain_u_set_mix2}} for the equivalent function for the 2-component mixture model
+#' @export
+obtain_u_set_mix1 <- function(df,
+                              positive = FALSE,
+                              u_max = 2000L,
+                              log_diff_max = 11.0,
+                              alpha1_init = 0.01,
+                              theta1_init = exp(-1.0),
+                              alpha2_init = 2.0,
+                              a_psiu = 0.1,
+                              b_psiu = 0.9,
+                              m_alpha1 = 0.00,
+                              s_alpha1 = 10.0,
+                              a_theta1 = 1.00,
+                              b_theta1 = 1.00,
+                              m_alpha2 = 0.00,
+                              s_alpha2 = 10.0,
+                              xmax = 100000) {
+  x <- df$x
+  if (any(x <= 0L)) {
+    stop("df$x has to be positive integers.")
+  }
+  count <- df$count
+  y <- rep(x, count) # full data
+  u_max <- min(max(x[x != max(x)]) - 1L, u_max)
+  l1 <- list()
+  i <- 0L # counter
+  u <- min(x) + 1L # smallest threshold for profile
+  print(paste0("Threshold = ", u))
+  df0 <-
+    data.frame(
+      u = u,
+      alpha1 = alpha1_init,
+      theta1 = theta1_init,
+      alpha2 = alpha2_init,
+      ll = as.numeric(NA),
+      lp = as.numeric(NA),
+      l_check = as.numeric(NA)
+    )
+  obj_bulk <- obj_pol <- NULL
+  both <- !inherits(obj_bulk, "try-error") && !inherits(obj_pol, "try-error")
+  ## loop
+  while (u < u_max && both) {
+    i <- i + 1L
+    u <- u + 1L
+    phiu <- mean(y > u)
+    psiu <- mean(x > u)
+    obj_bulk <-
+      try(
+        optim(
+          c(df0$alpha1, df0$theta1),
+          fn = lpost_bulk,
+          x = x,
+          count = count,
+          v = min(x) - 1,
+          u = u,
+          a_alpha = m_alpha1,
+          b_alpha = s_alpha1,
+          a_theta = a_theta1,
+          b_theta = b_theta1,
+          phil = 1.0 - phiu,
+          powerlaw = FALSE,
+          positive = positive,
+          control = list(fnscale = -1, maxit = 50000)
+        ),
+        silent = TRUE
+      )
+    obj_pol <-
+      try(
+        optim(
+          2.0,
+          fn = lpost_pol_wrapper,
+          x = x[x > u],
+          count = count[x > u],
+          a_alpha = m_alpha2,
+          b_alpha = s_alpha2,
+          a_theta = 1.0, # shouldn't matter
+          b_theta = 1.0, # shouldn't matter
+          powerlaw = TRUE,
+          xmax = xmax,
+          control = list(fnscale = -1, maxit = 50000),
+          method = "Brent",
+          lower = 1.00001,
+          upper = 500.0
+        ),
+        silent = TRUE
+      )
+    both <- !inherits(obj_bulk, "try-error") && !inherits(obj_pol, "try-error")
+    if (both) {
+      la <- obj_bulk$value + obj_pol$value
+      par_bulk <- obj_bulk$par
+      par_pol <- c(obj_pol$par, 1.0)
+      lb <-
+        lpost_mix1(
+          x, count, u,
+          par_bulk[1], par_bulk[2], par_pol[1],
+          a_psiu, b_psiu,
+          m_alpha1, s_alpha1,
+          a_theta1, b_theta1,
+          m_alpha2, s_alpha2,
+          positive, xmax
+        )
+      lc <-
+        llik_bulk(
+          par = par_bulk,
+          x = x,
+          count = count,
+          v = min(x) - 1L,
+          u = u,
+          phil = 1.0 - phiu,
+          powerlaw = FALSE,
+          positive = positive
+        ) +
+        llik_pol(
+          par = par_pol,
+          x = x,
+          count = count,
+          powerlaw = TRUE,
+          xmax = xmax
+        ) +
+        sum(y > u) * log(phiu)
+      lp <- la +
+        sum(y > u) * log(phiu) +
+        dunif(psiu, a_psiu, b_psiu, log = TRUE)
+      l_check <- lb
+      ll <- lc
+      df0 <-
+        data.frame(
+          u = u,
+          alpha1 = par_bulk[1],
+          theta1 = par_bulk[2],
+          alpha2 = par_pol[1],
+          ll = ll,
+          lp = lp,
+          l_check = l_check
+        )
+      df0$phiu <- phiu
+      df0$psiu <- psiu
+      l1[[i]] <- df0
+    } else {
+      print(paste0("Threshold = ", u))
+    }
+    if (u == u_max) {
+      print(paste0("Threshold = ", u, " (max)"))
+    }
+  }
+  cat("\n")
+  df1 <- dplyr::bind_rows(l1)
+  df1 <- df1[df1$lp > -Inf, ]
+  df1$ldiff <- max(df1$lp) - df1$lp
+  df2 <- data.frame(
+    positive = positive,
+    u_max = u_max,
+    log_diff_max = log_diff_max,
+    alpha1_init = alpha1_init,
+    theta1_init = theta1_init,
+    alpha2_init = alpha2_init,
+    a_psiu = a_psiu,
+    b_psiu = b_psiu,
+    m_alpha1 = m_alpha1,
+    s_alpha1 = s_alpha1,
+    a_theta1 = a_theta1,
+    b_theta1 = b_theta1,
+    m_alpha2 = m_alpha2,
+    s_alpha2 = s_alpha2
+  )
+  list(
+    u_set = df1[df1$ldiff <= log_diff_max, ]$u,
+    init = df1[df1$ldiff == 0.0, ],
+    profile = df1,
+    scalars = df2
+  )
+}
+
+#' Wrapper of mcmc_mix1
+#'
+#' @param df A data frame with at least two columns, x & count
+#' @param seed Integer for \code{set.seed}
+#' @param a_psiu,b_psiu,m_alpha1,s_alpha1,a_theta1,b_theta1,m_alpha2,s_alpha2 Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
+#' @param positive Boolean, is alpha1 positive (TRUE) or unbounded (FALSE)?
+#' @param iter Positive integer representing the length of the MCMC output
+#' @param thin Positive integer representing the thinning in the MCMC
+#' @param burn Non-negative integer representing the burn-in of the MCMC
+#' @param freq Positive integer representing the frequency of the sampled values being printed
+#' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+#' @return A list returned by \code{mcmc_mix1}
+#' @export
+mcmc_mix1_wrapper <- function(df, seed,
+                              a_psiu = 0.1,
+                              b_psiu = 0.9,
+                              m_alpha1 = 0.00,
+                              s_alpha1 = 10.0,
+                              a_theta1 = 1.00,
+                              b_theta1 = 1.00,
+                              m_alpha2 = 0.00,
+                              s_alpha2 = 10.0,
+                              positive = FALSE,
+                              iter = 2e+4L,
+                              thin = 1L,
+                              burn = 1e+4L,
+                              freq = 1e+2L,
+                              xmax = 100000) {
+  print("Obtaining profile")
+  obj0 <-
+    obtain_u_set_mix1(
+      df, positive,
+      a_psiu = a_psiu, b_psiu = b_psiu,
+      m_alpha1 = m_alpha1, s_alpha1 = s_alpha1,
+      a_theta1 = a_theta1, b_theta1 = b_theta1,
+      m_alpha2 = m_alpha2, s_alpha2 = s_alpha2,
+      xmax = xmax
+    )
+  print("Running MCMC")
+  set.seed(seed)
+  t0 <- system.time({
+    mcmc0 <-
+      mcmc_mix1(
+        x = df$x,
+        count = df$count,
+        u_set = obj0$u_set,
+        u = obj0$init$u,
+        alpha1 = obj0$init$alpha1,
+        theta1 = obj0$init$theta1,
+        alpha2 = obj0$init$alpha2,
+        a_psiu = a_psiu,
+        b_psiu = b_psiu,
+        a_alpha1 = m_alpha1,
+        b_alpha1 = s_alpha1,
+        a_theta1 = a_theta1,
+        b_theta1 = b_theta1,
+        a_alpha2 = m_alpha2,
+        b_alpha2 = s_alpha2,
+        positive = positive,
+        iter = iter,
+        thin = thin,
+        burn = burn,
+        freq = freq,
+        xmax = xmax
+      )
+  })
+  mcmc0$scalars$seed <- as.integer(seed)
+  mcmc0$scalars$seconds <- as.numeric(t0["elapsed"])
+  mcmc0
+}
+
 #' Wrapper of lpost_bulk, assuming power law (theta = 1.0)
 #'
 #' @param alpha A scalar, positive
@@ -88,7 +358,7 @@ lpost_bulk_wrapper <- function(alpha, ...) {
 #' @importFrom dplyr bind_rows
 #' @importFrom stats optim dunif
 #' @return A list: \code{u_set} is the vector of thresholds with high posterior density, \code{init} is the data frame with the maximum profile posterior density and associated parameter values, \code{profile} is the data frame with all thresholds with high posterior density and associated parameter values, \code{scalars} is the data frame with all arguments (except df)
-#' @seealso \code{\link{mcmc_mix2_wrapper}} that wraps \code{obtain_u_set_mix2} and \code{\link{mcmc_mix2}}
+#' @seealso \code{\link{mcmc_mix2_wrapper}} that wraps \code{obtain_u_set_mix2} and \code{\link{mcmc_mix2}}, \code{\link{obtain_u_set_mix1}} for the equivalent function for the TZP-power-law mixture model
 #' @export
 obtain_u_set_mix2 <- function(df,
                               powerlaw = FALSE,
@@ -337,7 +607,14 @@ mcmc_mix2_wrapper <- function(df, seed,
                               invts = 0.001 ^ ((0:8)/8)) {
   print("Obtaining profile")
   obj0 <-
-    obtain_u_set_mix2(df, powerlaw = (pr_power == 1.0), positive = positive)
+    obtain_u_set_mix2(
+      df, powerlaw = (pr_power == 1.0), positive = positive,
+      a_psiu = a_psiu, b_psiu = b_psiu,
+      m_alpha = m_alpha, s_alpha = s_alpha,
+      a_theta = a_theta, b_theta = b_theta,
+      m_shape = m_shape, s_shape = s_shape,
+      a_sigma = a_sigma, b_sigma = b_sigma
+    )
   print("Running MCMC")
   set.seed(seed)
   t0 <- system.time({
@@ -758,7 +1035,13 @@ mcmc_mix3_wrapper <- function(df, seed,
       powerlaw1 = powerlaw1,
       powerlaw2 = (pr_power2 == 1.0),
       positive1 = positive1,
-      positive2 = positive2
+      positive2 = positive2,
+      a_psi1 = a_psi1, a_psi2 = a_psi2,
+      a_psiu = a_psiu, b_psiu = b_psiu,
+      m_alpha = m_alpha, s_alpha = s_alpha,
+      a_theta = a_theta, b_theta = b_theta,
+      m_shape = m_shape, s_shape = s_shape,
+      a_sigma = a_sigma, b_sigma = b_sigma
     )
   print("Running MCMC")
   set.seed(seed)

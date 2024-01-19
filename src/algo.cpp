@@ -226,6 +226,7 @@ const NumericVector Spol(const IntegerVector x,
   return S;
 }
 
+// [[Rcpp::export]]
 const double llik_pol(const NumericVector par,
                       const IntegerVector x,
                       const IntegerVector count,
@@ -260,6 +261,7 @@ const double llik_pol(const NumericVector par,
   return lnan(l);
 }
 
+// [[Rcpp::export]]
 const double lpost_pol(const IntegerVector x,
                        const IntegerVector count,
                        const double alpha,
@@ -747,6 +749,272 @@ const double lpost_igpd(const NumericVector par,
 
 
 // 04) 2-component mixture distribution
+
+// [[Rcpp::export]]
+const double lpost_mix1(const IntegerVector x,
+                        const IntegerVector count,
+                        const int u,
+                        const double alpha1,
+                        const double theta1,
+                        const double alpha2,
+                        const double a_psiu,
+                        const double b_psiu,
+                        const double a_alpha1,
+                        const double b_alpha1,
+                        const double a_theta1,
+                        const double b_theta1,
+                        const double a_alpha2,
+                        const double b_alpha2,
+                        const bool positive, // alpha1 bound to be positive?
+                        const int xmax = 100000) {
+  // T(Z)P below u, power law above u
+  if (x.size() != count.size()) {
+    stop("lpost_mix1: lengths of x & count have to be equal.");
+  }
+  const int v = min(x) - 1;
+  const LogicalVector above = x > u;
+  const IntegerVector xu = x[above], cu = count[above];
+  const double nu(sum(cu));
+  const NumericVector
+    par1 = NumericVector::create(alpha1, theta1),
+    par2 = NumericVector::create(alpha2, 1.0);
+  const double
+    phiu = intdiv(sum(cu), sum(count)),
+    phil = 1.0 - phiu,
+    psiu = intdiv(cu.size(), count.size());
+  double l;
+  if (u <= 1 || u <= min(x) || u >= max(x)) {
+    l = -INFINITY;
+  }
+  else {
+    l =
+      llik_bulk(par1, x, count, v, u, phil, false, positive) +
+      llik_pol(par2, xu, cu, true, xmax) +
+      nu * log(phiu) + // not in llik_pol()
+      ldunif(psiu, a_psiu, b_psiu) +
+      ldnorm(alpha1, a_alpha1, b_alpha1) +
+      ldbeta(theta1, a_theta1, b_theta1) +
+      ldnorm(alpha2, a_alpha2, b_alpha2);
+  }
+  return lnan(l);
+}
+
+//' Markov chain Monte Carlo for TZP-power-law mixture
+//'
+//' \code{mcmc_mix1} returns the posterior samples of the parameters, for fitting the TZP-power-law mixture distribution. The samples are obtained using Markov chain Monte Carlo (MCMC).
+//'
+//' In the MCMC, a componentwise Metropolis-Hastings algorithm is used. The threshold u is treated as a parameter and therefore sampled. The hyperparameters are used in the following priors: u is such that the implied unique exceedance probability psiu ~ Uniform(a_psi, b_psi); alpha1 ~ Normal(mean = a_alpha1, sd = b_alpha1); theta1 ~ Beta(a_theta1, b_theta1); alpha2 ~ Normal(mean = a_alpha2, sd = b_alpha2)
+//' @param x Vector of the unique values (positive integers) of the data
+//' @param count Vector of the same length as x that contains the counts of each unique value in the full data, which is essentially rep(x, count)
+//' @param u_set Positive integer vector of the values u will be sampled from
+//' @param u Positive integer, initial value of the threshold
+//' @param alpha1 Real number, initial value of the parameter
+//' @param theta1 Real number in (0, 1], initial value of the parameter
+//' @param alpha2 Real number greater than 1, initial value of the parameter
+//' @param a_psiu,b_psiu,a_alpha1,b_alpha1,a_theta1,b_theta1,a_alpha2,b_alpha2 Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
+//' @param positive Boolean, is alpha positive (TRUE) or unbounded (FALSE)?
+//' @param iter Positive integer representing the length of the MCMC output
+//' @param thin Positive integer representing the thinning in the MCMC
+//' @param burn Non-negative integer representing the burn-in of the MCMC
+//' @param freq Positive integer representing the frequency of the sampled values being printed
+//' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+//' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
+//' @seealso \code{\link{mcmc_pol}}, \code{\link{mcmc_mix2}} and \code{\link{mcmc_mix3}} for MCMC for the Zipf-polylog, and 2-component and 3-component discrete extreme value mixture distributions, respectively.
+//' @export
+// [[Rcpp::export]]
+List mcmc_mix1(const IntegerVector x,
+               const IntegerVector count,
+               const IntegerVector u_set,
+               int u,
+               double alpha1,
+               double theta1,
+               double alpha2,
+               const double a_psiu,
+               const double b_psiu,
+               const double a_alpha1,
+               const double b_alpha1,
+               const double a_theta1,
+               const double b_theta1,
+               const double a_alpha2,
+               const double b_alpha2,
+               const bool positive,
+               const int iter,
+               const int thin,
+               const int burn,
+               const int freq,
+               const int xmax = 100000) {
+  // -01) save
+  DataFrame
+    data =
+    DataFrame::create(Named("x") = x,
+                      Named("count") = count),
+    init =
+    DataFrame::create(Named("u") = ti(u),
+                      Named("alpha1") = tv(alpha1),
+                      Named("theta1") = tv(theta1),
+                      Named("alpha2") = tv(alpha2)),
+    hyperpars =
+    DataFrame::create(Named("a_psiu") = tv(a_psiu),
+                      Named("b_psiu") = tv(b_psiu),
+                      Named("a_alpha1") = tv(a_alpha1),
+                      Named("b_alpha1") = tv(b_alpha1),
+                      Named("a_theta1") = tv(a_theta1),
+                      Named("b_theta1") = tv(b_theta1),
+                      Named("a_alpha2") = tv(a_alpha2),
+                      Named("b_alpha2") = tv(b_alpha2)),
+    scalars = df_scalars(iter, thin, burn, freq, false);
+  // 00) checks
+  // x are the unique values (> 1) w/ freq count
+  if (is_true(any(x <= 0))) {
+    stop("mcmc_mix1: all of x has to be +ve integers.");
+  }
+  if (is_true(all(u_set != u))) {
+    stop("mcmc_mix1: u must be in u_set.");
+  }
+  // 01)
+  int k;
+  const int K = 1, // for future dev
+    m = u_set.size();
+  const IntegerVector seqm = seq_len(m) - 1;
+  NumericVector w(m), w1(m);
+  const double sd0 = 0.001 / sqrt(2.0), sd1 = 2.38 / sqrt(2.0); // see Roberts & Rosenthal (2008)
+  // 02)
+  IntegerVector u_curr(K, u);
+  NumericVector
+    alpha1_curr(K, alpha1), alpha1_prop(K),
+    theta1_curr(K, theta1), theta1_prop(K),
+    alpha2_curr(K, alpha2), alpha2_prop(K),
+    lpost_curr(K), lpost_prop(K);
+  auto lpost =
+    [x, count,
+     a_psiu, b_psiu, a_alpha1, b_alpha1,
+     a_theta1, b_theta1, a_alpha2, b_alpha2,
+     xmax, positive]
+    (const int u, const double alpha1,
+     const double theta1, const double alpha2) {
+      return
+        lpost_mix1(x, count, u, alpha1, theta1, alpha2,
+                   a_psiu, b_psiu, a_alpha1, b_alpha1,
+                   a_theta1, b_theta1, a_alpha2, b_alpha2,
+                   positive, xmax);
+    };
+  for (k = 0; k < K; k++) {
+    lpost_curr.at(k) = lpost(u_curr.at(k), alpha1_curr.at(k), theta1_curr.at(k), alpha2_curr.at(k));
+  }
+  Rcout << "Iteration 0: Log-posterior = " << lpost_curr << endl;
+  mat alpha1_burn(burn, K), theta1_burn(burn, K), alpha2_burn(burn, K);
+  NumericVector sd_alpha1(K, 0.1), sd_theta1(K, 0.1), sd_alpha2(K, 0.1), cor1(K, 0.1);
+  const IntegerVector seqKm1 = seq_len(K - 1) - 1;
+  // 03) for saving
+  IntegerVector u_vec(iter);
+  NumericVector alpha1_vec(iter), theta1_vec(iter), alpha2_vec(iter), phiu_vec(iter), lpost_vec(iter);
+  const int n = sum(count);
+  double phiu;
+  IntegerVector cu;
+  // 04) run
+  int s, t;
+  for (t = 0; t < iter * thin + burn; t++) {
+    for (k = 0; k < K; k++) {
+      // u
+      std::fill(w.begin(), w.end(), NA_REAL);
+      for (s = 0; s < u_set.size(); s++) {
+        w[s] = lpost(u_set[s], alpha1_curr.at(k), theta1_curr.at(k), alpha2_curr.at(k));
+      }
+      w1 = exp(1.0 * (w - max(w)));
+      s = sample_w(seqm, w1);
+      u_curr.at(k) = u_set[s];
+      lpost_curr.at(k) = w[s];
+      // alpha1 & theta1
+      if (t < burn &&
+          (isnan(cor1.at(k)) || ispm1(cor1.at(k)) ||
+           isnan(sd_alpha1.at(k)) || isnan(sd_theta1.at(k)) || lr1() < log(0.05))) {
+        alpha1_prop.at(k) = rnorm(1, alpha1_curr.at(k), sd0)[0];
+        theta1_prop.at(k) = rnorm(1, theta1_curr.at(k), sd0)[0];
+      }
+      else {
+        alpha1_prop.at(k) = rnorm(1, alpha1_curr.at(k), sd1 * sd_alpha1.at(k))[0];
+        theta1_prop.at(k) = rnorm(1, theta1_curr.at(k) + sd_theta1.at(k) / sd_alpha1.at(k) * cor1.at(k) * (alpha1_prop.at(k) - alpha1_curr.at(k)), sd1 * sqrt1mx2(cor1.at(k)) * sd_theta1.at(k))[0];
+      }
+      lpost_prop.at(k) = lpost(u_curr.at(k), alpha1_prop.at(k), theta1_prop.at(k), alpha2_curr.at(k));
+      if (1.0 * (lpost_prop.at(k) - lpost_curr.at(k)) > lr1()) {
+        alpha1_curr.at(k) = alpha1_prop.at(k);
+        theta1_curr.at(k) = theta1_prop.at(k);
+        lpost_curr.at(k) = lpost_prop.at(k);
+      }
+      // alpha2
+      alpha2_prop.at(k) = rnorm(1, alpha2_curr.at(k), sd_alpha2.at(k))[0];
+      lpost_prop.at(k) = lpost(u_curr.at(k), alpha1_curr.at(k), theta1_curr.at(k), alpha2_prop.at(k));
+      update(alpha2_curr.at(k), alpha2_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha2.at(k), t, burn, 1.0);
+    } // loop over k completes
+    // 05)
+    // 06) adaptive update sds
+    for (k = 0; k < K; k++) {
+      if (t < burn) {
+        alpha1_burn(t, k) = alpha1_curr.at(k);
+        theta1_burn(t, k) = theta1_curr.at(k);
+        sd_alpha1.at(k) = sd_curr(alpha1_burn.col(k), t+1);
+        sd_theta1.at(k) = sd_curr(theta1_burn.col(k), t+1);
+        cor1.at(k) = cor_curr(alpha1_burn.col(k), theta1_burn.col(k), t+1);
+      }
+    }
+    // 07) print
+    if ((t + 1) % freq == 0) {
+      Rcout << "Iteration " << t + 1;
+      Rcout << ": Log-posterior = " << std::setprecision(6) << lpost_curr.at(0) << endl;
+      Rcout << "  u   = " << u_curr.at(0) << endl;
+      if (t < burn) {
+        Rcout << "alpha1 = " << alpha1_curr.at(0) << " (" << sd_alpha1.at(0) << ")" << endl;
+        Rcout << "theta1 = " << theta1_curr.at(0);
+        Rcout << " (" << sd_theta1.at(0) << ")" << endl;
+        Rcout << "cor(alpha1, theta1) = " << cor1.at(0) << endl;
+        Rcout << "alpha2 = " << alpha2_curr.at(0) << " (" << sd_alpha2.at(0) << ")" << endl;
+      }
+      else {
+        Rcout << "alpha1 = " << alpha1_curr.at(0) << endl;
+        Rcout << "theta1 = " << theta1_curr.at(0) << endl;
+        Rcout << "alpha2 = " << alpha2_curr.at(0) << endl;
+      }
+      Rcout << endl;
+    }
+    // 08) save
+    if (t >= burn) {
+      s = t - burn + 1;
+      if (s % thin == 0) {
+        s = s / thin - 1;
+        u = u_curr.at(0);
+        alpha1 = alpha1_curr.at(0);
+        theta1 = theta1_curr.at(0);
+        alpha2 = alpha2_curr.at(0);
+        cu = count[x > u];
+        phiu = intdiv(sum(cu), n);
+        u_vec[s] = u;
+        alpha1_vec[s] = alpha1;
+        theta1_vec[s] = theta1;
+        alpha2_vec[s] = alpha2;
+        phiu_vec[s] = phiu;
+        lpost_vec[s] = lpost_curr.at(0);
+      }
+    }
+  }
+  // 09) output
+  DataFrame
+    pars =
+    DataFrame::create(Named("u") = u_vec,
+                      Named("alpha1") = alpha1_vec,
+                      Named("theta1") = theta1_vec,
+                      Named("alpha2") = alpha2_vec,
+                      Named("phiu") = phiu_vec,
+                      Named("lpost") = lpost_vec);
+  List output =
+    List::create(Named("pars") = pars,
+                 Named("data") = data,
+                 Named("u_set") = u_set,
+                 Named("init") = init,
+                 Named("hyperpars") = hyperpars,
+                 Named("scalars") = scalars);
+  return output;
+}
+
 //' Probability mass function (PMF) of 2-component discrete extreme value mixture distribution
 //'
 //' \code{dmix2} returns the PMF at x for the 2-component discrete extreme value mixture distribution. The components below and above the threshold u are the (truncated) Zipf-polylog(alpha,theta) and the generalised Pareto(shape, sigma) distributions, respectively.

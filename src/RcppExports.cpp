@@ -39,6 +39,41 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// llik_pol
+const double llik_pol(const NumericVector par, const IntegerVector x, const IntegerVector count, const bool powerlaw, const int xmax);
+RcppExport SEXP _crandep_llik_pol(SEXP parSEXP, SEXP xSEXP, SEXP countSEXP, SEXP powerlawSEXP, SEXP xmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector >::type par(parSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const bool >::type powerlaw(powerlawSEXP);
+    Rcpp::traits::input_parameter< const int >::type xmax(xmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(llik_pol(par, x, count, powerlaw, xmax));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lpost_pol
+const double lpost_pol(const IntegerVector x, const IntegerVector count, const double alpha, const double theta, const double a_alpha, const double b_alpha, const double a_theta, const double b_theta, const double powerlaw, const int xmax);
+RcppExport SEXP _crandep_lpost_pol(SEXP xSEXP, SEXP countSEXP, SEXP alphaSEXP, SEXP thetaSEXP, SEXP a_alphaSEXP, SEXP b_alphaSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP powerlawSEXP, SEXP xmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha(a_alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha(b_alphaSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_theta(a_thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_theta(b_thetaSEXP);
+    Rcpp::traits::input_parameter< const double >::type powerlaw(powerlawSEXP);
+    Rcpp::traits::input_parameter< const int >::type xmax(xmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(lpost_pol(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, xmax));
+    return rcpp_result_gen;
+END_RCPP
+}
 // mcmc_pol
 List mcmc_pol(const IntegerVector x, const IntegerVector count, double alpha, double theta, const double a_alpha, const double b_alpha, const double a_theta, const double b_theta, const double a_pseudo, const double b_pseudo, const double pr_power, const int iter, const int thin, const int burn, const int freq, const NumericVector invt, const int xmax);
 RcppExport SEXP _crandep_mcmc_pol(SEXP xSEXP, SEXP countSEXP, SEXP alphaSEXP, SEXP thetaSEXP, SEXP a_alphaSEXP, SEXP b_alphaSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP a_pseudoSEXP, SEXP b_pseudoSEXP, SEXP pr_powerSEXP, SEXP iterSEXP, SEXP thinSEXP, SEXP burnSEXP, SEXP freqSEXP, SEXP invtSEXP, SEXP xmaxSEXP) {
@@ -137,6 +172,63 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type b_sigma(b_sigmaSEXP);
     Rcpp::traits::input_parameter< const double >::type phiu(phiuSEXP);
     rcpp_result_gen = Rcpp::wrap(lpost_igpd(par, x, count, u, m_shape, s_shape, a_sigma, b_sigma, phiu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lpost_mix1
+const double lpost_mix1(const IntegerVector x, const IntegerVector count, const int u, const double alpha1, const double theta1, const double alpha2, const double a_psiu, const double b_psiu, const double a_alpha1, const double b_alpha1, const double a_theta1, const double b_theta1, const double a_alpha2, const double b_alpha2, const bool positive, const int xmax);
+RcppExport SEXP _crandep_lpost_mix1(SEXP xSEXP, SEXP countSEXP, SEXP uSEXP, SEXP alpha1SEXP, SEXP theta1SEXP, SEXP alpha2SEXP, SEXP a_psiuSEXP, SEXP b_psiuSEXP, SEXP a_alpha1SEXP, SEXP b_alpha1SEXP, SEXP a_theta1SEXP, SEXP b_theta1SEXP, SEXP a_alpha2SEXP, SEXP b_alpha2SEXP, SEXP positiveSEXP, SEXP xmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const int >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha1(alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type theta1(theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type alpha2(alpha2SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_psiu(a_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_psiu(b_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha1(a_alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha1(b_alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_theta1(a_theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_theta1(b_theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha2(a_alpha2SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha2(b_alpha2SEXP);
+    Rcpp::traits::input_parameter< const bool >::type positive(positiveSEXP);
+    Rcpp::traits::input_parameter< const int >::type xmax(xmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(lpost_mix1(x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, xmax));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mcmc_mix1
+List mcmc_mix1(const IntegerVector x, const IntegerVector count, const IntegerVector u_set, int u, double alpha1, double theta1, double alpha2, const double a_psiu, const double b_psiu, const double a_alpha1, const double b_alpha1, const double a_theta1, const double b_theta1, const double a_alpha2, const double b_alpha2, const bool positive, const int iter, const int thin, const int burn, const int freq, const int xmax);
+RcppExport SEXP _crandep_mcmc_mix1(SEXP xSEXP, SEXP countSEXP, SEXP u_setSEXP, SEXP uSEXP, SEXP alpha1SEXP, SEXP theta1SEXP, SEXP alpha2SEXP, SEXP a_psiuSEXP, SEXP b_psiuSEXP, SEXP a_alpha1SEXP, SEXP b_alpha1SEXP, SEXP a_theta1SEXP, SEXP b_theta1SEXP, SEXP a_alpha2SEXP, SEXP b_alpha2SEXP, SEXP positiveSEXP, SEXP iterSEXP, SEXP thinSEXP, SEXP burnSEXP, SEXP freqSEXP, SEXP xmaxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type count(countSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector >::type u_set(u_setSEXP);
+    Rcpp::traits::input_parameter< int >::type u(uSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha1(alpha1SEXP);
+    Rcpp::traits::input_parameter< double >::type theta1(theta1SEXP);
+    Rcpp::traits::input_parameter< double >::type alpha2(alpha2SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_psiu(a_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type b_psiu(b_psiuSEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha1(a_alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha1(b_alpha1SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_theta1(a_theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_theta1(b_theta1SEXP);
+    Rcpp::traits::input_parameter< const double >::type a_alpha2(a_alpha2SEXP);
+    Rcpp::traits::input_parameter< const double >::type b_alpha2(b_alpha2SEXP);
+    Rcpp::traits::input_parameter< const bool >::type positive(positiveSEXP);
+    Rcpp::traits::input_parameter< const int >::type iter(iterSEXP);
+    Rcpp::traits::input_parameter< const int >::type thin(thinSEXP);
+    Rcpp::traits::input_parameter< const int >::type burn(burnSEXP);
+    Rcpp::traits::input_parameter< const int >::type freq(freqSEXP);
+    Rcpp::traits::input_parameter< const int >::type xmax(xmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(mcmc_mix1(x, count, u_set, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, iter, thin, burn, freq, xmax));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -377,11 +469,15 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_crandep_dpol", (DL_FUNC) &_crandep_dpol, 4},
     {"_crandep_Spol", (DL_FUNC) &_crandep_Spol, 4},
+    {"_crandep_llik_pol", (DL_FUNC) &_crandep_llik_pol, 5},
+    {"_crandep_lpost_pol", (DL_FUNC) &_crandep_lpost_pol, 10},
     {"_crandep_mcmc_pol", (DL_FUNC) &_crandep_mcmc_pol, 17},
     {"_crandep_llik_bulk", (DL_FUNC) &_crandep_llik_bulk, 8},
     {"_crandep_lpost_bulk", (DL_FUNC) &_crandep_lpost_bulk, 12},
     {"_crandep_llik_igpd", (DL_FUNC) &_crandep_llik_igpd, 5},
     {"_crandep_lpost_igpd", (DL_FUNC) &_crandep_lpost_igpd, 9},
+    {"_crandep_lpost_mix1", (DL_FUNC) &_crandep_lpost_mix1, 16},
+    {"_crandep_mcmc_mix1", (DL_FUNC) &_crandep_mcmc_mix1, 21},
     {"_crandep_dmix2", (DL_FUNC) &_crandep_dmix2, 7},
     {"_crandep_Smix2", (DL_FUNC) &_crandep_Smix2, 7},
     {"_crandep_lpost_mix2", (DL_FUNC) &_crandep_lpost_mix2, 19},

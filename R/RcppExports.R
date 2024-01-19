@@ -36,6 +36,14 @@ Spol <- function(x, alpha, theta, xmax = 100000L) {
     .Call(`_crandep_Spol`, x, alpha, theta, xmax)
 }
 
+llik_pol <- function(par, x, count, powerlaw, xmax) {
+    .Call(`_crandep_llik_pol`, par, x, count, powerlaw, xmax)
+}
+
+lpost_pol <- function(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, xmax) {
+    .Call(`_crandep_lpost_pol`, x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, xmax)
+}
+
 #' Markov chain Monte Carlo for Zipf-polylog distribution
 #'
 #' \code{mcmc_pol} returns the samples from the posterior of alpha and theta, for fitting the Zipf-polylog distribution to the data x. The samples are obtained using Markov chain Monte Carlo (MCMC). In the MCMC, a Metropolis-Hastings algorithm is used.
@@ -77,6 +85,36 @@ llik_igpd <- function(par, x, count, u, phiu) {
 
 lpost_igpd <- function(par, x, count, u, m_shape, s_shape, a_sigma, b_sigma, phiu) {
     .Call(`_crandep_lpost_igpd`, par, x, count, u, m_shape, s_shape, a_sigma, b_sigma, phiu)
+}
+
+lpost_mix1 <- function(x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, xmax = 100000L) {
+    .Call(`_crandep_lpost_mix1`, x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, xmax)
+}
+
+#' Markov chain Monte Carlo for TZP-power-law mixture
+#'
+#' \code{mcmc_mix1} returns the posterior samples of the parameters, for fitting the TZP-power-law mixture distribution. The samples are obtained using Markov chain Monte Carlo (MCMC).
+#'
+#' In the MCMC, a componentwise Metropolis-Hastings algorithm is used. The threshold u is treated as a parameter and therefore sampled. The hyperparameters are used in the following priors: u is such that the implied unique exceedance probability psiu ~ Uniform(a_psi, b_psi); alpha1 ~ Normal(mean = a_alpha1, sd = b_alpha1); theta1 ~ Beta(a_theta1, b_theta1); alpha2 ~ Normal(mean = a_alpha2, sd = b_alpha2)
+#' @param x Vector of the unique values (positive integers) of the data
+#' @param count Vector of the same length as x that contains the counts of each unique value in the full data, which is essentially rep(x, count)
+#' @param u_set Positive integer vector of the values u will be sampled from
+#' @param u Positive integer, initial value of the threshold
+#' @param alpha1 Real number, initial value of the parameter
+#' @param theta1 Real number in (0, 1], initial value of the parameter
+#' @param alpha2 Real number greater than 1, initial value of the parameter
+#' @param a_psiu,b_psiu,a_alpha1,b_alpha1,a_theta1,b_theta1,a_alpha2,b_alpha2 Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
+#' @param positive Boolean, is alpha positive (TRUE) or unbounded (FALSE)?
+#' @param iter Positive integer representing the length of the MCMC output
+#' @param thin Positive integer representing the thinning in the MCMC
+#' @param burn Non-negative integer representing the burn-in of the MCMC
+#' @param freq Positive integer representing the frequency of the sampled values being printed
+#' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+#' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
+#' @seealso \code{\link{mcmc_pol}}, \code{\link{mcmc_mix2}} and \code{\link{mcmc_mix3}} for MCMC for the Zipf-polylog, and 2-component and 3-component discrete extreme value mixture distributions, respectively.
+#' @export
+mcmc_mix1 <- function(x, count, u_set, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, iter, thin, burn, freq, xmax = 100000L) {
+    .Call(`_crandep_mcmc_mix1`, x, count, u_set, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, iter, thin, burn, freq, xmax)
 }
 
 #' Probability mass function (PMF) of 2-component discrete extreme value mixture distribution

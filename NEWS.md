@@ -2,7 +2,8 @@
 
 ## Functions
 - The argument `name` has been removed in the wrapper functions as it required data frames with a specific column `name`.
-- Functions related to the mixture model mid-way of current 2-component & 3-component mixtures are added. 
+- Functions related to the TZP-power-law mixture model (mid-way of current 2-component & 3-component mixtures) are added.
+- Wrapper functions of the 2-component & 3-component mixtures have the default arguments included in the body so they are relayed to `obtain_u_set_mix2()` or `obtain_u_set_mix3()`.
 
 # crandep 0.3.4 (2023-12-19)
 
