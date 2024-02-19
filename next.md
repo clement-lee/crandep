@@ -14,7 +14,9 @@
 
 ## Fix hyperparameters: m_alpha vs a_alpha, s_alpha vs b_alpha
 
-## Add power posterior for marginal likelihood
+## Add power posterior for marginal likelihood for mix{1,2,3}
+
+## Overhaul sampling for *pol as numerical integration & marginal likelihood analytically possible
 
 ## expand see also between profile & mcmc functions after adding TZP-power-law mixture
 

@@ -51,9 +51,9 @@ const double ldunif(const double x, const double a, const double b) {
 }
 
 template <class T>
-void update(T & par_curr, T par_prop, double & lpost_curr, const double lpost_prop, double & s, const int i, const int burnin, const double invt = 1.0, const double factor = 10.0) {
+void update(T & par_curr, T par_prop, double & lpost_curr, const double lpost_prop, double & s, const int i, const int burnin, bool & accept_reject, const double invt = 1.0, const double factor = 10.0) {
   const double lalpha = invt * (lpost_prop - lpost_curr);
-  const bool accept_reject = lalpha > lr1();
+  accept_reject = lalpha > lr1();
   par_curr = accept_reject ? par_prop : par_curr;
   lpost_curr = accept_reject ? lpost_prop : lpost_curr;
   if (i < burnin) {
@@ -261,6 +261,7 @@ const double llik_pol(const NumericVector par,
   return lnan(l);
 }
 
+//' @keywords internal
 // [[Rcpp::export]]
 const double lpost_pol(const IntegerVector x,
                        const IntegerVector count,
@@ -271,7 +272,9 @@ const double lpost_pol(const IntegerVector x,
                        const double a_theta,
                        const double b_theta,
                        const double powerlaw,
-                       const int xmax) {
+                       const int xmax,
+                       double & llik,
+                       const double invt = 1.0) {
   // checks in llik_pol
   double l;
   if (theta <= 0.0 || theta > 1.0 ||
@@ -280,7 +283,9 @@ const double lpost_pol(const IntegerVector x,
   }
   else {
     const NumericVector par = NumericVector::create(alpha, theta);
-    l = llik_pol(par, x, count, powerlaw, xmax) +
+    llik = llik_pol(par, x, count, powerlaw, xmax);
+    // invt for marginal likelihood, not parallel tempering
+    l = llik * invt +
       ldnorm(alpha, a_alpha, b_alpha) +
       (powerlaw ? 0.0 : ldbeta(theta, a_theta, b_theta));
   }
@@ -328,7 +333,7 @@ List mcmc_pol(const IntegerVector x,
               const int freq,
               const NumericVector invt,
               const int xmax = 100000) { // should be enough
-  // -01) save
+  // 01) save
   DataFrame
     data =
     DataFrame::create(Named("x") = x,
@@ -346,7 +351,7 @@ List mcmc_pol(const IntegerVector x,
                       Named("b_pseudo") = tv(b_pseudo),
                       Named("pr_power") = tv(pr_power)),
     scalars = df_scalars(iter, thin, burn, freq, invt.size() != 1);
-  // 00) checks
+  // 02) checks
   // x are the unique values (> 1) w/ freq count
   if (is_true(any(x <= 0))) {
     stop("mcmc_pol: all of x has to be +ve integers.");
@@ -362,13 +367,13 @@ List mcmc_pol(const IntegerVector x,
   if (!std::is_sorted(invt0.begin(), invt0.end())) {
     stop("mcmc_pol: invt has to be in decreasing order.");
   }
-  // 01) dimensions const to invt.size()
+  // 03) dimensions const to invt.size()
   int k;
   const int K = invt.size();
   //  const double sd0 = 0.001 / sqrt(2.0), sd1 = 2.38 / sqrt(2.0); // see Roberts & Rosenthal (2008)
   double ldiff;
   vec swap_accept(K-1, fill::zeros), swap_count(K-1, fill::zeros);
-  bool powl;
+  bool powl, accept_reject;
   if (pr_power == 1.0) { // power law
     powl = true; // & stay true
     theta = 1.0; // & stay 1.0
@@ -382,29 +387,31 @@ List mcmc_pol(const IntegerVector x,
   // for model selection
   double theta_pseudo, ak, bk, logA_powl, logA_poly;
   running_stat<double> powl_stat;
-  // 02) dimensions increase w/ K
+  // 04) dimensions increase w/ K
   NumericVector
     alpha_curr(K, alpha), alpha_prop(K),
     theta_curr(K, theta), theta_prop(K),
+    llik_curr(K), llik_prop(K),
     lpost_curr(K), lpost_prop(K);
   LogicalVector powl_curr(K, powl);
   auto lpost =
     [x, count, a_alpha, b_alpha, a_theta, b_theta, xmax]
-    (const double alpha, const double theta, const bool powerlaw) {
+    (const double alpha, const double theta, const bool powerlaw, double & llik) {
       return
         lpost_pol(x, count, alpha, theta,
                   a_alpha, b_alpha,
                   a_theta, b_theta,
-                  powerlaw, xmax);
+                  powerlaw, xmax,
+                  llik, 1.0);
     };
   for (int k = 0; k < K; k++) {
-    lpost_curr.at(k) = lpost(alpha_curr.at(k), theta_curr.at(k), powl_curr.at(k));
+    lpost_curr.at(k) = lpost(alpha_curr.at(k), theta_curr.at(k), powl_curr.at(k), llik_curr.at(k));
   }
   Rcout << "Iteration 0: Log-posterior = " << lpost_curr << endl;
   mat alpha_burn(burn, K), theta_burn(burn, K);
   NumericVector sd_alpha(K, 0.1), sd_theta(K, 0.1), cor1(K, 0.1);
   const IntegerVector seqKm1 = seq_len(K - 1) - 1;
-  // 03) for saving, dimensions const to K
+  // 05) for saving, dimensions const to K
   IntegerVector powl_vec(iter);
   NumericVector alpha_vec(iter), theta_vec(iter), lpost_vec(iter);
   const int xmin = min(x);
@@ -412,18 +419,24 @@ List mcmc_pol(const IntegerVector x,
   const int n0 = x0.size();
   NumericVector f0(n0), S0(n0); // fitted
   mat f0_mat(iter, n0), S0_mat(iter, n0);
-  // 04) run
+  // 06) run
   int s, t, l;
   for (t = 0; t < iter * thin + burn; t++) {
     for (k = 0; k < K; k++) {
       // alpha & theta
       alpha_prop.at(k) = rnorm(1, alpha_curr.at(k), sd_alpha.at(k))[0];
-      lpost_prop.at(k) = lpost(alpha_prop.at(k), theta_curr.at(k), powl_curr.at(k));
-      update(alpha_curr.at(k), alpha_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha.at(k), t, burn, invt.at(k));
+      lpost_prop.at(k) = lpost(alpha_prop.at(k), theta_curr.at(k), powl_curr.at(k), llik_prop.at(k));
+      update(alpha_curr.at(k), alpha_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha.at(k), t, burn, accept_reject, invt.at(k));
+      if (accept_reject) {
+        llik_curr.at(k) = llik_prop.at(k);
+      }
       if (!powl_curr.at(k)) {
         theta_prop.at(k) = rnorm(1, theta_curr.at(k), sd_theta.at(k))[0];
-        lpost_prop.at(k) = lpost(alpha_curr.at(k), theta_prop.at(k), powl_curr.at(k));
-        update(theta_curr.at(k), theta_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_theta.at(k), t, burn, 1.0);
+        lpost_prop.at(k) = lpost(alpha_curr.at(k), theta_prop.at(k), powl_curr.at(k), llik_prop.at(k));
+        update(theta_curr.at(k), theta_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_theta.at(k), t, burn, accept_reject, invt.at(k));
+        if (accept_reject) {
+          llik_curr.at(k) = llik_prop.at(k);
+        }
       }
       // model selection
       if (pr_power != 0.0 && pr_power != 1.0 && t >= burn) {
@@ -437,17 +450,18 @@ List mcmc_pol(const IntegerVector x,
             ldbeta(theta_pseudo, ak, bk) +
             log(pr_power);
           logA_poly =
-            lpost(alpha_curr.at(k), theta_pseudo, false) +
+            lpost(alpha_curr.at(k), theta_pseudo, false, llik_prop.at(k)) +
             log(1.0 - pr_power);
           if (lr1() > -log(1.0 + exp(logA_poly - logA_powl))) { // switch to polylog
             powl_curr.at(k) = false;
             theta_curr.at(k) = theta_pseudo;
             lpost_curr.at(k) = logA_poly - log(1.0 - pr_power);
+            llik_curr.at(k) = llik_prop.at(k);
           }
         }
         else { // currently polylog
           logA_powl =
-            lpost(alpha_curr.at(k), theta_curr.at(k), true) +
+            lpost(alpha_curr.at(k), theta_curr.at(k), true, llik_prop.at(k)) +
             ldbeta(theta_curr.at(k), ak, bk) +
             log(pr_power);
           logA_poly =
@@ -456,6 +470,7 @@ List mcmc_pol(const IntegerVector x,
             powl_curr.at(k) = true;
             theta_curr.at(k) = 1.0;
             lpost_curr.at(k) = logA_powl - ldbeta(theta_curr.at(k), ak, bk) - log(pr_power);
+            llik_curr.at(k) = llik_prop.at(k);
           }
         }
         if (k == 0) {
@@ -463,7 +478,7 @@ List mcmc_pol(const IntegerVector x,
         }
       }
     } // loop over k completes
-    // 05) Metropolis coupling
+    // 07) Metropolis coupling
     if (K > 1) {
       k = Rcpp::RcppArmadillo::sample(seqKm1, 1, false)[0];
       l = k + 1;
@@ -472,11 +487,13 @@ List mcmc_pol(const IntegerVector x,
         swap(alpha_curr.at(k), alpha_curr.at(l));
         swap(theta_curr.at(k), theta_curr.at(l));
         swap(powl_curr.at(k), powl_curr.at(l));
+        swap(lpost_curr.at(k), llik_curr.at(l));
+        swap(llik_curr.at(k), llik_curr.at(l));
         swap_accept.at(k) += 1.0;
       }
       swap_count.at(k) += 1.0;
     }
-    // 06) update cor for printing
+    // 08) update cor for printing
     // in case we decide to change to update simultaneously
     for (k = 0; k < K; k++) {
       if (t < burn) {
@@ -487,7 +504,7 @@ List mcmc_pol(const IntegerVector x,
         }
       }
     }
-    // 07) print
+    // 09) print
     if ((t + 1) % freq == 0) {
       Rcout << "Iteration " << t + 1;
       Rcout << ": Log-posterior = " << std::setprecision(6) << lpost_curr.at(0) << endl;
@@ -520,7 +537,7 @@ List mcmc_pol(const IntegerVector x,
       }
       Rcout << endl;
     }
-    // 08) save
+    // 10) save
     if (t >= burn) {
       s = t - burn + 1;
       if (s % thin == 0) {
@@ -539,7 +556,7 @@ List mcmc_pol(const IntegerVector x,
       }
     }
   }
-  // 08) output
+  // 11) output
   const vec p1 = { 0.025, 0.50, 0.975 };
   const mat
     f0_q = quantile(f0_mat, p1, 0),
@@ -843,7 +860,7 @@ List mcmc_mix1(const IntegerVector x,
                const int burn,
                const int freq,
                const int xmax = 100000) {
-  // -01) save
+  // 01) save
   DataFrame
     data =
     DataFrame::create(Named("x") = x,
@@ -863,7 +880,7 @@ List mcmc_mix1(const IntegerVector x,
                       Named("a_alpha2") = tv(a_alpha2),
                       Named("b_alpha2") = tv(b_alpha2)),
     scalars = df_scalars(iter, thin, burn, freq, false);
-  // 00) checks
+  // 02) checks
   // x are the unique values (> 1) w/ freq count
   if (is_true(any(x <= 0))) {
     stop("mcmc_mix1: all of x has to be +ve integers.");
@@ -871,14 +888,15 @@ List mcmc_mix1(const IntegerVector x,
   if (is_true(all(u_set != u))) {
     stop("mcmc_mix1: u must be in u_set.");
   }
-  // 01)
+  // 03)
   int k;
   const int K = 1, // for future dev
     m = u_set.size();
   const IntegerVector seqm = seq_len(m) - 1;
   NumericVector w(m), w1(m);
   const double sd0 = 0.001 / sqrt(2.0), sd1 = 2.38 / sqrt(2.0); // see Roberts & Rosenthal (2008)
-  // 02)
+  bool accept_reject;
+  // 04)
   IntegerVector u_curr(K, u);
   NumericVector
     alpha1_curr(K, alpha1), alpha1_prop(K),
@@ -905,13 +923,13 @@ List mcmc_mix1(const IntegerVector x,
   mat alpha1_burn(burn, K), theta1_burn(burn, K), alpha2_burn(burn, K);
   NumericVector sd_alpha1(K, 0.1), sd_theta1(K, 0.1), sd_alpha2(K, 0.1), cor1(K, 0.1);
   const IntegerVector seqKm1 = seq_len(K - 1) - 1;
-  // 03) for saving
+  // 05) for saving
   IntegerVector u_vec(iter);
   NumericVector alpha1_vec(iter), theta1_vec(iter), alpha2_vec(iter), phiu_vec(iter), lpost_vec(iter);
   const int n = sum(count);
   double phiu;
   IntegerVector cu;
-  // 04) run
+  // 06) run
   int s, t;
   for (t = 0; t < iter * thin + burn; t++) {
     for (k = 0; k < K; k++) {
@@ -944,10 +962,10 @@ List mcmc_mix1(const IntegerVector x,
       // alpha2
       alpha2_prop.at(k) = rnorm(1, alpha2_curr.at(k), sd_alpha2.at(k))[0];
       lpost_prop.at(k) = lpost(u_curr.at(k), alpha1_curr.at(k), theta1_curr.at(k), alpha2_prop.at(k));
-      update(alpha2_curr.at(k), alpha2_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha2.at(k), t, burn, 1.0);
+      update(alpha2_curr.at(k), alpha2_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha2.at(k), t, burn, accept_reject, 1.0);
     } // loop over k completes
-    // 05)
-    // 06) adaptive update sds
+    // 07)
+    // 08) adaptive update sds
     for (k = 0; k < K; k++) {
       if (t < burn) {
         alpha1_burn(t, k) = alpha1_curr.at(k);
@@ -957,7 +975,7 @@ List mcmc_mix1(const IntegerVector x,
         cor1.at(k) = cor_curr(alpha1_burn.col(k), theta1_burn.col(k), t+1);
       }
     }
-    // 07) print
+    // 09) print
     if ((t + 1) % freq == 0) {
       Rcout << "Iteration " << t + 1;
       Rcout << ": Log-posterior = " << std::setprecision(6) << lpost_curr.at(0) << endl;
@@ -976,7 +994,7 @@ List mcmc_mix1(const IntegerVector x,
       }
       Rcout << endl;
     }
-    // 08) save
+    // 10) save
     if (t >= burn) {
       s = t - burn + 1;
       if (s % thin == 0) {
@@ -996,7 +1014,7 @@ List mcmc_mix1(const IntegerVector x,
       }
     }
   }
-  // 09) output
+  // 11) output
   DataFrame
     pars =
     DataFrame::create(Named("u") = u_vec,
@@ -1242,7 +1260,7 @@ List mcmc_mix2(const IntegerVector x,
                const int burn,
                const int freq,
                const NumericVector invt) {
-  // -01) save
+  // 01) save
   DataFrame
     data =
     DataFrame::create(Named("x") = x,
@@ -1270,7 +1288,7 @@ List mcmc_mix2(const IntegerVector x,
                       Named("b_pseudo") = tv(b_pseudo),
                       Named("pr_power") = tv(pr_power)),
     scalars = df_scalars(iter, thin, burn, freq, invt.size() != 1);
-  // 00) checks
+  // 02) checks
   // x are the unique values (> 1) w/ freq count
   if (is_true(any(x <= 0))) {
     stop("mcmc_mix2: all of x has to be +ve integers.");
@@ -1289,7 +1307,7 @@ List mcmc_mix2(const IntegerVector x,
   if (!std::is_sorted(invt0.begin(), invt0.end())) {
     stop("mcmc_mix2: invt has to be in decreasing order.");
   }
-  // 01) dimensions const to invt.size()
+  // 03) dimensions const to invt.size()
   int k;
   const int K = invt.size(), m = u_set.size();
   const IntegerVector seqm = seq_len(m) - 1;
@@ -1297,7 +1315,7 @@ List mcmc_mix2(const IntegerVector x,
   const double sd0 = 0.001 / sqrt(2.0), sd1 = 2.38 / sqrt(2.0); // see Roberts & Rosenthal (2008)
   double ldiff;
   vec swap_accept(K-1, fill::zeros), swap_count(K-1, fill::zeros);
-  bool powl;
+  bool powl, accept_reject;
   if (pr_power == 1.0) { // power law
     powl = true; // & stay true
     theta = 1.0; // & stay 1.0
@@ -1311,7 +1329,7 @@ List mcmc_mix2(const IntegerVector x,
   // for model selection
   double theta_pseudo, ak, bk, logA_powl, logA_poly;
   running_stat<double> powl_stat;
-  // 02) dimensions increase w/ K
+  // 04) dimensions increase w/ K
   IntegerVector u_curr(K, u);
   NumericVector
     alpha_curr(K, alpha), alpha_prop(K),
@@ -1344,7 +1362,7 @@ List mcmc_mix2(const IntegerVector x,
   NumericVector sd_alpha(K, 0.1), sd_theta(K, 0.1), sd_shape(K, 0.1), sd_sigma(K, 0.1), cor1(K, 0.1), cor2(K, 0.1);
   // these sds & cors not as influential as sd0
   const IntegerVector seqKm1 = seq_len(K - 1) - 1;
-  // 03) for saving, dimensions const to K
+  // 05) for saving, dimensions const to K
   IntegerVector u_vec(iter), powl_vec(iter);
   NumericVector alpha_vec(iter), theta_vec(iter), shape_vec(iter), sigma_vec(iter), phiu_vec(iter), lpost_vec(iter);
   const int n = sum(count);
@@ -1354,7 +1372,7 @@ List mcmc_mix2(const IntegerVector x,
   const int n0 = x0.size();
   NumericVector f0(n0), S0(n0); // fitted
   mat f0_mat(iter, n0), S0_mat(iter, n0);
-  // 04) run
+  // 06) run
   int s, t, l;
   for (t = 0; t < iter * thin + burn; t++) {
     for (k = 0; k < K; k++) {
@@ -1371,7 +1389,7 @@ List mcmc_mix2(const IntegerVector x,
       if (powl_curr.at(k)) {
         alpha_prop.at(k) = rnorm(1, alpha_curr.at(k), sd_alpha.at(k))[0];
         lpost_prop.at(k) = lpost(u_curr.at(k), alpha_prop.at(k), theta_curr.at(k), shape_curr.at(k), sigma_curr.at(k), powl_curr.at(k));
-        update(alpha_curr.at(k), alpha_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha.at(k), t, burn, invt.at(k));
+        update(alpha_curr.at(k), alpha_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha.at(k), t, burn, accept_reject, invt.at(k));
       }
       else {
         if (t < burn &&
@@ -1447,7 +1465,7 @@ List mcmc_mix2(const IntegerVector x,
         }
       }
     } // loop over k completes
-    // 05) Metropolis coupling
+    // 07) Metropolis coupling
     if (K > 1) {
       k = Rcpp::RcppArmadillo::sample(seqKm1, 1, false)[0];
       l = k + 1;
@@ -1464,7 +1482,7 @@ List mcmc_mix2(const IntegerVector x,
       }
       swap_count.at(k) += 1.0;
     }
-    // 06) adaptive update sds after chain swap
+    // 08) adaptive update sds after chain swap
     for (k = 0; k < K; k++) {
       if (t < burn) {
         if (!powl_curr.at(k)) {
@@ -1481,7 +1499,7 @@ List mcmc_mix2(const IntegerVector x,
         cor2.at(k) = cor_curr(shape_burn.col(k), sigma_burn.col(k), t+1);
       }
     }
-    // 07) print
+    // 09) print
     if ((t + 1) % freq == 0) {
       Rcout << "Iteration " << t + 1;
       Rcout << ": Log-posterior = " << std::setprecision(6) << lpost_curr.at(0) << endl;
@@ -1520,7 +1538,7 @@ List mcmc_mix2(const IntegerVector x,
       }
       Rcout << endl;
     }
-    // 08) save
+    // 10) save
     if (t >= burn) {
       s = t - burn + 1;
       if (s % thin == 0) {
@@ -1548,7 +1566,7 @@ List mcmc_mix2(const IntegerVector x,
       }
     }
   }
-  // 09) output
+  // 11) output
   const vec p1 = { 0.025, 0.50, 0.975 };
   const mat
     f0_q = quantile(f0_mat, p1, 0), // 3 x n0
@@ -1873,7 +1891,7 @@ List mcmc_mix3(const IntegerVector x,
                const int burn,
                const int freq,
                const NumericVector invt) {
-  // -01) save
+  // 01) save
   DataFrame
     data =
     DataFrame::create(Named("x") = x,
@@ -1912,7 +1930,7 @@ List mcmc_mix3(const IntegerVector x,
                       Named("b_pseudo") = tv(b_pseudo),
                       Named("pr_power2") = tv(pr_power2)),
     scalars = df_scalars(iter, thin, burn, freq, invt.size() != 1);
-  // 00) checks
+  // 02) checks
   // x are the unique values (> 1) w/ freq count
   if (is_true(any(x <= 0))) {
     stop("mcmc_mix3: all of x has to be +ve integers.");
@@ -1934,7 +1952,7 @@ List mcmc_mix3(const IntegerVector x,
   if (!std::is_sorted(invt0.begin(), invt0.end())) {
     stop("mcmc_mix3: invt has to be in decreasing order.");
   }
-  // 01) dimensions const to invt.size()
+  // 03) dimensions const to invt.size()
   int k;
   const int K = invt.size(), m = u_set.size();
   const IntegerVector seqm = seq_len(m) - 1;
@@ -1942,7 +1960,7 @@ List mcmc_mix3(const IntegerVector x,
   const double sd0 = 0.001 / sqrt(2.0), sd1 = 2.38 / sqrt(2.0); // see Roberts & Rosenthal (2008)
   double ldiff;
   vec swap_accept(K-1, fill::zeros), swap_count(K-1, fill::zeros);
-  bool powl;
+  bool powl, accept_reject;
   if (pr_power2 == 1.0) { // power law
     powl = true; // & stay true
     theta2 = 1.0; // & stay 1.0
@@ -1956,7 +1974,7 @@ List mcmc_mix3(const IntegerVector x,
   // for model selection
   double theta2_pseudo, ak, bk, logA_powl, logA_poly;
   running_stat<double> powl_stat;
-  // 02) dimensions increase w/ K
+  // 04) dimensions increase w/ K
   IntegerVector v_curr(K, v), u_curr(K, u);
   NumericVector
     alpha1_curr(K, alpha1), alpha1_prop(K),
@@ -2008,7 +2026,7 @@ List mcmc_mix3(const IntegerVector x,
     cor1(K, 0.1), cor2(K, 0.1), cor3(K, 0.1);
   // these sds & cors not as influential as sd0
   const IntegerVector seqKm1 = seq_len(K - 1) - 1;
-  // 03) for saving, dimensions const to K
+  // 05) for saving, dimensions const to K
   IntegerVector
     v_vec(iter), u_vec(iter), powl_vec(iter);
   NumericVector
@@ -2024,7 +2042,7 @@ List mcmc_mix3(const IntegerVector x,
   const int n0 = x0.size();
   NumericVector f0(n0), S0(n0); // fitted
   mat f0_mat(iter, n0), S0_mat(iter, n0);
-  // 04) run
+  // 06) run
   int s, t, l;
   for (t = 0; t < iter * thin + burn; t++) {
     for (k = 0; k < K; k++) {
@@ -2071,7 +2089,7 @@ List mcmc_mix3(const IntegerVector x,
                                  alpha2_prop.at(k), theta2_curr.at(k),
                                  shape_curr.at(k), sigma_curr.at(k),
                                  powl_curr.at(k));
-        update(alpha2_curr.at(k), alpha2_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha2.at(k), t, burn, invt.at(k));
+        update(alpha2_curr.at(k), alpha2_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), sd_alpha2.at(k), t, burn, accept_reject, invt.at(k));
       }
       else {
         if (t < burn &&
@@ -2163,7 +2181,7 @@ List mcmc_mix3(const IntegerVector x,
         }
       }
     } // loop over k completes
-    // 05) Metropolis coupling
+    // 07) Metropolis coupling
     if (K > 1) {
       k = Rcpp::RcppArmadillo::sample(seqKm1, 1, false)[0];
       l = k + 1;
@@ -2183,7 +2201,7 @@ List mcmc_mix3(const IntegerVector x,
       }
       swap_count.at(k) += 1.0;
     }
-    // 06) adaptive update sds after chain swap
+    // 08) adaptive update sds after chain swap
     for (k = 0; k < K; k++) {
       if (t < burn) {
         alpha1_burn(t, k) = alpha1_curr.at(k);
@@ -2205,7 +2223,7 @@ List mcmc_mix3(const IntegerVector x,
         cor3.at(k) = cor_curr(shape_burn.col(k), sigma_burn.col(k), t+1);
       }
     }
-    // 07) print
+    // 09) print
     if ((t + 1) % freq == 0) {
       Rcout << "Iteration " << t + 1;
       Rcout << ": Log-posterior = " << std::setprecision(6) << lpost_curr.at(0) << endl;
@@ -2251,7 +2269,7 @@ List mcmc_mix3(const IntegerVector x,
       }
       Rcout << endl;
     }
-    // 08) save
+    // 10) save
     if (t >= burn) {
       s = t - burn + 1;
       if (s % thin == 0) {
@@ -2294,7 +2312,7 @@ List mcmc_mix3(const IntegerVector x,
       }
     }
   }
-  // 09) output
+  // 11) output
   const vec p1 = { 0.025, 0.50, 0.975 };
   const mat
     f0_q = quantile(f0_mat, p1, 0), // 3 x n0
