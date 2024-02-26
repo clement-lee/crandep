@@ -1,3 +1,61 @@
+#' Unnormalised log-posterior density of discrete power law
+#'
+#' @param alpha Real number greater than 1
+#' @param df A data frame with at least two columns, x & count
+#' @param m_alpha Real number, mean of the prior normal distribution for alpha
+#' @param s_alpha Positive real number, standard deviation of the prior normal distribution for alpha
+#' @importFrom gsl hzeta
+#' @importFrom stats dnorm
+#' @return A real number
+#' @keywords internal
+lpost_pow <- function(alpha, df, m_alpha, s_alpha) {
+  y <- rep(df$x, df$count)
+  llik <- ifelse(alpha <= 1.0, -Inf, -alpha * sum(log(y)) - length(y) * log(gsl::hzeta(alpha, min(df$x))))
+  llik + dnorm(alpha, m_alpha, s_alpha, log = TRUE)
+}
+
+#' Marginal log-likelihood and posterior density of discrete power law via numerical integration
+#'
+#' @param df A data frame with at least two columns, x & count
+#' @param lower Real number greater than 1, lower limit for numerical integration
+#' @param upper Real number greater than lower, upper limit for numerical integration
+#' @param m_alpha Real number, mean of the prior normal distribution for alpha
+#' @param s_alpha Positive real number, standard deviation of the prior normal distribution for alpha
+#' @param by Positive real number, the width of subintervals between lower and upper, for numerical integration and posterior density evaluation
+#' @importFrom pracma integral
+#' @return A list: \code{log.marginal} is the marginal log-likelihood, \code{posterior} is a data frame of non-zero posterior densities
+#' @export
+marg_pow <- function(df, lower, upper, m_alpha, s_alpha, by = 0.001) {
+  if (lower <= 1.0) {
+    stop("marg_pow: lower bound of alpha has to be greater than 1.0.")
+  } else if (lower >= upper) {
+    stop("marg_pow: lower bound of alpha has to be smaller than the upper bound.")
+  }
+  optim0 <-
+    optim(
+      1.5,
+      lpost_pow,
+      df = df,
+      m_alpha = m_alpha,
+      s_alpha = s_alpha,
+      control = list(fnscale = -1, maxit = 50000),
+      method = "Brent",
+      lower = lower,
+      upper = upper
+    )
+  foo <- function(alpha, offset) {
+    exp(lpost_pow(alpha, df, m_alpha, s_alpha) - offset)
+  }
+  l1 <- pracma::integral(foo, lower, upper, no_intervals = (upper - lower) / by, offset = optim0$value)
+  lmarg1 <- log(l1) + optim0$value
+  alphas <- seq(lower, upper, by = by)
+  post <- data.frame(alpha = alphas, density = foo(alphas, lmarg1))
+  list(
+    log.marginal = lmarg1,
+    posterior = post[post$density > 0.0, ]
+  )
+}
+
 #' Wrapper of lpost_pol, assuming power law (theta = 1.0)
 #'
 #' @param alpha A scalar, positive

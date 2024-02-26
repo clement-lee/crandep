@@ -154,7 +154,23 @@ mcmc0.imports$pars |>
   ggplot2::theme_bw(12)
 ```
 
-This means the number of reverse "Imports" follows approximately a power law with exponent `r round(mean(mcmc0.imports$pars$alpha),2)`. We can also calculate the fitted frequencies and survival function, using `dpol()` and `Spol()` respectively. Their summaries are however readily available in the MCMC output. We overlay the fitted line (blue, dashed) and credible intervals (red, dotted) on the plot above to check goodness-of-fit:
+This means the number of reverse "Imports" follows approximately a power law with exponent `r round(mean(mcmc0.imports$pars$alpha),2)`. We can also obtain the posterior density via numerical integration using `marg_pol()`. The returned list contains `log.marginal` for the marginal log-likelihood, and `posterior` for the posterior density in a data frame. We verify its alignment with the MCMC results:
+
+```{r}
+marg0.imports <-
+  marg_pow(
+    data.frame(x = x, count = counts),
+    lower = 1.001,
+    upper = 20.0,
+    m_alpha = m_alpha,
+    s_alpha = s_alpha
+  )
+ggplot2::last_plot() +
+  ggplot2::geom_line(ggplot2::aes(alpha, density), marg0.imports$posterior, col = 2) +
+  ggplot2::coord_cartesian(xlim = range(mcmc0.imports$pars$alpha))
+```
+
+We can also calculate the fitted frequencies and survival function, using `dpol()` and `Spol()` respectively. Their summaries are however readily available in the MCMC output. We overlay the fitted line (blue, dashed) and credible intervals (red, dotted) on the plot above to check goodness-of-fit:
 
 ```{r}
 n0 <- sum(df1.imports$frequency) # TOTAL number of data points in x

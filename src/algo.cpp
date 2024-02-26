@@ -261,7 +261,6 @@ const double llik_pol(const NumericVector par,
   return lnan(l);
 }
 
-//' @keywords internal
 // [[Rcpp::export]]
 const double lpost_pol(const IntegerVector x,
                        const IntegerVector count,

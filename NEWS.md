@@ -1,4 +1,13 @@
-# crandep 0.3.5
+# crandep 0.3.6 (2024-02-26)
+
+## Functions
+- Add `marg_pow()` for calculating the posterior density and marginal (log-)likelihood of the discrete power law i.e. the Zipf distribution.
+- Change `update()` in C++ in preparation for marginal log-likelihood calculations for other models (Zipf-polylog, mixtures, etc.)
+
+## Vignettes
+- Calculations using `marg_pow()` added to align with `mcmc_pol()` (when theta = 1.0) in terms of posterior density.
+
+# crandep 0.3.5 (2024-01-19)
 
 ## Functions
 - The argument `name` has been removed in the wrapper functions as it required data frames with a specific column `name`.

@@ -40,8 +40,8 @@ llik_pol <- function(par, x, count, powerlaw, xmax) {
     .Call(`_crandep_llik_pol`, par, x, count, powerlaw, xmax)
 }
 
-lpost_pol <- function(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, xmax) {
-    .Call(`_crandep_lpost_pol`, x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, xmax)
+lpost_pol <- function(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, xmax, llik, invt = 1.0) {
+    .Call(`_crandep_lpost_pol`, x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, xmax, llik, invt)
 }
 
 #' Markov chain Monte Carlo for Zipf-polylog distribution

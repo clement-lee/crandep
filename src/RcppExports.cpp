@@ -55,8 +55,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // lpost_pol
-const double lpost_pol(const IntegerVector x, const IntegerVector count, const double alpha, const double theta, const double a_alpha, const double b_alpha, const double a_theta, const double b_theta, const double powerlaw, const int xmax);
-RcppExport SEXP _crandep_lpost_pol(SEXP xSEXP, SEXP countSEXP, SEXP alphaSEXP, SEXP thetaSEXP, SEXP a_alphaSEXP, SEXP b_alphaSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP powerlawSEXP, SEXP xmaxSEXP) {
+const double lpost_pol(const IntegerVector x, const IntegerVector count, const double alpha, const double theta, const double a_alpha, const double b_alpha, const double a_theta, const double b_theta, const double powerlaw, const int xmax, double& llik, const double invt);
+RcppExport SEXP _crandep_lpost_pol(SEXP xSEXP, SEXP countSEXP, SEXP alphaSEXP, SEXP thetaSEXP, SEXP a_alphaSEXP, SEXP b_alphaSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP powerlawSEXP, SEXP xmaxSEXP, SEXP llikSEXP, SEXP invtSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -70,7 +70,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type b_theta(b_thetaSEXP);
     Rcpp::traits::input_parameter< const double >::type powerlaw(powerlawSEXP);
     Rcpp::traits::input_parameter< const int >::type xmax(xmaxSEXP);
-    rcpp_result_gen = Rcpp::wrap(lpost_pol(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, xmax));
+    Rcpp::traits::input_parameter< double& >::type llik(llikSEXP);
+    Rcpp::traits::input_parameter< const double >::type invt(invtSEXP);
+    rcpp_result_gen = Rcpp::wrap(lpost_pol(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, xmax, llik, invt));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -470,7 +472,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_crandep_dpol", (DL_FUNC) &_crandep_dpol, 4},
     {"_crandep_Spol", (DL_FUNC) &_crandep_Spol, 4},
     {"_crandep_llik_pol", (DL_FUNC) &_crandep_llik_pol, 5},
-    {"_crandep_lpost_pol", (DL_FUNC) &_crandep_lpost_pol, 10},
+    {"_crandep_lpost_pol", (DL_FUNC) &_crandep_lpost_pol, 12},
     {"_crandep_mcmc_pol", (DL_FUNC) &_crandep_mcmc_pol, 17},
     {"_crandep_llik_bulk", (DL_FUNC) &_crandep_llik_bulk, 8},
     {"_crandep_lpost_bulk", (DL_FUNC) &_crandep_lpost_bulk, 12},
