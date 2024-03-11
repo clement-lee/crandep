@@ -62,12 +62,12 @@ lpost_pol <- function(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta
 #' @param thin Positive integer representing the thinning in the MCMC
 #' @param burn Non-negative integer representing the burn-in of the MCMC
 #' @param freq Positive integer representing the frequency of the sampled values being printed
-#' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC; default c(1.0) i.e. no Metropolis-coupling
-#' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+#' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
+#' @param xmax Scalar, positive integer limit for computing the normalising constant
 #' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 #' @seealso \code{\link{mcmc_mix2}} and \code{\link{mcmc_mix3}} for MCMC for the 2-component and 3-component discrete extreme value mixture distributions, respectively.
 #' @export
-mcmc_pol <- function(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, xmax = 100000L) {
+mcmc_pol <- function(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, xmax) {
     .Call(`_crandep_mcmc_pol`, x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, xmax)
 }
 
@@ -87,8 +87,8 @@ lpost_igpd <- function(par, x, count, u, m_shape, s_shape, a_sigma, b_sigma, phi
     .Call(`_crandep_lpost_igpd`, par, x, count, u, m_shape, s_shape, a_sigma, b_sigma, phiu)
 }
 
-lpost_mix1 <- function(x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, xmax = 100000L) {
-    .Call(`_crandep_lpost_mix1`, x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, xmax)
+lpost_mix1 <- function(x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, xmax, llik, invt = 1.0) {
+    .Call(`_crandep_lpost_mix1`, x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, xmax, llik, invt)
 }
 
 #' Markov chain Monte Carlo for TZP-power-law mixture
@@ -109,12 +109,13 @@ lpost_mix1 <- function(x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_al
 #' @param thin Positive integer representing the thinning in the MCMC
 #' @param burn Non-negative integer representing the burn-in of the MCMC
 #' @param freq Positive integer representing the frequency of the sampled values being printed
-#' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+#' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
+#' @param xmax Scalar, positive integer limit for computing the normalising constant
 #' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 #' @seealso \code{\link{mcmc_pol}}, \code{\link{mcmc_mix2}} and \code{\link{mcmc_mix3}} for MCMC for the Zipf-polylog, and 2-component and 3-component discrete extreme value mixture distributions, respectively.
 #' @export
-mcmc_mix1 <- function(x, count, u_set, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, iter, thin, burn, freq, xmax = 100000L) {
-    .Call(`_crandep_mcmc_mix1`, x, count, u_set, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, iter, thin, burn, freq, xmax)
+mcmc_mix1 <- function(x, count, u_set, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, iter, thin, burn, freq, invt, xmax) {
+    .Call(`_crandep_mcmc_mix1`, x, count, u_set, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, iter, thin, burn, freq, invt, xmax)
 }
 
 #' Probability mass function (PMF) of 2-component discrete extreme value mixture distribution
@@ -151,8 +152,8 @@ Smix2 <- function(x, u, alpha, theta, shape, sigma, phiu) {
     .Call(`_crandep_Smix2`, x, u, alpha, theta, shape, sigma, phiu)
 }
 
-lpost_mix2 <- function(x, count, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, powerlaw, positive) {
-    .Call(`_crandep_lpost_mix2`, x, count, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, powerlaw, positive)
+lpost_mix2 <- function(x, count, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, powerlaw, positive, llik, invt = 1.0) {
+    .Call(`_crandep_lpost_mix2`, x, count, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, powerlaw, positive, llik, invt)
 }
 
 #' Markov chain Monte Carlo for 2-component discrete extreme value mixture distribution
@@ -177,7 +178,7 @@ lpost_mix2 <- function(x, count, u, alpha, theta, shape, sigma, a_psiu, b_psiu, 
 #' @param thin Positive integer representing the thinning in the MCMC
 #' @param burn Non-negative integer representing the burn-in of the MCMC
 #' @param freq Positive integer representing the frequency of the sampled values being printed
-#' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC; default c(1.0) i.e. no Metropolis-coupling
+#' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
 #' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 #' @seealso \code{\link{mcmc_pol}} and \code{\link{mcmc_mix3}} for MCMC for the Zipf-polylog and 3-component discrete extreme value mixture distributions, respectively.
 #' @export
@@ -229,8 +230,8 @@ Smix3 <- function(x, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, phi1, p
     .Call(`_crandep_Smix3`, x, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, phi1, phi2, phiu)
 }
 
-lpost_mix3 <- function(x, count, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, a_psi1, a_psi2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, a_theta2, b_theta2, m_shape, s_shape, a_sigma, b_sigma, powerlaw1, powerlaw2, positive1, positive2) {
-    .Call(`_crandep_lpost_mix3`, x, count, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, a_psi1, a_psi2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, a_theta2, b_theta2, m_shape, s_shape, a_sigma, b_sigma, powerlaw1, powerlaw2, positive1, positive2)
+lpost_mix3 <- function(x, count, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, a_psi1, a_psi2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, a_theta2, b_theta2, m_shape, s_shape, a_sigma, b_sigma, powerlaw1, powerlaw2, positive1, positive2, llik, invt = 1.0) {
+    .Call(`_crandep_lpost_mix3`, x, count, v, u, alpha1, theta1, alpha2, theta2, shape, sigma, a_psi1, a_psi2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, a_theta2, b_theta2, m_shape, s_shape, a_sigma, b_sigma, powerlaw1, powerlaw2, positive1, positive2, llik, invt)
 }
 
 #' Markov chain Monte Carlo for 3-component discrete extreme value mixture distribution
@@ -261,7 +262,7 @@ lpost_mix3 <- function(x, count, v, u, alpha1, theta1, alpha2, theta2, shape, si
 #' @param thin Positive integer representing the thinning in the MCMC
 #' @param burn Non-negative integer representing the burn-in of the MCMC
 #' @param freq Positive integer representing the frequency of the sampled values being printed
-#' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC; default c(1.0) i.e. no Metropolis-coupling
+#' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
 #' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 #' @seealso \code{\link{mcmc_pol}} and \code{\link{mcmc_mix2}} for MCMC for the Zipf-polylog and 2-component discrete extreme value mixture distributions, respectively.
 #' @export

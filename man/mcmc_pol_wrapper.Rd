@@ -21,7 +21,8 @@ mcmc_pol_wrapper(
   burn = 100000L,
   freq = 1000L,
   mc3 = FALSE,
-  invts = 0.001^((0:8)/8)
+  invts = 0.001^((0:8)/8),
+  xmax = 1e+05
 )
 }
 \arguments{
@@ -57,7 +58,9 @@ mcmc_pol_wrapper(
 
 \item{mc3}{Boolean, is Metropolis-coupled MCMC to be used?}
 
-\item{invts}{Vector of the inverse temperatures for Metropolis-coupled MCMC}
+\item{invts}{Vector of the inverse temperatures for Metropolis-coupled MCMC; ignored if mc3 = FALSE}
+
+\item{xmax}{Scalar (default 100000), positive integer limit for computing the normalising constant}
 }
 \value{
 A list returned by \code{mcmc_pol}

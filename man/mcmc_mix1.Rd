@@ -25,7 +25,8 @@ mcmc_mix1(
   thin,
   burn,
   freq,
-  xmax = 100000L
+  invt,
+  xmax
 )
 }
 \arguments{
@@ -55,7 +56,9 @@ mcmc_mix1(
 
 \item{freq}{Positive integer representing the frequency of the sampled values being printed}
 
-\item{xmax}{Scalar (default 100000), positive integer limit for computing the normalising constant}
+\item{invt}{Vector of the inverse temperatures for Metropolis-coupled MCMC}
+
+\item{xmax}{Scalar, positive integer limit for computing the normalising constant}
 }
 \value{
 A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC

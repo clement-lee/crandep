@@ -141,7 +141,8 @@ mcmc0.imports <-
     thin = 1L,
     burn = 500L,
     freq = 500L,
-    invt = 1.0
+    invt = 1.0,
+    xmax = 100000
   ) # takes seconds
 ```
 

@@ -23,3 +23,5 @@
 ## expand functionality (MC3, model selection) for TZP-power-law mixture
 
 ## subsume log-likelihood updates in update() in algo.cpp
+
+## replaces *_prop NumericVectors by double
