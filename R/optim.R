@@ -84,8 +84,8 @@ lpost_pol_wrapper <- function(alpha, x, count, ...) {
 #' @param thin Positive integer representing the thinning in the MCMC
 #' @param burn Non-negative integer representing the burn-in of the MCMC
 #' @param freq Positive integer representing the frequency of the sampled values being printed
-#' @param mc3 Boolean, is Metropolis-coupled MCMC to be used?
-#' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC; ignored if mc3 = FALSE
+#' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC (if mc3_or_marg = TRUE) or power posterior (if mc3_or_marg = FALSE)
+#' @param mc3_or_marg Boolean, is Metropolis-coupled MCMC to be used? Ignored if invts = c(1.0)
 #' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
 #' @return A list returned by \code{mcmc_pol}
 #' @export
@@ -103,9 +103,10 @@ mcmc_pol_wrapper <- function(df, seed,
                              thin = 2e+1L,
                              burn = 1e+5L,
                              freq = 1e+3L,
-                             mc3 = FALSE,
                              invts = 0.001 ^ ((0:8)/8),
+                             mc3_or_marg = TRUE,
                              xmax = 100000) {
+  mc3 <- mc3_or_marg && (length(invts) > 1)
   set.seed(seed)
   t0 <- system.time({
     mcmc0 <-
@@ -125,7 +126,8 @@ mcmc_pol_wrapper <- function(df, seed,
         thin = thin * ifelse(mc3, 2L, 1L),
         burn = burn,
         freq = freq,
-        invt = if (mc3) invts else 1.0,
+        invt = invts,
+        mc3_or_marg = mc3_or_marg,
         xmax = xmax
       )
   })
@@ -335,8 +337,8 @@ obtain_u_set_mix1 <- function(df,
 #' @param thin Positive integer representing the thinning in the MCMC
 #' @param burn Non-negative integer representing the burn-in of the MCMC
 #' @param freq Positive integer representing the frequency of the sampled values being printed
-#' @param mc3 Boolean, is Metropolis-coupled MCMC to be used?
-#' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC; ignored if mc3 = FALSE
+#' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC (if mc3_or_marg = TRUE) or power posterior (if mc3_or_marg = FALSE)
+#' @param mc3_or_marg Boolean, is Metropolis-coupled MCMC to be used? Ignored if invts = c(1.0)
 #' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
 #' @return A list returned by \code{mcmc_mix1}
 #' @export
@@ -354,8 +356,8 @@ mcmc_mix1_wrapper <- function(df, seed,
                               thin = 1L,
                               burn = 1e+4L,
                               freq = 1e+2L,
-                              mc3 = FALSE,
                               invts = 0.001 ^ ((0:8)/8),
+                              mc3_or_marg = TRUE,
                               xmax = 100000) {
   print("Obtaining profile")
   obj0 <-
@@ -392,7 +394,8 @@ mcmc_mix1_wrapper <- function(df, seed,
         thin = thin,
         burn = burn,
         freq = freq,
-        invt = if (mc3) invts else 1.0,
+        invt = invts,
+        mc3_or_marg = mc3_or_marg,
         xmax = xmax
       )
   })
@@ -653,8 +656,8 @@ obtain_u_set_mix2 <- function(df,
 #' @param thin Positive integer representing the thinning in the MCMC
 #' @param burn Non-negative integer representing the burn-in of the MCMC
 #' @param freq Positive integer representing the frequency of the sampled values being printed
-#' @param mc3 Boolean, is Metropolis-coupled MCMC to be used?
-#' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC; ignored if mc3 = FALSE
+#' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC (if mc3_or_marg = TRUE) or power posterior (if mc3_or_marg = FALSE)
+#' @param mc3_or_marg Boolean, is Metropolis-coupled MCMC to be used? Ignored if invts = c(1.0)
 #' @return A list returned by \code{mcmc_mix2}
 #' @export
 mcmc_mix2_wrapper <- function(df, seed,
@@ -676,8 +679,8 @@ mcmc_mix2_wrapper <- function(df, seed,
                               thin = 2e+1L,
                               burn = 1e+5L,
                               freq = 1e+3L,
-                              mc3 = FALSE,
-                              invts = 0.001 ^ ((0:8)/8)) {
+                              invts = 0.001 ^ ((0:8)/8),
+                              mc3_or_marg = TRUE) {
   print("Obtaining profile")
   obj0 <-
     obtain_u_set_mix2(
@@ -689,6 +692,7 @@ mcmc_mix2_wrapper <- function(df, seed,
       a_sigma = a_sigma, b_sigma = b_sigma
     )
   print("Running MCMC")
+  mc3 <- mc3_or_marg && (length(invts) > 1)
   set.seed(seed)
   t0 <- system.time({
     mcmc0 <-
@@ -719,7 +723,8 @@ mcmc_mix2_wrapper <- function(df, seed,
         thin = thin * ifelse(mc3, 2L, 1L),
         burn = burn,
         freq = freq,
-        invt = if (mc3) invts else 1.0
+        invt = invts,
+        mc3_or_marg = mc3_or_marg
       )
   })
   mcmc0$scalars$seed <- as.integer(seed)
@@ -1075,8 +1080,8 @@ obtain_u_set_mix3 <- function(df,
 #' @param thin Positive integer representing the thinning in the MCMC
 #' @param burn Non-negative integer representing the burn-in of the MCMC
 #' @param freq Positive integer representing the frequency of the sampled values being printed
-#' @param mc3 Boolean, is Metropolis-coupled MCMC to be used?
-#' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC; ignored if mc3 = FALSE
+#' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC (if mc3_or_marg = TRUE) or power posterior (if mc3_or_marg = FALSE)
+#' @param mc3_or_marg Boolean, is Metropolis-coupled MCMC to be used? Ignored if invts = c(1.0)
 #' @return A list returned by \code{mcmc_mix3}
 #' @export
 mcmc_mix3_wrapper <- function(df, seed,
@@ -1102,8 +1107,8 @@ mcmc_mix3_wrapper <- function(df, seed,
                               thin = 2e+1L,
                               burn = 1e+5L,
                               freq = 1e+3L,
-                              mc3 = FALSE,
-                              invts = 0.001 ^ ((0:8)/8)) {
+                              invts = 0.001 ^ ((0:8)/8),
+                              mc3_or_marg = TRUE) {
   print("Obtaining profile")
   obj0 <-
     obtain_u_set_mix3(
@@ -1120,6 +1125,7 @@ mcmc_mix3_wrapper <- function(df, seed,
       a_sigma = a_sigma, b_sigma = b_sigma
     )
   print("Running MCMC")
+  mc3 <- mc3_or_marg && (length(invts) > 1)
   set.seed(seed)
   t0 <- system.time({
     mcmc0 <-
@@ -1162,7 +1168,8 @@ mcmc_mix3_wrapper <- function(df, seed,
         thin = thin * ifelse(mc3, 2L, 1L),
         burn = burn,
         freq = freq,
-        invt = if (mc3) invts else 1.0
+        invt = invts,
+        mc3_or_marg = mc3_or_marg
       )
   })
   mcmc0$scalars$seed <- as.integer(seed)

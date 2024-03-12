@@ -26,6 +26,7 @@ mcmc_mix1(
   burn,
   freq,
   invt,
+  mc3_or_marg,
   xmax
 )
 }
@@ -57,6 +58,8 @@ mcmc_mix1(
 \item{freq}{Positive integer representing the frequency of the sampled values being printed}
 
 \item{invt}{Vector of the inverse temperatures for Metropolis-coupled MCMC}
+
+\item{mc3_or_marg}{Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?}
 
 \item{xmax}{Scalar, positive integer limit for computing the normalising constant}
 }

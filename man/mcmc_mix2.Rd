@@ -31,7 +31,8 @@ mcmc_mix2(
   thin,
   burn,
   freq,
-  invt
+  invt,
+  mc3_or_marg = TRUE
 )
 }
 \arguments{
@@ -70,6 +71,8 @@ mcmc_mix2(
 \item{freq}{Positive integer representing the frequency of the sampled values being printed}
 
 \item{invt}{Vector of the inverse temperatures for Metropolis-coupled MCMC}
+
+\item{mc3_or_marg}{Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?}
 }
 \value{
 A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC

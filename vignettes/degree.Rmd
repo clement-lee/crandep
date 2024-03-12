@@ -142,6 +142,7 @@ mcmc0.imports <-
     burn = 500L,
     freq = 500L,
     invt = 1.0,
+    mc3_or_marg = TRUE,
     xmax = 100000
   ) # takes seconds
 ```

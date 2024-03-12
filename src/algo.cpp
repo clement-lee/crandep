@@ -82,6 +82,12 @@ const double cor_curr(const vec x, const vec y, const int i) {
   return as_scalar(cor(x.head(i), y.head(i)));
 }
 
+const int sample_1(const IntegerVector seq) {
+  // sample 1 value from seq uniformly
+  return Rcpp::RcppArmadillo::sample(seq, 1, false)[0];
+  // true or false shouldn't matter
+}
+
 const int sample_w(const IntegerVector seq, const NumericVector weights) {
   // sample 1 value from seq with weights
   return Rcpp::RcppArmadillo::sample(seq, 1, true, weights)[0];
@@ -95,13 +101,13 @@ DataFrame df_scalars(const int iter,
                      const int thin,
                      const int burn,
                      const int freq,
-                     const bool mc3) {
+                     const bool mc3_or_marg) {
   return
     DataFrame::create(Named("iter") = ti(iter),
                       Named("thin") = ti(thin),
                       Named("burn") = ti(burn),
                       Named("freq") = ti(freq),
-                      Named("mc3") = tl(mc3));
+                      Named("mc3_or_marg") = tl(mc3_or_marg));
 }
 
 const IntegerVector for_Smix(const int u, const int xmin) {
@@ -134,6 +140,13 @@ const double intdiv(const int a, const int b) {
 
 const double odds(const double p) {
   return p / (1.0 - p);
+}
+
+const NumericVector pm(const NumericVector v, const bool plus_or_minus) {
+  const int n = v.size();
+  const double factor = (double) plus_or_minus * 2.0 - 1.0;
+  const NumericVector u = head(v, n - 1) + factor * tail(v, n - 1);
+  return u;
 }
 
 
@@ -323,6 +336,7 @@ const double lpost_pol(const IntegerVector x,
 //' @param freq Positive integer representing the frequency of the sampled values being printed
 //' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
 //' @param xmax Scalar, positive integer limit for computing the normalising constant
+//' @param mc3_or_marg Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?
 //' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 //' @seealso \code{\link{mcmc_mix2}} and \code{\link{mcmc_mix3}} for MCMC for the 2-component and 3-component discrete extreme value mixture distributions, respectively.
 //' @export
@@ -343,6 +357,7 @@ List mcmc_pol(const IntegerVector x,
               const int burn,
               const int freq,
               const NumericVector invt,
+              const bool mc3_or_marg,
               const int xmax) {
   // 01) save
   DataFrame
@@ -361,7 +376,7 @@ List mcmc_pol(const IntegerVector x,
     DataFrame::create(Named("a_pseudo") = tv(a_pseudo),
                       Named("b_pseudo") = tv(b_pseudo),
                       Named("pr_power") = tv(pr_power)),
-    scalars = df_scalars(iter, thin, burn, freq, invt.size() != 1);
+    scalars = df_scalars(iter, thin, burn, freq, mc3_or_marg);
   // 02) checks
   // x are the unique values (> 1) w/ freq count
   if (is_true(any(x <= 0))) {
@@ -370,8 +385,14 @@ List mcmc_pol(const IntegerVector x,
   if (invt.at(0) != 1.0) {
     stop("mcmc_pol: 1st element of inverse temperatures (invt) has to be 1.0.");
   }
-  if (is_true(any(invt > 1.0)) || is_true(any(invt <= 0.0))) {
-    stop("mcmc_pol: all elements of invt must be in (0.0, 1.0].");
+  if (mc3_or_marg) {
+    if (is_true(any(invt > 1.0)) || is_true(any(invt <= 0.0))) {
+      stop("mcmc_pol: all elements of invt must be in (0.0, 1.0].");
+    }
+  } else {
+    if (is_true(any(invt > 1.0)) || is_true(any(invt < 0.0))) {
+      stop("mcmc_pol: all elements of invt must be in [0.0, 1.0].");
+    }
   }
   NumericVector invt0 = clone(invt);
   std::reverse(invt0.begin(), invt0.end());
@@ -407,21 +428,21 @@ List mcmc_pol(const IntegerVector x,
   LogicalVector powl_curr(K, powl);
   auto lpost =
     [x, count, a_alpha, b_alpha, a_theta, b_theta, xmax]
-    (const double alpha, const double theta, const bool powerlaw, double & llik) {
+    (const double alpha, const double theta, const bool powerlaw, double & llik, const double invt) {
       return
         lpost_pol(x, count, alpha, theta,
                   a_alpha, b_alpha,
                   a_theta, b_theta,
                   powerlaw, xmax,
-                  llik, 1.0); // to chg for power posterior
+                  llik, invt);
     };
-  for (int k = 0; k < K; k++) {
-    lpost_curr.at(k) = lpost(alpha_curr.at(k), theta_curr.at(k), powl_curr.at(k), llik_curr.at(k));
-  }
-  Rcout << "Iteration 0: Log-posterior = " << lpost_curr << endl;
+  lpost_curr.at(0) = lpost(alpha_curr.at(0), theta_curr.at(0), powl_curr.at(0), llik_curr.at(0), mc3_or_marg ? 1.0 : invt.at(0));
+  Rcout << "Iteration 0, chain 0: Log-posterior = " << lpost_curr.at(0) << endl;
   mat alpha_burn(burn, K), theta_burn(burn, K);
   NumericVector sd_alpha(K, 0.1), sd_theta(K, 0.1), cor1(K, 0.1);
   const IntegerVector seqKm1 = seq_len(K - 1) - 1;
+  vec llik_arma(K);
+  running_stat_vec<vec> llik_stat;
   // 05) for saving, dimensions const to K
   IntegerVector powl_vec(iter);
   NumericVector alpha_vec(iter), theta_vec(iter), lpost_vec(iter), llik_vec(iter);
@@ -430,24 +451,68 @@ List mcmc_pol(const IntegerVector x,
   const int n0 = x0.size();
   NumericVector f0(n0), S0(n0); // fitted
   mat f0_mat(iter, n0), S0_mat(iter, n0);
-  // 06) run
+  // 06) burn-in, separate from main run
   int s, t, l;
-  for (t = 0; t < iter * thin + burn; t++) {
+  for (k = 0; k < K; k++) {
+    // use chain (k-1)'s values for chain k
+    if (k > 0) {
+      alpha_curr.at(k) = alpha_curr.at(k-1);
+      theta_curr.at(k) = theta_curr.at(k-1);
+      powl_curr.at(k) = powl_curr.at(k-1);
+      lpost_curr.at(k) = lpost(alpha_curr.at(k), theta_curr.at(k), powl_curr.at(k), llik_curr.at(k), mc3_or_marg ? 1.0 : invt.at(k));
+      Rcout << endl << "Iteration 0, chain " << k << ": Log-posterior = " << lpost_curr.at(k) << endl;
+    }
+    for (t = 0; t < burn; t++) {
+      // alpha & theta
+      alpha_prop.at(k) = rnorm(1, alpha_curr.at(k), sd_alpha.at(k))[0];
+      lpost_prop.at(k) = lpost(alpha_prop.at(k), theta_curr.at(k), powl_curr.at(k), llik_prop.at(k), mc3_or_marg ? 1.0 : invt.at(k));
+      update(alpha_curr.at(k), alpha_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), llik_curr.at(k), llik_prop.at(k), sd_alpha.at(k), t, burn, mc3_or_marg ? invt.at(k) : 1.0);
+      if (!powl_curr.at(k)) {
+        theta_prop.at(k) = rnorm(1, theta_curr.at(k), sd_theta.at(k))[0];
+        lpost_prop.at(k) = lpost(alpha_curr.at(k), theta_prop.at(k), powl_curr.at(k), llik_prop.at(k), mc3_or_marg ? 1.0 : invt.at(k));
+        update(theta_curr.at(k), theta_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), llik_curr.at(k), llik_prop.at(k), sd_theta.at(k), t, burn, mc3_or_marg ? invt.at(k) : 1.0);
+      }
+      // update cor for printing
+      // in case we decide to change to update simultaneously
+      if (!powl_curr.at(k)) {
+        alpha_burn(t, k) = alpha_curr.at(k);
+        theta_burn(t, k) = theta_curr.at(k);
+        cor1.at(k) = cor_curr(alpha_burn.col(k), theta_burn.col(k), t+1);
+      }
+      // print
+      if ((t + 1) % freq == 0) {
+        Rcout << endl << "Iteration " << t + 1 << ", chain " << k;
+        Rcout << ": Log-posterior = " << std::setprecision(6) << lpost_curr.at(k) << endl;
+        Rcout << "alpha = " << alpha_curr.at(k) << " (" << sd_alpha.at(k) << ")" << endl;
+        Rcout << "theta = " << theta_curr.at(k);
+        if (!powl_curr.at(k)) {
+          Rcout << " (" << sd_theta.at(k) << ")" << endl;
+          Rcout << "cor(alpha, theta) = " << cor1.at(k) << endl;
+        }
+        else {
+          Rcout << endl;
+        }
+      }
+    }
+  }
+  Rcout << endl << "Burn-in completed" << endl << endl;
+  // 07) main run
+  for (t = burn; t < iter * thin + burn; t++) {
     for (k = 0; k < K; k++) {
       // alpha & theta
       alpha_prop.at(k) = rnorm(1, alpha_curr.at(k), sd_alpha.at(k))[0];
-      lpost_prop.at(k) = lpost(alpha_prop.at(k), theta_curr.at(k), powl_curr.at(k), llik_prop.at(k));
-      update(alpha_curr.at(k), alpha_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), llik_curr.at(k), llik_prop.at(k), sd_alpha.at(k), t, burn, invt.at(k));
+      lpost_prop.at(k) = lpost(alpha_prop.at(k), theta_curr.at(k), powl_curr.at(k), llik_prop.at(k), mc3_or_marg ? 1.0 : invt.at(k));
+      update(alpha_curr.at(k), alpha_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), llik_curr.at(k), llik_prop.at(k), sd_alpha.at(k), t, burn, mc3_or_marg ? invt.at(k) : 1.0);
       if (!powl_curr.at(k)) {
         theta_prop.at(k) = rnorm(1, theta_curr.at(k), sd_theta.at(k))[0];
-        lpost_prop.at(k) = lpost(alpha_curr.at(k), theta_prop.at(k), powl_curr.at(k), llik_prop.at(k));
-        update(theta_curr.at(k), theta_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), llik_curr.at(k), llik_prop.at(k), sd_theta.at(k), t, burn, invt.at(k));
+        lpost_prop.at(k) = lpost(alpha_curr.at(k), theta_prop.at(k), powl_curr.at(k), llik_prop.at(k), mc3_or_marg ? 1.0 : invt.at(k));
+        update(theta_curr.at(k), theta_prop.at(k), lpost_curr.at(k), lpost_prop.at(k), llik_curr.at(k), llik_prop.at(k), sd_theta.at(k), t, burn, mc3_or_marg ? invt.at(k) : 1.0);
       }
       // model selection
-      if (pr_power != 0.0 && pr_power != 1.0 && t >= burn) {
+      if (pr_power != 0.0 && pr_power != 1.0) { //// think if sensible if mc3_or_marg = false
         // only model select after burn-in
-        ak = invt.at(k) * (a_pseudo - 1.0) + 1.0;
-        bk = invt.at(k) * (b_pseudo - 1.0) + 1.0;
+        ak = invt.at(k) * (a_pseudo - 1.0) + 1.0; //// shouldn't mc3_or_marg matter?
+        bk = invt.at(k) * (b_pseudo - 1.0) + 1.0; //// shouldn't mc3_or_marg matter?
         if (powl_curr.at(k)) { // currently power law
           theta_pseudo = rbeta(1, ak, bk)[0]; // sim from pseudoprior
           logA_powl =
@@ -455,7 +520,7 @@ List mcmc_pol(const IntegerVector x,
             ldbeta(theta_pseudo, ak, bk) +
             log(pr_power);
           logA_poly =
-            lpost(alpha_curr.at(k), theta_pseudo, false, llik_prop.at(k)) +
+            lpost(alpha_curr.at(k), theta_pseudo, false, llik_prop.at(k), mc3_or_marg ? 1.0 : invt.at(k)) +
             log(1.0 - pr_power);
           if (lr1() > -log(1.0 + exp(logA_poly - logA_powl))) { // switch to polylog
             powl_curr.at(k) = false;
@@ -466,7 +531,7 @@ List mcmc_pol(const IntegerVector x,
         }
         else { // currently polylog
           logA_powl =
-            lpost(alpha_curr.at(k), theta_curr.at(k), true, llik_prop.at(k)) +
+            lpost(alpha_curr.at(k), theta_curr.at(k), true, llik_prop.at(k), mc3_or_marg ? 1.0 : invt.at(k)) +
             ldbeta(theta_curr.at(k), ak, bk) +
             log(pr_power);
           logA_poly =
@@ -483,9 +548,9 @@ List mcmc_pol(const IntegerVector x,
         }
       }
     } // loop over k completes
-    // 07) Metropolis coupling
-    if (K > 1) {
-      k = Rcpp::RcppArmadillo::sample(seqKm1, 1, false)[0];
+    // 08) Metropolis coupling
+    if (K > 1 && mc3_or_marg) {
+      k = sample_1(seqKm1);
       l = k + 1;
       ldiff = (lpost_curr.at(k) - lpost_curr.at(l)) * (invt.at(l) - invt.at(k));
       if (lr1() < ldiff) {
@@ -498,42 +563,18 @@ List mcmc_pol(const IntegerVector x,
       }
       swap_count.at(k) += 1.0;
     }
-    // 08) update cor for printing
-    // in case we decide to change to update simultaneously
-    for (k = 0; k < K; k++) {
-      if (t < burn) {
-        if (!powl_curr.at(k)) {
-          alpha_burn(t, k) = alpha_curr.at(k);
-          theta_burn(t, k) = theta_curr.at(k);
-          cor1 = cor_curr(alpha_burn.col(k), theta_burn.col(k), t+1);
-        }
-      }
-    }
     // 09) print
     if ((t + 1) % freq == 0) {
       Rcout << "Iteration " << t + 1;
       Rcout << ": Log-posterior = " << std::setprecision(6) << lpost_curr.at(0) << endl;
-      if (t < burn) {
-        Rcout << "alpha = " << alpha_curr.at(0) << " (" << sd_alpha.at(0) << ")" << endl;
-        Rcout << "theta = " << theta_curr.at(0);
-        if (!powl_curr.at(0)) {
-          Rcout << " (" << sd_theta.at(0) << ")" << endl;
-          Rcout << "cor(alpha, theta) = " << cor1.at(0) << endl;
-        }
-        else {
-          Rcout << endl;
-        }
+      Rcout << "alpha = " << alpha_curr.at(0) << endl;
+      Rcout << "theta = " << theta_curr.at(0) << endl;
+      if (pr_power != 0.0 && pr_power != 1.0) {
+        // only print after burn-in & w/ model selection
+        Rcout << "power law = " << (powl_curr.at(0) ? "true" : "false") << endl;
+        Rcout << "average   = " << powl_stat.mean() << endl;
       }
-      else {
-        Rcout << "alpha = " << alpha_curr.at(0) << endl;
-        Rcout << "theta = " << theta_curr.at(0) << endl;
-        if (pr_power != 0.0 && pr_power != 1.0) {
-          // only print after burn-in & w/ model selection
-          Rcout << "power law = " << (powl_curr.at(0) ? "true" : "false") << endl;
-          Rcout << "average   = " << powl_stat.mean() << endl;
-        }
-      }
-      if (K > 1) {
+      if (K > 1 && mc3_or_marg) {
         Rcout << "swap rates: " << endl;
         for (k = 0; k < K-1; k++) {
           Rcout << "  b/w inv temp " << std::setprecision(3) << invt.at(k);
@@ -543,23 +584,23 @@ List mcmc_pol(const IntegerVector x,
       Rcout << endl;
     }
     // 10) save
-    if (t >= burn) {
-      s = t - burn + 1;
-      if (s % thin == 0) {
-        s = s / thin - 1;
-        alpha = alpha_curr.at(0);
-        theta = theta_curr.at(0);
-        alpha_vec[s] = alpha;
-        theta_vec[s] = theta;
-        powl_vec[s] = (int) powl_curr.at(0);
-        lpost_vec[s] = lpost_curr.at(0);
-        llik_vec[s] = llik_curr.at(0);
-        // prob mass & survival functions
-        f0 = dpol(x0, alpha, theta, xmax);
-        f0_mat.row(s) = as<rowvec>(f0);
-        S0 = Spol(x0, alpha, theta, xmax);
-        S0_mat.row(s) = as<rowvec>(S0);
-      }
+    s = t - burn + 1;
+    if (s % thin == 0) {
+      s = s / thin - 1;
+      alpha = alpha_curr.at(0);
+      theta = theta_curr.at(0);
+      alpha_vec[s] = alpha;
+      theta_vec[s] = theta;
+      powl_vec[s] = (int) powl_curr.at(0);
+      lpost_vec[s] = lpost_curr.at(0);
+      llik_vec[s] = llik_curr.at(0);
+      llik_arma = as<vec>(llik_curr);
+      llik_stat(llik_arma);
+      // prob mass & survival functions
+      f0 = dpol(x0, alpha, theta, xmax);
+      f0_mat.row(s) = as<rowvec>(f0);
+      S0 = Spol(x0, alpha, theta, xmax);
+      S0_mat.row(s) = as<rowvec>(S0);
     }
   }
   // 11) output
@@ -595,8 +636,16 @@ List mcmc_pol(const IntegerVector x,
                  Named("hyperpars") = hyperpars,
                  Named("gvs_quants") = gvs_quants,
                  Named("scalars") = scalars,
-                 Named("swap_rates") = swap_accept / swap_count,
                  Named("invt") = invt);
+  if (K > 1) {
+    if (mc3_or_marg) {
+      output["swap_rates"] = swap_accept / swap_count;
+    } else {
+      const NumericVector llik_mean = wrap(llik_stat.mean());
+      output["llik_mean"] = llik_mean;
+      output["log.marginal"] = sum(pm(invt, true) * pm(llik_mean, false)) / 2.0;
+    }
+  }
   return output;
 }
 
@@ -847,6 +896,7 @@ const double lpost_mix1(const IntegerVector x,
 //' @param freq Positive integer representing the frequency of the sampled values being printed
 //' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
 //' @param xmax Scalar, positive integer limit for computing the normalising constant
+//' @param mc3_or_marg Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?
 //' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 //' @seealso \code{\link{mcmc_pol}}, \code{\link{mcmc_mix2}} and \code{\link{mcmc_mix3}} for MCMC for the Zipf-polylog, and 2-component and 3-component discrete extreme value mixture distributions, respectively.
 //' @export
@@ -872,6 +922,7 @@ List mcmc_mix1(const IntegerVector x,
                const int burn,
                const int freq,
                const NumericVector invt,
+               const bool mc3_or_marg,
                const int xmax) {
   // 01) save
   DataFrame
@@ -892,7 +943,7 @@ List mcmc_mix1(const IntegerVector x,
                       Named("b_theta1") = tv(b_theta1),
                       Named("a_alpha2") = tv(a_alpha2),
                       Named("b_alpha2") = tv(b_alpha2)),
-    scalars = df_scalars(iter, thin, burn, freq, false);
+    scalars = df_scalars(iter, thin, burn, freq, mc3_or_marg);
   // 02) checks
   // x are the unique values (> 1) w/ freq count
   if (is_true(any(x <= 0))) {
@@ -930,7 +981,7 @@ List mcmc_mix1(const IntegerVector x,
                    a_psiu, b_psiu, a_alpha1, b_alpha1,
                    a_theta1, b_theta1, a_alpha2, b_alpha2,
                    positive, xmax,
-                   llik, 1.0); // to change for power posterior
+                   llik, 1.0); //// to change for power posterior
     };
   for (k = 0; k < K; k++) {
     lpost_curr.at(k) = lpost(u_curr.at(k), alpha1_curr.at(k), theta1_curr.at(k), alpha2_curr.at(k), llik_curr.at(k));
@@ -984,7 +1035,7 @@ List mcmc_mix1(const IntegerVector x,
     } // loop over k completes
     // 07) Metropolis coupling
     if (K > 1) {
-      k = Rcpp::RcppArmadillo::sample(seqKm1, 1, false)[0];
+      k = sample_1(seqKm1);
       l = k + 1;
       ldiff = (lpost_curr.at(k) - lpost_curr.at(l)) * (invt.at(l) - invt.at(k));
       if (lr1() < ldiff) {
@@ -1277,6 +1328,7 @@ const double lpost_mix2(const IntegerVector x,
 //' @param burn Non-negative integer representing the burn-in of the MCMC
 //' @param freq Positive integer representing the frequency of the sampled values being printed
 //' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
+//' @param mc3_or_marg Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?
 //' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 //' @seealso \code{\link{mcmc_pol}} and \code{\link{mcmc_mix3}} for MCMC for the Zipf-polylog and 3-component discrete extreme value mixture distributions, respectively.
 //' @export
@@ -1307,7 +1359,8 @@ List mcmc_mix2(const IntegerVector x,
                const int thin,
                const int burn,
                const int freq,
-               const NumericVector invt) {
+               const NumericVector invt,
+               const bool mc3_or_marg = true) {
   // 01) save
   DataFrame
     data =
@@ -1335,7 +1388,7 @@ List mcmc_mix2(const IntegerVector x,
     DataFrame::create(Named("a_pseudo") = tv(a_pseudo),
                       Named("b_pseudo") = tv(b_pseudo),
                       Named("pr_power") = tv(pr_power)),
-    scalars = df_scalars(iter, thin, burn, freq, invt.size() != 1);
+    scalars = df_scalars(iter, thin, burn, freq, mc3_or_marg);
   // 02) checks
   // x are the unique values (> 1) w/ freq count
   if (is_true(any(x <= 0))) {
@@ -1402,7 +1455,7 @@ List mcmc_mix2(const IntegerVector x,
                         a_alpha, b_alpha, a_theta, b_theta,
                         m_shape, s_shape, a_sigma, b_sigma,
                         powerlaw, positive,
-                        llik, 1.0); // to change for power posterior
+                        llik, 1.0); //// to change for power posterior
     };
   for (int k = 0; k < K; k++) {
     lpost_curr.at(k) = lpost(u_curr.at(k), alpha_curr.at(k), theta_curr.at(k), shape_curr.at(k), sigma_curr.at(k), powl_curr.at(k), llik_curr.at(k));
@@ -1522,7 +1575,7 @@ List mcmc_mix2(const IntegerVector x,
     } // loop over k completes
     // 07) Metropolis coupling
     if (K > 1) {
-      k = Rcpp::RcppArmadillo::sample(seqKm1, 1, false)[0];
+      k = sample_1(seqKm1);
       l = k + 1;
       ldiff = (lpost_curr.at(k) - lpost_curr.at(l)) * (invt.at(l) - invt.at(k));
       if (lr1() < ldiff) {
@@ -1910,6 +1963,7 @@ const double lpost_mix3(const IntegerVector x,
 //' @param burn Non-negative integer representing the burn-in of the MCMC
 //' @param freq Positive integer representing the frequency of the sampled values being printed
 //' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
+//' @param mc3_or_marg Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?
 //' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 //' @seealso \code{\link{mcmc_pol}} and \code{\link{mcmc_mix2}} for MCMC for the Zipf-polylog and 2-component discrete extreme value mixture distributions, respectively.
 //' @export
@@ -1952,7 +2006,8 @@ List mcmc_mix3(const IntegerVector x,
                const int thin,
                const int burn,
                const int freq,
-               const NumericVector invt) {
+               const NumericVector invt,
+               const bool mc3_or_marg = true) {
   // 01) save
   DataFrame
     data =
@@ -1991,7 +2046,7 @@ List mcmc_mix3(const IntegerVector x,
     DataFrame::create(Named("a_pseudo") = tv(a_pseudo),
                       Named("b_pseudo") = tv(b_pseudo),
                       Named("pr_power2") = tv(pr_power2)),
-    scalars = df_scalars(iter, thin, burn, freq, invt.size() != 1);
+    scalars = df_scalars(iter, thin, burn, freq, mc3_or_marg);
   // 02) checks
   // x are the unique values (> 1) w/ freq count
   if (is_true(any(x <= 0))) {
@@ -2069,7 +2124,7 @@ List mcmc_mix3(const IntegerVector x,
                         m_shape, s_shape, a_sigma, b_sigma,
                         powerlaw1, powerlaw2,
                         positive1, positive2,
-                        llik, 1.0); // to change for power posterior
+                        llik, 1.0); //// to change for power posterior
     };
   for (int k = 0; k < K; k++) {
     lpost_curr.at(k) = lpost(v_curr.at(k), u_curr.at(k),
@@ -2253,7 +2308,7 @@ List mcmc_mix3(const IntegerVector x,
     } // loop over k completes
     // 07) Metropolis coupling
     if (K > 1) {
-      k = Rcpp::RcppArmadillo::sample(seqKm1, 1, false)[0];
+      k = sample_1(seqKm1);
       l = k + 1;
       ldiff = (lpost_curr.at(k) - lpost_curr.at(l)) * (invt.at(l) - invt.at(k));
       if (lr1() < ldiff) {
