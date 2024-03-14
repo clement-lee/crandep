@@ -23,7 +23,7 @@ lpost_pow <- function(alpha, df, m_alpha, s_alpha) {
 #' @param s_alpha Positive real number, standard deviation of the prior normal distribution for alpha
 #' @param by Positive real number, the width of subintervals between lower and upper, for numerical integration and posterior density evaluation
 #' @importFrom pracma integral
-#' @return A list: \code{log.marginal} is the marginal log-likelihood, \code{posterior} is a data frame of non-zero posterior densities
+#' @return A list: \code{log_marginal} is the marginal log-likelihood, \code{posterior} is a data frame of non-zero posterior densities
 #' @export
 marg_pow <- function(df, lower, upper, m_alpha, s_alpha, by = 0.001) {
   if (lower <= 1.0) {
@@ -51,7 +51,7 @@ marg_pow <- function(df, lower, upper, m_alpha, s_alpha, by = 0.001) {
   alphas <- seq(lower, upper, by = by)
   post <- data.frame(alpha = alphas, density = foo(alphas, lmarg1))
   list(
-    log.marginal = lmarg1,
+    log_marginal = lmarg1,
     posterior = post[post$density > .Machine$double.eps, ]
   )
 }

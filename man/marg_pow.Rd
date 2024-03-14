@@ -20,7 +20,7 @@ marg_pow(df, lower, upper, m_alpha, s_alpha, by = 0.001)
 \item{by}{Positive real number, the width of subintervals between lower and upper, for numerical integration and posterior density evaluation}
 }
 \value{
-A list: \code{log.marginal} is the marginal log-likelihood, \code{posterior} is a data frame of non-zero posterior densities
+A list: \code{log_marginal} is the marginal log-likelihood, \code{posterior} is a data frame of non-zero posterior densities
 }
 \description{
 Marginal log-likelihood and posterior density of discrete power law via numerical integration
