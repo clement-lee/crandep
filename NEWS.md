@@ -1,3 +1,9 @@
+# crandep 0.3.7 (2024-03-28)
+
+## Functions
+- Allows marginal likelihood calculations via power posterior in `mcmc_pol()` (for the polylog distribution) and `mcmc_mix2()` (for the 2-component mixture distribution). The combination of the existing argument `invt` for inverse temperatures and the new boolean argument `mc3_or_marg` determines either parallel tempering or power posterior or neither will be performed.
+- The corresponding wrapper functions are updated accordingly.
+
 # crandep 0.3.6 (2024-02-26)
 
 ## Functions
