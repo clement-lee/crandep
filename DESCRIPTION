@@ -1,6 +1,6 @@
 Package: crandep
 Title: Network Analysis of Dependencies of CRAN Packages
-Version: 0.3.7
+Version: 0.3.8
 Authors@R: person("Clement", "Lee", email = "clement.lee.tm@outlook.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0003-1785-8671"))
 Description: The dependencies of CRAN packages can be analysed in a network fashion. For each package we can obtain the packages that it depends, imports, suggests, etc. By iterating this procedure over a number of packages, we can build, visualise, and analyse the dependency network, enabling us to have a bird's-eye view of the CRAN ecosystem. One aspect of interest is the number of reverse dependencies of the packages, or equivalently the in-degree distribution of the dependency network. This can be fitted by the power law and/or an extreme value mixture distribution <arXiv:2008.03073>, of which functions are provided.
 Depends: R (>= 3.4)

@@ -27,7 +27,7 @@ mcmc_mix1(
   freq,
   invt,
   mc3_or_marg,
-  xmax
+  x_max
 )
 }
 \arguments{
@@ -61,7 +61,7 @@ mcmc_mix1(
 
 \item{mc3_or_marg}{Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?}
 
-\item{xmax}{Scalar, positive integer limit for computing the normalising constant}
+\item{x_max}{Scalar, positive integer limit for computing the normalising constant}
 }
 \value{
 A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC

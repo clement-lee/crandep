@@ -7,6 +7,8 @@
 mcmc_mix3_wrapper(
   df,
   seed,
+  v_max = 100L,
+  u_max = 2000L,
   a_psi1 = 1,
   a_psi2 = 1,
   a_psiu = 0.001,
@@ -29,7 +31,7 @@ mcmc_mix3_wrapper(
   thin = 20L,
   burn = 100000L,
   freq = 1000L,
-  invts = 0.001^((0:8)/8),
+  invts = 1,
   mc3_or_marg = TRUE
 )
 }
@@ -37,6 +39,10 @@ mcmc_mix3_wrapper(
 \item{df}{A data frame with at least two columns, x & count}
 
 \item{seed}{Integer for \code{set.seed}}
+
+\item{v_max}{Scalar (default 100), positive integer for the maximum lower threshold to be passed to \code{obtain_u_set_mix3}}
+
+\item{u_max}{Scalar (default 2000), positive integer for the maximum upper threshold to be passed to \code{obtain_u_set_mix3}}
 
 \item{a_psi1, a_psi2, a_psiu, b_psiu, m_alpha, s_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma}{Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.}
 

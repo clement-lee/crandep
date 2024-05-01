@@ -110,7 +110,7 @@ DataFrame df_scalars(const int iter,
                       Named("mc3_or_marg") = tl(mc3_or_marg));
 }
 
-const IntegerVector for_Smix(const int u, const int xmin) {
+const IntegerVector for_Smix(const int u, const int x_min) {
   const uvec x0 = regspace<uvec>(1, 9);
   uvec x(x0);
   x = join_cols(x, x0 * pow(10, 1));
@@ -119,7 +119,7 @@ const IntegerVector for_Smix(const int u, const int xmin) {
   x = join_cols(x, x0 * pow(10, 4));
   x = join_cols(x, x0 * pow(10, 5));
   IntegerVector x1 = wrap(x);
-  x1 = x1[(x1 <= u) & (x1 >= xmin)];
+  x1 = x1[(x1 <= u) & (x1 >= x_min)];
   x1.insert(x1.end(), u);
   return x1;
 }
@@ -155,14 +155,14 @@ const NumericVector pm(const NumericVector v, const bool plus_or_minus) {
 // 01) polylogarithm only
 const double lnc_pol(const double alpha,
                      const double gamma,
-                     const int xmin,
-                     const int xmax) {
+                     const int x_min,
+                     const int x_max) {
   // log of normalising constant for polylog
-  // gamma & xmin have to be +ve
-  const IntegerVector y0 = tail(seq_len(xmax), xmax - xmin + 1); // xmin:xmax
+  // gamma & x_min have to be +ve
+  const IntegerVector y0 = tail(seq_len(x_max), x_max - x_min + 1); // x_min:x_max
   const NumericVector y(y0), ly = log(y);
   const double
-    xs(xmin), // x_star: (approx) x w/ max value
+    xs(x_min), // x_star: (approx) x w/ max value
     lxs = log(xs),
     lnc = lse(- alpha * (ly - lxs) - gamma * (y - xs))
     - alpha * lxs - gamma * xs;
@@ -177,7 +177,7 @@ const double lnc_pol(const double alpha,
 //' @param x Vector of positive integers
 //' @param alpha Real number greater than 1
 //' @param theta Real number in (0, 1]
-//' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+//' @param x_max Scalar (default 100000), positive integer limit for computing the normalising constant
 //' @return A numeric vector of the same length as x
 //' @examples
 //' dpol(c(1,2,3,4,5), 1.2, 0.5)
@@ -187,7 +187,7 @@ const double lnc_pol(const double alpha,
 const NumericVector dpol(const IntegerVector x,
                          const double alpha,
                          const double theta,
-                         const int xmax = 100000) {
+                         const int x_max = 100000) {
   // density for polylogarithm
   // x are desired values, not data
   if (is_true(any(x <= 0))) {
@@ -202,7 +202,7 @@ const NumericVector dpol(const IntegerVector x,
   const double gamma = -log(theta);
   const NumericVector x0(x),
     l = - alpha * log(x0) - x0 * gamma
-    - lnc_pol(alpha, gamma, min(x), xmax);
+    - lnc_pol(alpha, gamma, min(x), x_max);
   return exp(l);
 }
 
@@ -213,7 +213,7 @@ const NumericVector dpol(const IntegerVector x,
 //' @param x Vector of positive integers
 //' @param alpha Real number greater than 1
 //' @param theta Real number in (0, 1]
-//' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+//' @param x_max Scalar (default 100000), positive integer limit for computing the normalising constant
 //' @return A numeric vector of the same length as x
 //' @examples
 //' Spol(c(1,2,3,4,5), 1.2, 0.5)
@@ -223,7 +223,7 @@ const NumericVector dpol(const IntegerVector x,
 const NumericVector Spol(const IntegerVector x,
                          const double alpha,
                          const double theta,
-                         const int xmax = 100000) {
+                         const int x_max = 100000) {
   // survival for polylogarithm
   // x are the desired values, not data
   if (is_true(any(x <= 0))) {
@@ -235,19 +235,19 @@ const NumericVector Spol(const IntegerVector x,
   else if (theta == 1.0 && alpha <= 1.0) {
     stop("Spol: alpha has to be greater than 1.0 when theta is 1.0.");
   }
-  const int xmin = min(x);
+  const int x_min = min(x);
   const double gamma = -log(theta);
   const NumericVector x0(x);
-  IntegerVector seq1 = seq_len(xmax); // 1 to xmax
-  seq1 = tail(seq1, xmax - xmin + 1); // xmin to xmax
+  IntegerVector seq1 = seq_len(x_max); // 1 to x_max
+  seq1 = tail(seq1, x_max - x_min + 1); // x_min to x_max
   const NumericVector
-    x1(seq1), // xmin to xmax
+    x1(seq1), // x_min to x_max
     l1 = - alpha * log(x1) - x1 * gamma
-    - lnc_pol(alpha, gamma, xmin, xmax),
+    - lnc_pol(alpha, gamma, x_min, x_max),
     cf1 = cumsum(exp(l1));
   NumericVector S(x.size());
   for (int i = 0; i < x.size(); i++) {
-    S[i] = 1.0 - cf1[x[i] - xmin] / cf1[xmax - xmin];
+    S[i] = 1.0 - cf1[x[i] - x_min] / cf1[x_max - x_min];
   }
   return S;
 }
@@ -257,7 +257,7 @@ const double llik_pol(const NumericVector par,
                       const IntegerVector x,
                       const IntegerVector count,
                       const bool powerlaw,
-                      const int xmax) {
+                      const int x_max) {
   // polylogarithm for the whole data
   if (x.size() != count.size()) {
     stop("llik_pol: lengths of x & count have to be equal.");
@@ -271,7 +271,7 @@ const double llik_pol(const NumericVector par,
   const double
     alpha = par[0], theta = powerlaw ? 1.0 : par[1],
     gamma = -log(theta), n(sum(count));
-  const int xmin = min(x);
+  const int x_min = min(x);
   const NumericVector x0(x), c0(count);
   double l;
   if (theta <= 0.0 || theta > 1.0 ||
@@ -281,7 +281,7 @@ const double llik_pol(const NumericVector par,
   else {
     l = - alpha * sum(c0 * log(x0))
     - gamma * sum(c0 * x0)
-    - n * lnc_pol(alpha, gamma, xmin, xmax);
+    - n * lnc_pol(alpha, gamma, x_min, x_max);
   }
   return lnan(l);
 }
@@ -296,7 +296,7 @@ const double lpost_pol(const IntegerVector x,
                        const double a_theta,
                        const double b_theta,
                        const double powerlaw,
-                       const int xmax,
+                       const int x_max,
                        double & llik,
                        const double invt = 1.0) {
   // checks in llik_pol
@@ -307,7 +307,7 @@ const double lpost_pol(const IntegerVector x,
   }
   else {
     const NumericVector par = NumericVector::create(alpha, theta);
-    llik = llik_pol(par, x, count, powerlaw, xmax);
+    llik = llik_pol(par, x, count, powerlaw, x_max);
     l = llik * invt + // invt for power posterior, not parallel tempering
       ldnorm(alpha, a_alpha, b_alpha) +
       (powerlaw ? 0.0 : ldbeta(theta, a_theta, b_theta));
@@ -334,7 +334,7 @@ const double lpost_pol(const IntegerVector x,
 //' @param burn Non-negative integer representing the burn-in of the MCMC
 //' @param freq Positive integer representing the frequency of the sampled values being printed
 //' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
-//' @param xmax Scalar, positive integer limit for computing the normalising constant
+//' @param x_max Scalar, positive integer limit for computing the normalising constant
 //' @param mc3_or_marg Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?
 //' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 //' @seealso \code{\link{mcmc_mix2}} and \code{\link{mcmc_mix3}} for MCMC for the 2-component and 3-component discrete extreme value mixture distributions, respectively.
@@ -357,7 +357,7 @@ List mcmc_pol(const IntegerVector x,
               const int freq,
               const NumericVector invt,
               const bool mc3_or_marg,
-              const int xmax) {
+              const int x_max) {
   // 01) save
   DataFrame
     data =
@@ -426,13 +426,13 @@ List mcmc_pol(const IntegerVector x,
     lpost_curr(K), lpost_prop(K);
   LogicalVector powl_curr(K, powl);
   auto lpost =
-    [x, count, a_alpha, b_alpha, a_theta, b_theta, xmax]
+    [x, count, a_alpha, b_alpha, a_theta, b_theta, x_max]
     (const double alpha, const double theta, const bool powerlaw, double & llik, const double invt) {
       return
         lpost_pol(x, count, alpha, theta,
                   a_alpha, b_alpha,
                   a_theta, b_theta,
-                  powerlaw, xmax,
+                  powerlaw, x_max,
                   llik, invt);
     };
   lpost_curr.at(0) = lpost(alpha_curr.at(0), theta_curr.at(0), powl_curr.at(0), llik_curr.at(0), mc3_or_marg ? 1.0 : invt.at(0));
@@ -449,8 +449,8 @@ List mcmc_pol(const IntegerVector x,
   // 05) for saving, dimensions const to K
   IntegerVector powl_vec(iter);
   NumericVector alpha_vec(iter), theta_vec(iter), lpost_vec(iter), llik_vec(iter);
-  const int xmin = min(x);
-  IntegerVector x0 = for_Smix(max(x) - 1, xmin);
+  const int x_min = min(x);
+  IntegerVector x0 = for_Smix(max(x) - 1, x_min);
   const int n0 = x0.size();
   NumericVector f0(n0), S0(n0); // fitted
   mat f0_mat(iter, n0), S0_mat(iter, n0);
@@ -603,9 +603,9 @@ List mcmc_pol(const IntegerVector x,
       llik_arma = as<vec>(llik_curr);
       llik_stat(llik_arma);
       // prob mass & survival functions
-      f0 = dpol(x0, alpha, theta, xmax);
+      f0 = dpol(x0, alpha, theta, x_max);
       f0_mat.row(s) = as<rowvec>(f0);
-      S0 = Spol(x0, alpha, theta, xmax);
+      S0 = Spol(x0, alpha, theta, x_max);
       S0_mat.row(s) = as<rowvec>(S0);
     }
   }
@@ -844,7 +844,7 @@ const double lpost_mix1(const IntegerVector x,
                         const double a_alpha2,
                         const double b_alpha2,
                         const bool positive, // alpha1 bound to be positive?
-                        const int xmax,
+                        const int x_max,
                         double & llik,
                         const double invt = 1.0) {
   // T(Z)P below u, power law above u
@@ -869,7 +869,7 @@ const double lpost_mix1(const IntegerVector x,
   else {
     llik =
       llik_bulk(par1, x, count, v, u, phil, false, positive) +
-      llik_pol(par2, xu, cu, true, xmax) +
+      llik_pol(par2, xu, cu, true, x_max) +
       nu * log(phiu); // not in llik_pol()
     l =
       llik * invt + // invt for power posterior, not parallel tempering
@@ -900,7 +900,7 @@ const double lpost_mix1(const IntegerVector x,
 //' @param burn Non-negative integer representing the burn-in of the MCMC
 //' @param freq Positive integer representing the frequency of the sampled values being printed
 //' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
-//' @param xmax Scalar, positive integer limit for computing the normalising constant
+//' @param x_max Scalar, positive integer limit for computing the normalising constant
 //' @param mc3_or_marg Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?
 //' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 //' @seealso \code{\link{mcmc_pol}}, \code{\link{mcmc_mix2}} and \code{\link{mcmc_mix3}} for MCMC for the Zipf-polylog, and 2-component and 3-component discrete extreme value mixture distributions, respectively.
@@ -928,7 +928,7 @@ List mcmc_mix1(const IntegerVector x,
                const int freq,
                const NumericVector invt,
                const bool mc3_or_marg,
-               const int xmax) {
+               const int x_max) {
   // 01) save
   DataFrame
     data =
@@ -976,7 +976,7 @@ List mcmc_mix1(const IntegerVector x,
     [x, count,
      a_psiu, b_psiu, a_alpha1, b_alpha1,
      a_theta1, b_theta1, a_alpha2, b_alpha2,
-     xmax, positive]
+     x_max, positive]
     (const int u, const double alpha1,
      const double theta1, const double alpha2,
      double & llik) {
@@ -984,7 +984,7 @@ List mcmc_mix1(const IntegerVector x,
         lpost_mix1(x, count, u, alpha1, theta1, alpha2,
                    a_psiu, b_psiu, a_alpha1, b_alpha1,
                    a_theta1, b_theta1, a_alpha2, b_alpha2,
-                   positive, xmax,
+                   positive, x_max,
                    llik, 1.0); //// to change for power posterior
     };
   for (k = 0; k < K; k++) {
@@ -1484,8 +1484,8 @@ List mcmc_mix2(const IntegerVector x,
   NumericVector alpha_vec(iter), theta_vec(iter), shape_vec(iter), sigma_vec(iter), phiu_vec(iter), lpost_vec(iter), llik_vec(iter);
   const int n = sum(count);
   double phiu;
-  const int xmin = min(x);
-  IntegerVector x0 = for_Smix(max(x) - 1, xmin), cu;
+  const int x_min = min(x);
+  IntegerVector x0 = for_Smix(max(x) - 1, x_min), cu;
   const int n0 = x0.size();
   NumericVector f0(n0), S0(n0); // fitted
   mat f0_mat(iter, n0), S0_mat(iter, n0);
@@ -2231,8 +2231,8 @@ List mcmc_mix3(const IntegerVector x,
     phiu_vec(iter), lpost_vec(iter), llik_vec(iter);
   const int n = sum(count);
   double phi1, phi2, phiu;
-  const int xmin = min(x);
-  IntegerVector x0 = for_Smix(max(x) - 1, xmin), c1, c2, cu;
+  const int x_min = min(x);
+  IntegerVector x0 = for_Smix(max(x) - 1, x_min), c1, c2, cu;
   const int n0 = x0.size();
   NumericVector f0(n0), S0(n0); // fitted
   mat f0_mat(iter, n0), S0_mat(iter, n0);

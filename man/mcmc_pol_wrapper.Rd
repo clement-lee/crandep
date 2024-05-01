@@ -20,9 +20,9 @@ mcmc_pol_wrapper(
   thin = 20L,
   burn = 100000L,
   freq = 1000L,
-  invts = 0.001^((0:8)/8),
+  invts = 1,
   mc3_or_marg = TRUE,
-  xmax = 1e+05
+  x_max = 1e+05
 )
 }
 \arguments{
@@ -60,7 +60,7 @@ mcmc_pol_wrapper(
 
 \item{mc3_or_marg}{Boolean, is Metropolis-coupled MCMC to be used? Ignored if invts = c(1.0)}
 
-\item{xmax}{Scalar (default 100000), positive integer limit for computing the normalising constant}
+\item{x_max}{Scalar (default 100000), positive integer limit for computing the normalising constant}
 }
 \value{
 A list returned by \code{mcmc_pol}

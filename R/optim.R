@@ -86,7 +86,7 @@ lpost_pol_wrapper <- function(alpha, x, count, ...) {
 #' @param freq Positive integer representing the frequency of the sampled values being printed
 #' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC (if mc3_or_marg = TRUE) or power posterior (if mc3_or_marg = FALSE)
 #' @param mc3_or_marg Boolean, is Metropolis-coupled MCMC to be used? Ignored if invts = c(1.0)
-#' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+#' @param x_max Scalar (default 100000), positive integer limit for computing the normalising constant
 #' @return A list returned by \code{mcmc_pol}
 #' @export
 mcmc_pol_wrapper <- function(df, seed,
@@ -103,9 +103,9 @@ mcmc_pol_wrapper <- function(df, seed,
                              thin = 2e+1L,
                              burn = 1e+5L,
                              freq = 1e+3L,
-                             invts = 0.001 ^ ((0:8)/8),
+                             invts = 1.0,
                              mc3_or_marg = TRUE,
-                             xmax = 100000) {
+                             x_max = 100000) {
   mc3 <- mc3_or_marg && (length(invts) > 1)
   set.seed(seed)
   t0 <- system.time({
@@ -128,7 +128,7 @@ mcmc_pol_wrapper <- function(df, seed,
         freq = freq,
         invt = invts,
         mc3_or_marg = mc3_or_marg,
-        xmax = xmax
+        x_max = x_max
       )
   })
   mcmc0$scalars$seed <- as.integer(seed)
@@ -147,7 +147,7 @@ mcmc_pol_wrapper <- function(df, seed,
 #' @param theta1_init Scalar, initial value of theta1
 #' @param alpha2_init Scalar, initial value of alpha2
 #' @param a_psiu,b_psiu,m_alpha1,s_alpha1,a_theta1,b_theta1,m_alpha2,s_alpha2 Scalars, hyperparameters of the priors for the parameters
-#' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+#' @param x_max Scalar (default 100000), positive integer limit for computing the normalising constant
 #' @importFrom dplyr bind_rows
 #' @importFrom stats optim dunif
 #' @return A list: \code{u_set} is the vector of thresholds with high posterior density, \code{init} is the data frame with the maximum profile posterior density and associated parameter values, \code{profile} is the data frame with all thresholds with high posterior density and associated parameter values, \code{scalars} is the data frame with all arguments (except df)
@@ -168,7 +168,7 @@ obtain_u_set_mix1 <- function(df,
                               b_theta1 = 1.00,
                               m_alpha2 = 0.00,
                               s_alpha2 = 10.0,
-                              xmax = 100000) {
+                              x_max = 100000) {
   x <- df$x
   if (any(x <= 0L)) {
     stop("df$x has to be positive integers.")
@@ -230,7 +230,7 @@ obtain_u_set_mix1 <- function(df,
           a_theta = 1.0, # shouldn't matter
           b_theta = 1.0, # shouldn't matter
           powerlaw = TRUE,
-          xmax = xmax,
+          x_max = x_max,
           control = list(fnscale = -1, maxit = 50000),
           method = "Brent",
           lower = 1.00001,
@@ -252,7 +252,7 @@ obtain_u_set_mix1 <- function(df,
           m_alpha1, s_alpha1,
           a_theta1, b_theta1,
           m_alpha2, s_alpha2,
-          positive, xmax,
+          positive, x_max,
           llik = llik_temp, invt = 1.0
         )
       lc <-
@@ -271,7 +271,7 @@ obtain_u_set_mix1 <- function(df,
           x = x,
           count = count,
           powerlaw = TRUE,
-          xmax = xmax
+          x_max = x_max
         ) +
         sum(y > u) * log(phiu)
       lp <- la +
@@ -331,6 +331,7 @@ obtain_u_set_mix1 <- function(df,
 #'
 #' @param df A data frame with at least two columns, x & count
 #' @param seed Integer for \code{set.seed}
+#' @param u_max Scalar (default 2000), positive integer for the maximum threshold to be passed to \code{obtain_u_set_mix1}
 #' @param a_psiu,b_psiu,m_alpha1,s_alpha1,a_theta1,b_theta1,m_alpha2,s_alpha2 Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
 #' @param positive Boolean, is alpha1 positive (TRUE) or unbounded (FALSE)?
 #' @param iter Positive integer representing the length of the MCMC output
@@ -339,10 +340,11 @@ obtain_u_set_mix1 <- function(df,
 #' @param freq Positive integer representing the frequency of the sampled values being printed
 #' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC (if mc3_or_marg = TRUE) or power posterior (if mc3_or_marg = FALSE)
 #' @param mc3_or_marg Boolean, is Metropolis-coupled MCMC to be used? Ignored if invts = c(1.0)
-#' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+#' @param x_max Scalar (default 100000), positive integer limit for computing the normalising constant
 #' @return A list returned by \code{mcmc_mix1}
 #' @export
 mcmc_mix1_wrapper <- function(df, seed,
+                              u_max = 2000L,
                               a_psiu = 0.1,
                               b_psiu = 0.9,
                               m_alpha1 = 0.00,
@@ -356,18 +358,19 @@ mcmc_mix1_wrapper <- function(df, seed,
                               thin = 1L,
                               burn = 1e+4L,
                               freq = 1e+2L,
-                              invts = 0.001 ^ ((0:8)/8),
+                              invts = 1.0,
                               mc3_or_marg = TRUE,
-                              xmax = 100000) {
+                              x_max = 100000) {
   print("Obtaining profile")
   obj0 <-
     obtain_u_set_mix1(
       df, positive,
+      u_max = u_max,
       a_psiu = a_psiu, b_psiu = b_psiu,
       m_alpha1 = m_alpha1, s_alpha1 = s_alpha1,
       a_theta1 = a_theta1, b_theta1 = b_theta1,
       m_alpha2 = m_alpha2, s_alpha2 = s_alpha2,
-      xmax = xmax
+      x_max = x_max
     )
   print("Running MCMC")
   set.seed(seed)
@@ -396,7 +399,7 @@ mcmc_mix1_wrapper <- function(df, seed,
         freq = freq,
         invt = invts,
         mc3_or_marg = mc3_or_marg,
-        xmax = xmax
+        x_max = x_max
       )
   })
   mcmc0$scalars$seed <- as.integer(seed)
@@ -647,6 +650,7 @@ obtain_u_set_mix2 <- function(df,
 #'
 #' @param df A data frame with at least two columns, x & count
 #' @param seed Integer for \code{set.seed}
+#' @param u_max Scalar (default 2000), positive integer for the maximum threshold to be passed to \code{obtain_u_set_mix2}
 #' @param a_psiu,b_psiu,m_alpha,s_alpha,a_theta,b_theta,m_shape,s_shape,a_sigma,b_sigma Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
 #' @param a_pseudo Positive real number, first parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
 #' @param b_pseudo Positive real number, second parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
@@ -661,6 +665,7 @@ obtain_u_set_mix2 <- function(df,
 #' @return A list returned by \code{mcmc_mix2}
 #' @export
 mcmc_mix2_wrapper <- function(df, seed,
+                              u_max = 2000L,
                               a_psiu = 0.001,
                               b_psiu = 0.9,
                               m_alpha = 0.00,
@@ -679,12 +684,13 @@ mcmc_mix2_wrapper <- function(df, seed,
                               thin = 2e+1L,
                               burn = 1e+5L,
                               freq = 1e+3L,
-                              invts = 0.001 ^ ((0:8)/8),
+                              invts = 1.0,
                               mc3_or_marg = TRUE) {
   print("Obtaining profile")
   obj0 <-
     obtain_u_set_mix2(
       df, powerlaw = (pr_power == 1.0), positive = positive,
+      u_max = u_max,
       a_psiu = a_psiu, b_psiu = b_psiu,
       m_alpha = m_alpha, s_alpha = s_alpha,
       a_theta = a_theta, b_theta = b_theta,
@@ -1069,6 +1075,8 @@ obtain_u_set_mix3 <- function(df,
 #'
 #' @param df A data frame with at least two columns, x & count
 #' @param seed Integer for \code{set.seed}
+#' @param v_max Scalar (default 100), positive integer for the maximum lower threshold to be passed to \code{obtain_u_set_mix3}
+#' @param u_max Scalar (default 2000), positive integer for the maximum upper threshold to be passed to \code{obtain_u_set_mix3}
 #' @param a_psi1,a_psi2,a_psiu,b_psiu,m_alpha,s_alpha,a_theta,b_theta,m_shape,s_shape,a_sigma,b_sigma Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
 #' @param a_pseudo Positive real number, first parameter of the pseudoprior beta distribution for theta2 in model selection; ignored if pr_power2 = 1.0
 #' @param b_pseudo Positive real number, second parameter of the pseudoprior beta distribution for theta2 in model selection; ignored if pr_power2 = 1.0
@@ -1085,6 +1093,8 @@ obtain_u_set_mix3 <- function(df,
 #' @return A list returned by \code{mcmc_mix3}
 #' @export
 mcmc_mix3_wrapper <- function(df, seed,
+                              v_max = 100L,
+                              u_max = 2000L,
                               a_psi1 = 1.0,
                               a_psi2 = 1.0,
                               a_psiu = 0.001,
@@ -1107,7 +1117,7 @@ mcmc_mix3_wrapper <- function(df, seed,
                               thin = 2e+1L,
                               burn = 1e+5L,
                               freq = 1e+3L,
-                              invts = 0.001 ^ ((0:8)/8),
+                              invts = 1.0,
                               mc3_or_marg = TRUE) {
   print("Obtaining profile")
   obj0 <-
@@ -1117,6 +1127,8 @@ mcmc_mix3_wrapper <- function(df, seed,
       powerlaw2 = (pr_power2 == 1.0),
       positive1 = positive1,
       positive2 = positive2,
+      v_max = v_max,
+      u_max = u_max,
       a_psi1 = a_psi1, a_psi2 = a_psi2,
       a_psiu = a_psiu, b_psiu = b_psiu,
       m_alpha = m_alpha, s_alpha = s_alpha,

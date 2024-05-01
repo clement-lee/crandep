@@ -20,7 +20,7 @@ obtain_u_set_mix1(
   b_theta1 = 1,
   m_alpha2 = 0,
   s_alpha2 = 10,
-  xmax = 1e+05
+  x_max = 1e+05
 )
 }
 \arguments{
@@ -40,7 +40,7 @@ obtain_u_set_mix1(
 
 \item{a_psiu, b_psiu, m_alpha1, s_alpha1, a_theta1, b_theta1, m_alpha2, s_alpha2}{Scalars, hyperparameters of the priors for the parameters}
 
-\item{xmax}{Scalar (default 100000), positive integer limit for computing the normalising constant}
+\item{x_max}{Scalar (default 100000), positive integer limit for computing the normalising constant}
 }
 \value{
 A list: \code{u_set} is the vector of thresholds with high posterior density, \code{init} is the data frame with the maximum profile posterior density and associated parameter values, \code{profile} is the data frame with all thresholds with high posterior density and associated parameter values, \code{scalars} is the data frame with all arguments (except df)

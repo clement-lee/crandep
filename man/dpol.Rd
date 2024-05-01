@@ -4,7 +4,7 @@
 \alias{dpol}
 \title{Probability mass function (PMF) of Zipf-polylog distribution}
 \usage{
-dpol(x, alpha, theta, xmax = 100000L)
+dpol(x, alpha, theta, x_max = 100000L)
 }
 \arguments{
 \item{x}{Vector of positive integers}
@@ -13,7 +13,7 @@ dpol(x, alpha, theta, xmax = 100000L)
 
 \item{theta}{Real number in (0, 1]}
 
-\item{xmax}{Scalar (default 100000), positive integer limit for computing the normalising constant}
+\item{x_max}{Scalar (default 100000), positive integer limit for computing the normalising constant}
 }
 \value{
 A numeric vector of the same length as x

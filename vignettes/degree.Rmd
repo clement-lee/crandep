@@ -143,7 +143,7 @@ mcmc0.imports <-
     freq = 500L,
     invt = 1.0,
     mc3_or_marg = TRUE,
-    xmax = 100000
+    x_max = 100000
   ) # takes seconds
 ```
 

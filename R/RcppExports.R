@@ -9,14 +9,14 @@
 #' @param x Vector of positive integers
 #' @param alpha Real number greater than 1
 #' @param theta Real number in (0, 1]
-#' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+#' @param x_max Scalar (default 100000), positive integer limit for computing the normalising constant
 #' @return A numeric vector of the same length as x
 #' @examples
 #' dpol(c(1,2,3,4,5), 1.2, 0.5)
 #' @seealso \code{\link{Spol}} for the corresponding survival function, \code{\link{dmix2}} and \code{\link{dmix3}} for the PMFs of the 2-component and 3-component discrete extreme value mixture distributions, respectively.
 #' @export
-dpol <- function(x, alpha, theta, xmax = 100000L) {
-    .Call(`_crandep_dpol`, x, alpha, theta, xmax)
+dpol <- function(x, alpha, theta, x_max = 100000L) {
+    .Call(`_crandep_dpol`, x, alpha, theta, x_max)
 }
 
 #' Survival function of Zipf-polylog distribution
@@ -26,22 +26,22 @@ dpol <- function(x, alpha, theta, xmax = 100000L) {
 #' @param x Vector of positive integers
 #' @param alpha Real number greater than 1
 #' @param theta Real number in (0, 1]
-#' @param xmax Scalar (default 100000), positive integer limit for computing the normalising constant
+#' @param x_max Scalar (default 100000), positive integer limit for computing the normalising constant
 #' @return A numeric vector of the same length as x
 #' @examples
 #' Spol(c(1,2,3,4,5), 1.2, 0.5)
 #' @seealso \code{\link{dpol}} for the corresponding probability mass function, \code{\link{Smix2}} and \code{\link{Smix3}} for the survival functions of the 2-component and 3-component discrete extreme value mixture distributions, respectively.
 #' @export
-Spol <- function(x, alpha, theta, xmax = 100000L) {
-    .Call(`_crandep_Spol`, x, alpha, theta, xmax)
+Spol <- function(x, alpha, theta, x_max = 100000L) {
+    .Call(`_crandep_Spol`, x, alpha, theta, x_max)
 }
 
-llik_pol <- function(par, x, count, powerlaw, xmax) {
-    .Call(`_crandep_llik_pol`, par, x, count, powerlaw, xmax)
+llik_pol <- function(par, x, count, powerlaw, x_max) {
+    .Call(`_crandep_llik_pol`, par, x, count, powerlaw, x_max)
 }
 
-lpost_pol <- function(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, xmax, llik, invt = 1.0) {
-    .Call(`_crandep_lpost_pol`, x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, xmax, llik, invt)
+lpost_pol <- function(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, x_max, llik, invt = 1.0) {
+    .Call(`_crandep_lpost_pol`, x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, powerlaw, x_max, llik, invt)
 }
 
 #' Markov chain Monte Carlo for Zipf-polylog distribution
@@ -63,13 +63,13 @@ lpost_pol <- function(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta
 #' @param burn Non-negative integer representing the burn-in of the MCMC
 #' @param freq Positive integer representing the frequency of the sampled values being printed
 #' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
-#' @param xmax Scalar, positive integer limit for computing the normalising constant
+#' @param x_max Scalar, positive integer limit for computing the normalising constant
 #' @param mc3_or_marg Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?
 #' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 #' @seealso \code{\link{mcmc_mix2}} and \code{\link{mcmc_mix3}} for MCMC for the 2-component and 3-component discrete extreme value mixture distributions, respectively.
 #' @export
-mcmc_pol <- function(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, mc3_or_marg, xmax) {
-    .Call(`_crandep_mcmc_pol`, x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, mc3_or_marg, xmax)
+mcmc_pol <- function(x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, mc3_or_marg, x_max) {
+    .Call(`_crandep_mcmc_pol`, x, count, alpha, theta, a_alpha, b_alpha, a_theta, b_theta, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, mc3_or_marg, x_max)
 }
 
 llik_bulk <- function(par, x, count, v, u, phil, powerlaw, positive) {
@@ -88,8 +88,8 @@ lpost_igpd <- function(par, x, count, u, m_shape, s_shape, a_sigma, b_sigma, phi
     .Call(`_crandep_lpost_igpd`, par, x, count, u, m_shape, s_shape, a_sigma, b_sigma, phiu)
 }
 
-lpost_mix1 <- function(x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, xmax, llik, invt = 1.0) {
-    .Call(`_crandep_lpost_mix1`, x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, xmax, llik, invt)
+lpost_mix1 <- function(x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, x_max, llik, invt = 1.0) {
+    .Call(`_crandep_lpost_mix1`, x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, x_max, llik, invt)
 }
 
 #' Markov chain Monte Carlo for TZP-power-law mixture
@@ -111,13 +111,13 @@ lpost_mix1 <- function(x, count, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_al
 #' @param burn Non-negative integer representing the burn-in of the MCMC
 #' @param freq Positive integer representing the frequency of the sampled values being printed
 #' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
-#' @param xmax Scalar, positive integer limit for computing the normalising constant
+#' @param x_max Scalar, positive integer limit for computing the normalising constant
 #' @param mc3_or_marg Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?
 #' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 #' @seealso \code{\link{mcmc_pol}}, \code{\link{mcmc_mix2}} and \code{\link{mcmc_mix3}} for MCMC for the Zipf-polylog, and 2-component and 3-component discrete extreme value mixture distributions, respectively.
 #' @export
-mcmc_mix1 <- function(x, count, u_set, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, iter, thin, burn, freq, invt, mc3_or_marg, xmax) {
-    .Call(`_crandep_mcmc_mix1`, x, count, u_set, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, iter, thin, burn, freq, invt, mc3_or_marg, xmax)
+mcmc_mix1 <- function(x, count, u_set, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, iter, thin, burn, freq, invt, mc3_or_marg, x_max) {
+    .Call(`_crandep_mcmc_mix1`, x, count, u_set, u, alpha1, theta1, alpha2, a_psiu, b_psiu, a_alpha1, b_alpha1, a_theta1, b_theta1, a_alpha2, b_alpha2, positive, iter, thin, burn, freq, invt, mc3_or_marg, x_max)
 }
 
 #' Probability mass function (PMF) of 2-component discrete extreme value mixture distribution

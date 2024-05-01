@@ -7,6 +7,7 @@
 mcmc_mix1_wrapper(
   df,
   seed,
+  u_max = 2000L,
   a_psiu = 0.1,
   b_psiu = 0.9,
   m_alpha1 = 0,
@@ -20,15 +21,17 @@ mcmc_mix1_wrapper(
   thin = 1L,
   burn = 10000L,
   freq = 100L,
-  invts = 0.001^((0:8)/8),
+  invts = 1,
   mc3_or_marg = TRUE,
-  xmax = 1e+05
+  x_max = 1e+05
 )
 }
 \arguments{
 \item{df}{A data frame with at least two columns, x & count}
 
 \item{seed}{Integer for \code{set.seed}}
+
+\item{u_max}{Scalar (default 2000), positive integer for the maximum threshold to be passed to \code{obtain_u_set_mix1}}
 
 \item{a_psiu, b_psiu, m_alpha1, s_alpha1, a_theta1, b_theta1, m_alpha2, s_alpha2}{Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.}
 
@@ -46,7 +49,7 @@ mcmc_mix1_wrapper(
 
 \item{mc3_or_marg}{Boolean, is Metropolis-coupled MCMC to be used? Ignored if invts = c(1.0)}
 
-\item{xmax}{Scalar (default 100000), positive integer limit for computing the normalising constant}
+\item{x_max}{Scalar (default 100000), positive integer limit for computing the normalising constant}
 }
 \value{
 A list returned by \code{mcmc_mix1}
