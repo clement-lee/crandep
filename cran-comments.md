@@ -1,4 +1,6 @@
-This is the first submission of version 0.3.8. The total check time is expected to be below 10min.
+This is the resubmission of version 0.3.8. The total check time is expected to be below 10min.
+
+The <arXiv:2008.03073> in the Description field has been changed to <doi:10.48550/arXiv.2008.03073>.
 
 There are no ERRORs or WARNINGs, and possible NOTEs are explained below.
 

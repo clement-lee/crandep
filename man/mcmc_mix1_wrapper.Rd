@@ -8,6 +8,7 @@ mcmc_mix1_wrapper(
   df,
   seed,
   u_max = 2000L,
+  log_diff_max = 11,
   a_psiu = 0.1,
   b_psiu = 0.9,
   m_alpha1 = 0,
@@ -32,6 +33,8 @@ mcmc_mix1_wrapper(
 \item{seed}{Integer for \code{set.seed}}
 
 \item{u_max}{Scalar (default 2000), positive integer for the maximum threshold to be passed to \code{obtain_u_set_mix1}}
+
+\item{log_diff_max}{Positive real number, the value such that thresholds with profile posterior density not less than the maximum posterior density - \code{log_diff_max} will be kept}
 
 \item{a_psiu, b_psiu, m_alpha1, s_alpha1, a_theta1, b_theta1, m_alpha2, s_alpha2}{Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.}
 

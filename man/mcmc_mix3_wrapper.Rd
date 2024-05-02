@@ -9,6 +9,7 @@ mcmc_mix3_wrapper(
   seed,
   v_max = 100L,
   u_max = 2000L,
+  log_diff_max = 11,
   a_psi1 = 1,
   a_psi2 = 1,
   a_psiu = 0.001,
@@ -43,6 +44,8 @@ mcmc_mix3_wrapper(
 \item{v_max}{Scalar (default 100), positive integer for the maximum lower threshold to be passed to \code{obtain_u_set_mix3}}
 
 \item{u_max}{Scalar (default 2000), positive integer for the maximum upper threshold to be passed to \code{obtain_u_set_mix3}}
+
+\item{log_diff_max}{Positive real number, the value such that thresholds with profile posterior density not less than the maximum posterior density - \code{log_diff_max} will be kept}
 
 \item{a_psi1, a_psi2, a_psiu, b_psiu, m_alpha, s_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma}{Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.}
 

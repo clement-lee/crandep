@@ -332,6 +332,7 @@ obtain_u_set_mix1 <- function(df,
 #' @param df A data frame with at least two columns, x & count
 #' @param seed Integer for \code{set.seed}
 #' @param u_max Scalar (default 2000), positive integer for the maximum threshold to be passed to \code{obtain_u_set_mix1}
+#'@param log_diff_max Positive real number, the value such that thresholds with profile posterior density not less than the maximum posterior density - \code{log_diff_max} will be kept
 #' @param a_psiu,b_psiu,m_alpha1,s_alpha1,a_theta1,b_theta1,m_alpha2,s_alpha2 Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
 #' @param positive Boolean, is alpha1 positive (TRUE) or unbounded (FALSE)?
 #' @param iter Positive integer representing the length of the MCMC output
@@ -345,6 +346,7 @@ obtain_u_set_mix1 <- function(df,
 #' @export
 mcmc_mix1_wrapper <- function(df, seed,
                               u_max = 2000L,
+                              log_diff_max = 11.0,
                               a_psiu = 0.1,
                               b_psiu = 0.9,
                               m_alpha1 = 0.00,
@@ -366,6 +368,7 @@ mcmc_mix1_wrapper <- function(df, seed,
     obtain_u_set_mix1(
       df, positive,
       u_max = u_max,
+      log_diff_max = log_diff_max,
       a_psiu = a_psiu, b_psiu = b_psiu,
       m_alpha1 = m_alpha1, s_alpha1 = s_alpha1,
       a_theta1 = a_theta1, b_theta1 = b_theta1,
@@ -651,6 +654,7 @@ obtain_u_set_mix2 <- function(df,
 #' @param df A data frame with at least two columns, x & count
 #' @param seed Integer for \code{set.seed}
 #' @param u_max Scalar (default 2000), positive integer for the maximum threshold to be passed to \code{obtain_u_set_mix2}
+#' @param log_diff_max Positive real number, the value such that thresholds with profile posterior density not less than the maximum posterior density - \code{log_diff_max} will be kept
 #' @param a_psiu,b_psiu,m_alpha,s_alpha,a_theta,b_theta,m_shape,s_shape,a_sigma,b_sigma Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
 #' @param a_pseudo Positive real number, first parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
 #' @param b_pseudo Positive real number, second parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
@@ -666,6 +670,7 @@ obtain_u_set_mix2 <- function(df,
 #' @export
 mcmc_mix2_wrapper <- function(df, seed,
                               u_max = 2000L,
+                              log_diff_max = 11.0,
                               a_psiu = 0.001,
                               b_psiu = 0.9,
                               m_alpha = 0.00,
@@ -691,6 +696,7 @@ mcmc_mix2_wrapper <- function(df, seed,
     obtain_u_set_mix2(
       df, powerlaw = (pr_power == 1.0), positive = positive,
       u_max = u_max,
+      log_diff_max = log_diff_max,
       a_psiu = a_psiu, b_psiu = b_psiu,
       m_alpha = m_alpha, s_alpha = s_alpha,
       a_theta = a_theta, b_theta = b_theta,
@@ -1077,6 +1083,7 @@ obtain_u_set_mix3 <- function(df,
 #' @param seed Integer for \code{set.seed}
 #' @param v_max Scalar (default 100), positive integer for the maximum lower threshold to be passed to \code{obtain_u_set_mix3}
 #' @param u_max Scalar (default 2000), positive integer for the maximum upper threshold to be passed to \code{obtain_u_set_mix3}
+#' @param log_diff_max Positive real number, the value such that thresholds with profile posterior density not less than the maximum posterior density - \code{log_diff_max} will be kept
 #' @param a_psi1,a_psi2,a_psiu,b_psiu,m_alpha,s_alpha,a_theta,b_theta,m_shape,s_shape,a_sigma,b_sigma Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
 #' @param a_pseudo Positive real number, first parameter of the pseudoprior beta distribution for theta2 in model selection; ignored if pr_power2 = 1.0
 #' @param b_pseudo Positive real number, second parameter of the pseudoprior beta distribution for theta2 in model selection; ignored if pr_power2 = 1.0
@@ -1095,6 +1102,7 @@ obtain_u_set_mix3 <- function(df,
 mcmc_mix3_wrapper <- function(df, seed,
                               v_max = 100L,
                               u_max = 2000L,
+                              log_diff_max = 11.0,
                               a_psi1 = 1.0,
                               a_psi2 = 1.0,
                               a_psiu = 0.001,
@@ -1129,6 +1137,7 @@ mcmc_mix3_wrapper <- function(df, seed,
       positive2 = positive2,
       v_max = v_max,
       u_max = u_max,
+      log_diff_max = log_diff_max,
       a_psi1 = a_psi1, a_psi2 = a_psi2,
       a_psiu = a_psiu, b_psiu = b_psiu,
       m_alpha = m_alpha, s_alpha = s_alpha,
