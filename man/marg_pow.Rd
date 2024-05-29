@@ -4,7 +4,7 @@
 \alias{marg_pow}
 \title{Marginal log-likelihood and posterior density of discrete power law via numerical integration}
 \usage{
-marg_pow(df, lower, upper, m_alpha, s_alpha, by = 0.001)
+marg_pow(df, lower, upper, m_alpha = 0, s_alpha = 10, by = 0.001)
 }
 \arguments{
 \item{df}{A data frame with at least two columns, x & count}
@@ -13,9 +13,9 @@ marg_pow(df, lower, upper, m_alpha, s_alpha, by = 0.001)
 
 \item{upper}{Real number greater than lower, upper limit for numerical integration}
 
-\item{m_alpha}{Real number, mean of the prior normal distribution for alpha}
+\item{m_alpha}{Real number (default 0.0), mean of the prior normal distribution for alpha}
 
-\item{s_alpha}{Positive real number, standard deviation of the prior normal distribution for alpha}
+\item{s_alpha}{Positive real number (default 10.0), standard deviation of the prior normal distribution for alpha}
 
 \item{by}{Positive real number, the width of subintervals between lower and upper, for numerical integration and posterior density evaluation}
 }

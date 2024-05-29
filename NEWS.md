@@ -1,3 +1,9 @@
+# crandep 0.3.9
+
+## Functions
+- Add `obtain_u_set_mix2_constrained()` for constrained version of `obtain_u_set_mix2()`. This assumes power law in the body i.e. theta = 1.0, and (1.0 / xi + 1.0) > alpha > 1.0, and "continuity" at the threshold u.
+- Subsequently, add argument `constrained` in `mcmc_mix2()` & `mcmc_mix2_wrapper()` & `lpost_mix2()` to accommodate this constrained version.
+
 # crandep 0.3.8 (2024-04-30)
 
 ## Functions

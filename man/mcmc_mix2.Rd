@@ -32,7 +32,8 @@ mcmc_mix2(
   burn,
   freq,
   invt,
-  mc3_or_marg = TRUE
+  mc3_or_marg = TRUE,
+  constrained = FALSE
 )
 }
 \arguments{
@@ -54,13 +55,13 @@ mcmc_mix2(
 
 \item{a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma}{Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.}
 
-\item{positive}{Boolean, is alpha positive (TRUE) or unbounded (FALSE)?}
+\item{positive}{Boolean, is alpha positive (TRUE) or unbounded (FALSE)? Ignored if constrained is TRUE}
 
 \item{a_pseudo}{Positive real number, first parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0}
 
 \item{b_pseudo}{Positive real number, second parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0}
 
-\item{pr_power}{Real number in [0, 1], prior probability of the discrete power law (below u)}
+\item{pr_power}{Real number in [0, 1], prior probability of the discrete power law (below u). Overridden if constrained is TRUE}
 
 \item{iter}{Positive integer representing the length of the MCMC output}
 
@@ -73,6 +74,8 @@ mcmc_mix2(
 \item{invt}{Vector of the inverse temperatures for Metropolis-coupled MCMC}
 
 \item{mc3_or_marg}{Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?}
+
+\item{constrained}{Boolean, are alpha & shape constrained such that 1/shape+1 > alpha > 1 with the powerlaw assumed in the body & "continuity" at the threshold u (TRUE), or is there no constraint between alpha & shape, with the former governed by positive, and no powerlaw and continuity enforced (FALSE, default)?}
 }
 \value{
 A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC

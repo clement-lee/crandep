@@ -1255,6 +1255,20 @@ const NumericVector Smix2(const IntegerVector x,
   return S;
 }
 
+const double phiu_constrained(const int v,
+                              const int u,
+                              const double alpha,
+                              const double shape,
+                              const double sigma) {
+  // to obtain phiu under constrained version
+  const double
+    sigu = sigma + shape * u,
+    Gdiff = 1.0 - pow(1.0 + shape / sigu, -1.0 / shape),
+    lsum = lnc_pol(alpha, 0.0, v + 1, u) + alpha * log(u + 1.0),
+    phiu = 1.0 / (1.0 + Gdiff * exp(lsum));
+  return phiu;
+}
+
 // [[Rcpp::export]]
 const double lpost_mix2(const IntegerVector x,
                         const IntegerVector count,
@@ -1276,7 +1290,8 @@ const double lpost_mix2(const IntegerVector x,
                         const bool powerlaw,
                         const bool positive, // alpha bound to be positive?
                         double & llik,
-                        const double invt = 1.0) {
+                        const double invt = 1.0,
+                        const bool constrained = false) {
   if (x.size() != count.size()) {
     stop("lpost_mix2: lengths of x & count have to be equal.");
   }
@@ -1287,11 +1302,14 @@ const double lpost_mix2(const IntegerVector x,
     par1 = NumericVector::create(alpha, theta),
     par2 = NumericVector::create(shape, sigma);
   const double
-    phiu = intdiv(sum(cu), sum(count)),
+    phiu = constrained ?
+    phiu_constrained(v, u, alpha, shape, sigma) :
+    intdiv(sum(cu), sum(count)),
     phil = 1.0 - phiu,
     psiu = intdiv(cu.size(), count.size());
   double l;
-  if (u <= 1 || u <= min(x) || u >= max(x)) {
+  if (u <= 1 || u <= min(x) || u >= max(x) ||
+      (constrained && (alpha <= 1.0 || (alpha > 1.0 && shape > 1.0 / (alpha - 1.0))))) {
     l = -INFINITY;
   }
   else {
@@ -1323,16 +1341,17 @@ const double lpost_mix2(const IntegerVector x,
 //' @param shape Real number, initial value of the parameter
 //' @param sigma Positive real number, initial value of the parameter
 //' @param a_psiu,b_psiu,a_alpha,b_alpha,a_theta,b_theta,m_shape,s_shape,a_sigma,b_sigma Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
-//' @param positive Boolean, is alpha positive (TRUE) or unbounded (FALSE)?
+//' @param positive Boolean, is alpha positive (TRUE) or unbounded (FALSE)? Ignored if constrained is TRUE
 //' @param a_pseudo Positive real number, first parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
 //' @param b_pseudo Positive real number, second parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
-//' @param pr_power Real number in [0, 1], prior probability of the discrete power law (below u)
+//' @param pr_power Real number in [0, 1], prior probability of the discrete power law (below u). Overridden if constrained is TRUE
 //' @param iter Positive integer representing the length of the MCMC output
 //' @param thin Positive integer representing the thinning in the MCMC
 //' @param burn Non-negative integer representing the burn-in of the MCMC
 //' @param freq Positive integer representing the frequency of the sampled values being printed
 //' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
 //' @param mc3_or_marg Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?
+//' @param constrained Boolean, are alpha & shape constrained such that 1/shape+1 > alpha > 1 with the powerlaw assumed in the body & "continuity" at the threshold u (TRUE), or is there no constraint between alpha & shape, with the former governed by positive, and no powerlaw and continuity enforced (FALSE, default)?
 //' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 //' @seealso \code{\link{mcmc_pol}} and \code{\link{mcmc_mix3}} for MCMC for the Zipf-polylog and 3-component discrete extreme value mixture distributions, respectively.
 //' @export
@@ -1358,14 +1377,19 @@ List mcmc_mix2(const IntegerVector x,
                const bool positive, // alpha +ve / unbound?
                const double a_pseudo,
                const double b_pseudo,
-               const double pr_power, // prior prob of power law
+               double pr_power, // prior prob of power law
                const int iter,
                const int thin,
                const int burn,
                const int freq,
                const NumericVector invt,
-               const bool mc3_or_marg = true) {
+               const bool mc3_or_marg = true,
+               const bool constrained = false) {
   // 01) save
+  if (constrained && pr_power != 1.0) {
+    pr_power = 1.0;
+    Rcout << "mcmc_mix2: constrained version used, positive ignored, and pr_power set to 1.0 to assume power law in the body throughout." << endl;
+  }
   DataFrame
     data =
     DataFrame::create(Named("x") = x,
@@ -1454,7 +1478,7 @@ List mcmc_mix2(const IntegerVector x,
     [x, count, a_psiu, b_psiu,
      a_alpha, b_alpha, a_theta, b_theta,
      m_shape, s_shape, a_sigma, b_sigma,
-     positive]
+     positive, constrained]
     (const int u,
      const double alpha, const double theta,
      const double shape, const double sigma,
@@ -1465,7 +1489,7 @@ List mcmc_mix2(const IntegerVector x,
                         a_alpha, b_alpha, a_theta, b_theta,
                         m_shape, s_shape, a_sigma, b_sigma,
                         powerlaw, positive,
-                        llik, invt);
+                        llik, invt, constrained);
     };
   lpost_curr.at(0) = lpost(u_curr.at(0), alpha_curr.at(0), theta_curr.at(0), shape_curr.at(0), sigma_curr.at(0), powl_curr.at(0), llik_curr.at(0), mc3_or_marg ? 1.0 : invt.at(0));
   Rcout << "Iteration 0";
@@ -1724,7 +1748,9 @@ List mcmc_mix2(const IntegerVector x,
       shape = shape_curr.at(0);
       sigma = sigma_curr.at(0);
       cu = count[x > u];
-      phiu = intdiv(sum(cu), n);
+      phiu = constrained ?
+        phiu_constrained(min(x) - 1, u, alpha, shape, sigma) :
+        intdiv(sum(cu), n);
       u_vec[s] = u;
       alpha_vec[s] = alpha;
       theta_vec[s] = theta;

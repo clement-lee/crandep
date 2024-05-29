@@ -19,13 +19,13 @@ lpost_pow <- function(alpha, df, m_alpha, s_alpha) {
 #' @param df A data frame with at least two columns, x & count
 #' @param lower Real number greater than 1, lower limit for numerical integration
 #' @param upper Real number greater than lower, upper limit for numerical integration
-#' @param m_alpha Real number, mean of the prior normal distribution for alpha
-#' @param s_alpha Positive real number, standard deviation of the prior normal distribution for alpha
+#' @param m_alpha Real number (default 0.0), mean of the prior normal distribution for alpha
+#' @param s_alpha Positive real number (default 10.0), standard deviation of the prior normal distribution for alpha
 #' @param by Positive real number, the width of subintervals between lower and upper, for numerical integration and posterior density evaluation
 #' @importFrom pracma integral
 #' @return A list: \code{log_marginal} is the marginal log-likelihood, \code{posterior} is a data frame of non-zero posterior densities
 #' @export
-marg_pow <- function(df, lower, upper, m_alpha, s_alpha, by = 0.001) {
+marg_pow <- function(df, lower, upper, m_alpha = 0.0, s_alpha = 10.0, by = 0.001) {
   if (lower <= 1.0) {
     stop("marg_pow: lower bound of alpha has to be greater than 1.0.")
   } else if (lower >= upper) {
@@ -171,7 +171,7 @@ obtain_u_set_mix1 <- function(df,
                               x_max = 100000) {
   x <- df$x
   if (any(x <= 0L)) {
-    stop("df$x has to be positive integers.")
+    stop("obtain_u_set_mix1: df$x has to be positive integers.")
   }
   count <- df$count
   y <- rep(x, count) # full data
@@ -188,7 +188,7 @@ obtain_u_set_mix1 <- function(df,
       alpha2 = alpha2_init,
       ll = as.numeric(NA),
       lp = as.numeric(NA),
-      l_check = as.numeric(NA)
+      lp_check = as.numeric(NA)
     )
   obj_bulk <- obj_pol <- NULL
   both <- !inherits(obj_bulk, "try-error") && !inherits(obj_pol, "try-error")
@@ -244,7 +244,7 @@ obtain_u_set_mix1 <- function(df,
       par_bulk <- obj_bulk$par
       par_pol <- c(obj_pol$par, 1.0)
       llik_temp <- -Inf # won't get updated
-      lb <-
+      lp_check <- # log-posterior
         lpost_mix1(
           x, count, u,
           par_bulk[1], par_bulk[2], par_pol[1],
@@ -255,7 +255,7 @@ obtain_u_set_mix1 <- function(df,
           positive, x_max,
           llik = llik_temp, invt = 1.0
         )
-      lc <-
+      ll <- # log-likelihood only
         llik_bulk(
           par = par_bulk,
           x = x,
@@ -277,8 +277,6 @@ obtain_u_set_mix1 <- function(df,
       lp <- la +
         sum(y > u) * log(phiu) +
         dunif(psiu, a_psiu, b_psiu, log = TRUE)
-      l_check <- lb
-      ll <- lc
       df0 <-
         data.frame(
           u = u,
@@ -287,7 +285,7 @@ obtain_u_set_mix1 <- function(df,
           alpha2 = par_pol[1],
           ll = ll,
           lp = lp,
-          l_check = l_check
+          lp_check = lp_check
         )
       df0$phiu <- phiu
       df0$psiu <- psiu
@@ -459,7 +457,7 @@ obtain_u_set_mix2 <- function(df,
                               b_sigma = 0.01) {
   x <- df$x
   if (any(x <= 0L)) {
-    stop("df$x has to be positive integers.")
+    stop("obtain_u_set_mix2: df$x has to be positive integers.")
   }
   count <- df$count
   y <- rep(x, count) # full data
@@ -477,7 +475,7 @@ obtain_u_set_mix2 <- function(df,
       sigma = sigma_init,
       ll = as.numeric(NA),
       lp = as.numeric(NA),
-      l_check = as.numeric(NA)
+      lp_check = as.numeric(NA)
     )
   obj_bulk <- obj_igpd <- NULL
   both <- !inherits(obj_bulk, "try-error") && !inherits(obj_igpd, "try-error")
@@ -559,7 +557,7 @@ obtain_u_set_mix2 <- function(df,
       }
       par_igpd <- obj_igpd$par
       llik_temp <- -Inf # won't get updated
-      lb <-
+      lp_check <- # log-posterior
         lpost_mix2(
           x, count, u,
           par_bulk[1], par_bulk[2],
@@ -574,7 +572,7 @@ obtain_u_set_mix2 <- function(df,
           llik = llik_temp,
           invt = 1.0
         )
-      lc <-
+      ll <- # log-likelihood only
         llik_bulk(
           par = par_bulk,
           x = x,
@@ -593,8 +591,6 @@ obtain_u_set_mix2 <- function(df,
           phiu = phiu
         )
       lp <- la + dunif(psiu, a_psiu, b_psiu, log = TRUE)
-      l_check <- lb
-      ll <- lc
       df0 <-
         data.frame(
           u = u,
@@ -605,7 +601,7 @@ obtain_u_set_mix2 <- function(df,
           ll = ll,
           ll_check = llik_temp,
           lp = lp,
-          l_check = l_check
+          lp_check = lp_check
         )
       df0$phiu <- phiu
       df0$psiu <- psiu
@@ -649,6 +645,187 @@ obtain_u_set_mix2 <- function(df,
   )
 }
 
+#' Wrapper of lpost_mix2, assuming power law (theta = 1.0) & contrained (alpha > 1.0, xi < 1.0 / (alpha - 1.0))
+#'
+#' @param par parameter vector of length 3, with elements alpha, shape and sigma
+#' @param ... Other arguments passed to lpost_mix2
+#' @return A scalar of the log-posterior density
+#' @keywords internal
+lpost_mix2_constrained <- function(par, ...) {
+  llik_temp <- -Inf # won't get updated
+  alpha <- par[1]
+  theta <- 1.0
+  shape <- par[2]
+  sigma <- par[3]
+  lpost_mix2(
+    alpha = alpha,
+    theta = theta,
+    shape = shape,
+    sigma = sigma,
+    llik = llik_temp,
+    invt = 1.0,
+    constrained = TRUE,
+    ...
+  )
+}
+
+
+#' Obtain set of thresholds with high posterior density for the constrained 2-component mixture model
+#'
+#' \code{obtain_u_set_mix2_constrained} computes the profile posterior density of the threshold u, and subsets the thresholds (and other parameter values) with high profile values i.e. within a certain value from the maximum posterior density. The set of u can then be used for \code{\link{mcmc_mix2}}. Power law is assumed for the body, and alpha is assumed to be greater than 1.0 and smaller than 1.0/shape+1.0
+#' @param df A data frame with at least two columns, x & count
+#' @param log_diff_max Positive real number, the value such that thresholds with profile posterior density not less than the maximum posterior density - \code{log_diff_max} will be kept
+#' @param u_max Positive integer for the maximum threshold
+#' @param alpha_init Scalar, initial value of alpha
+#' @param shape_init Scalar, initial value of shape parameter
+#' @param sigma_init Scalar, initial value of sigma
+#' @param a_psiu,b_psiu,m_alpha,s_alpha,a_theta,b_theta,m_shape,s_shape,a_sigma,b_sigma Scalars, hyperparameters of the priors for the parameters
+#' @importFrom dplyr bind_rows
+#' @importFrom stats optim dunif quantile
+#' @return A list: \code{u_set} is the vector of thresholds with high posterior density, \code{init} is the data frame with the maximum profile posterior density and associated parameter values, \code{profile} is the data frame with all thresholds with high posterior density and associated parameter values, \code{scalars} is the data frame with all arguments (except df)
+#' @seealso \code{\link{obtain_u_set_mix2}} for the unconstrained version
+#' @export
+obtain_u_set_mix2_constrained <- function(df,
+                                          u_max = 2000L,
+                                          log_diff_max = 11.0,
+                                          alpha_init = 2.0,
+                                          shape_init = 0.1,
+                                          sigma_init = 1.0,
+                                          a_psiu = 0.001,
+                                          b_psiu = 0.9,
+                                          m_alpha = 0.00,
+                                          s_alpha = 10.0,
+                                          a_theta = 1.00,
+                                          b_theta = 1.00,
+                                          m_shape = 0.00,
+                                          s_shape = 10.0,
+                                          a_sigma = 1.00,
+                                          b_sigma = 0.01) {
+  x <- df$x
+  if (any(x <= 0L)) {
+    stop("obtain_u_set_mix2_constrained: df$x has to be positive integers.")
+  }
+  count <- df$count
+  y <- rep(x, count) # full data
+  u_max <- min(max(x[x != max(x)]) - 1L, u_max)
+  l1 <- list()
+  i <- 0L # counter
+  u <- as.integer(floor(quantile(x, 1.0 - b_psiu))) # smallest threshold for profile; we have to ensure u is admissible, unlike obtain_u_set_mix2()
+  print(paste0("Threshold = ", u))
+  df0 <-
+    data.frame(
+      u = u,
+      alpha = alpha_init,
+      theta = 1.0,
+      shape = shape_init,
+      sigma = sigma_init,
+      ll = as.numeric(NA),
+      lp = as.numeric(NA)
+    )
+  obj_both <- NULL
+  both <- !inherits(obj_both, "try-error")
+  ## loop
+  while (u < u_max && both) {
+    i <- i + 1L
+    u <- u + 1L
+    phiu <- mean(y > u)
+    psiu <- mean(x > u)
+    obj_both <-
+      try(
+        optim(
+          c(df0$alpha, df0$shape, df0$sigma),
+          fn = lpost_mix2_constrained,
+          x = x,
+          count = count,
+          u = u,
+          a_psiu = a_psiu,
+          b_psiu = b_psiu,
+          a_alpha = m_alpha,
+          b_alpha = s_alpha,
+          a_theta = a_theta,
+          b_theta = b_theta,
+          m_shape = m_shape,
+          s_shape = s_shape,
+          a_sigma = a_sigma,
+          b_sigma = b_sigma,
+          powerlaw = TRUE,
+          positive = TRUE, # ignored
+          control = list(fnscale = -1, maxit = 50000)
+        ),
+        silent = TRUE
+      )
+    both <- !inherits(obj_both, "try-error")
+    if (both) {
+      par_both <- obj_both$par
+      par_bulk <- c(par_both[1], 1.0)
+      par_igpd <- par_both[2:3]
+      ll <-
+        llik_bulk(
+          par = par_bulk,
+          x = x,
+          count = count,
+          v = min(x) - 1L,
+          u = u,
+          phil = 1.0 - phiu,
+          powerlaw = TRUE,
+          positive = TRUE # ignored
+        ) +
+        llik_igpd(
+          par = par_igpd,
+          x = x,
+          count = count,
+          u = u,
+          phiu = phiu
+        )
+      df0 <-
+        data.frame(
+          u = u,
+          alpha = par_both[1],
+          theta = 1.0,
+          shape = par_both[2],
+          sigma = par_both[3],
+          ll = ll,
+          lp = obj_both$value
+        )
+      df0$phiu <- phiu
+      df0$psiu <- psiu
+      l1[[i]] <- df0
+    } else {
+      print(paste0("Threshold = ", u))
+    }
+    if (u == u_max) {
+      print(paste0("Threshold = ", u, " (max)"))
+    }
+  }
+  cat("\n")
+  df1 <- dplyr::bind_rows(l1)
+  df1 <- df1[df1$lp > -Inf, ]
+  df1$ldiff <- max(df1$lp) - df1$lp
+  df2 <- data.frame(
+    u_max = u_max,
+    log_diff_max = log_diff_max,
+    alpha_init = alpha_init,
+    shape_init = shape_init,
+    sigma_init = sigma_init,
+    a_psiu = a_psiu,
+    b_psiu = b_psiu,
+    m_alpha = m_alpha,
+    s_alpha = s_alpha,
+    a_theta = a_theta,
+    b_theta = b_theta,
+    m_shape = m_shape,
+    s_shape = s_shape,
+    a_sigma = a_sigma,
+    b_sigma = b_sigma
+  )
+  list(
+    u_set = df1[df1$ldiff <= log_diff_max, ]$u,
+    init = df1[df1$ldiff == 0.0, ],
+    profile = df1,
+    scalars = df2
+  )
+}
+
 #' Wrapper of mcmc_mix2
 #'
 #' @param df A data frame with at least two columns, x & count
@@ -666,6 +843,7 @@ obtain_u_set_mix2 <- function(df,
 #' @param freq Positive integer representing the frequency of the sampled values being printed
 #' @param invts Vector of the inverse temperatures for Metropolis-coupled MCMC (if mc3_or_marg = TRUE) or power posterior (if mc3_or_marg = FALSE)
 #' @param mc3_or_marg Boolean, is Metropolis-coupled MCMC to be used? Ignored if invts = c(1.0)
+#' @param constrained Boolean, are alpha & shape constrained such that 1/shape+1 > alpha > 1 with the powerlaw assumed in the body & "continuity" at the threshold u (TRUE), or is there no constraint between alpha & shape, with the former governed by positive, and no powerlaw and continuity enforced (FALSE, default)?
 #' @return A list returned by \code{mcmc_mix2}
 #' @export
 mcmc_mix2_wrapper <- function(df, seed,
@@ -690,19 +868,34 @@ mcmc_mix2_wrapper <- function(df, seed,
                               burn = 1e+5L,
                               freq = 1e+3L,
                               invts = 1.0,
-                              mc3_or_marg = TRUE) {
+                              mc3_or_marg = TRUE,
+                              constrained = FALSE) {
   print("Obtaining profile")
-  obj0 <-
-    obtain_u_set_mix2(
-      df, powerlaw = (pr_power == 1.0), positive = positive,
-      u_max = u_max,
-      log_diff_max = log_diff_max,
-      a_psiu = a_psiu, b_psiu = b_psiu,
-      m_alpha = m_alpha, s_alpha = s_alpha,
-      a_theta = a_theta, b_theta = b_theta,
-      m_shape = m_shape, s_shape = s_shape,
-      a_sigma = a_sigma, b_sigma = b_sigma
-    )
+  if (!constrained) {
+    obj0 <-
+      obtain_u_set_mix2(
+        df, powerlaw = (pr_power == 1.0), positive = positive,
+        u_max = u_max,
+        log_diff_max = log_diff_max,
+        a_psiu = a_psiu, b_psiu = b_psiu,
+        m_alpha = m_alpha, s_alpha = s_alpha,
+        a_theta = a_theta, b_theta = b_theta,
+        m_shape = m_shape, s_shape = s_shape,
+        a_sigma = a_sigma, b_sigma = b_sigma
+      )
+  } else {
+    obj0 <-
+      obtain_u_set_mix2_constrained(
+        df,
+        u_max = u_max,
+        log_diff_max = log_diff_max,
+        a_psiu = a_psiu, b_psiu = b_psiu,
+        m_alpha = m_alpha, s_alpha = s_alpha,
+        a_theta = a_theta, b_theta = b_theta,
+        m_shape = m_shape, s_shape = s_shape,
+        a_sigma = a_sigma, b_sigma = b_sigma
+      )
+  }
   print("Running MCMC")
   mc3 <- mc3_or_marg && (length(invts) > 1)
   set.seed(seed)
@@ -736,7 +929,8 @@ mcmc_mix2_wrapper <- function(df, seed,
         burn = burn,
         freq = freq,
         invt = invts,
-        mc3_or_marg = mc3_or_marg
+        mc3_or_marg = mc3_or_marg,
+        constrained = constrained
       )
   })
   mcmc0$scalars$seed <- as.integer(seed)
@@ -791,7 +985,7 @@ obtain_u_set_mix3 <- function(df,
                               b_sigma = 0.01) {
   x <- df$x
   if (any(x <= 0L)) {
-    stop("df$x has to be positive integers.")
+    stop("obtain_u_set_mix3: df$x has to be positive integers.")
   }
   count <- df$count
   y <- rep(x, count) # full data
@@ -818,7 +1012,7 @@ obtain_u_set_mix3 <- function(df,
         sigma = sigma_init,
         ll = as.numeric(NA),
         lp = as.numeric(NA),
-        l_check = as.numeric(NA)
+        lp_check = as.numeric(NA)
       )
     obj_pol1 <- obj_pol2 <- obj_igpd <- NULL
     three <-
@@ -961,7 +1155,7 @@ obtain_u_set_mix3 <- function(df,
           }
           par_igpd <- obj_igpd$par
           llik_temp <- -Inf # won't get updated
-          lb <-
+          lp_check <- # log-posterior
             lpost_mix3(
               x, count, v, u,
               par_pol1[1], par_pol1[2],
@@ -981,7 +1175,7 @@ obtain_u_set_mix3 <- function(df,
               llik = llik_temp,
               invt = 1.0
             )
-          lc <-
+          ll <- # log-likelihood only
             llik_bulk(
               par = par_pol1,
               x = x,
@@ -1013,8 +1207,6 @@ obtain_u_set_mix3 <- function(df,
             la +
             dbeta(psi1 / (1.0 - psiu), a_psi1, a_psi2, log = TRUE) +
             dunif(psiu, a_psiu, b_psiu, log = TRUE)
-          l_check <- lb
-          ll <- lc
           df0 <-
             data.frame(
               v = v,
@@ -1027,7 +1219,7 @@ obtain_u_set_mix3 <- function(df,
               sigma = par_igpd[2],
               ll = ll,
               lp = lp,
-              l_check = l_check
+              lp_check = lp_check
             )
           df0$phi1 <- phi1
           df0$phi2 <- phi2

@@ -154,8 +154,8 @@ Smix2 <- function(x, u, alpha, theta, shape, sigma, phiu) {
     .Call(`_crandep_Smix2`, x, u, alpha, theta, shape, sigma, phiu)
 }
 
-lpost_mix2 <- function(x, count, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, powerlaw, positive, llik, invt = 1.0) {
-    .Call(`_crandep_lpost_mix2`, x, count, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, powerlaw, positive, llik, invt)
+lpost_mix2 <- function(x, count, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, powerlaw, positive, llik, invt = 1.0, constrained = FALSE) {
+    .Call(`_crandep_lpost_mix2`, x, count, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, powerlaw, positive, llik, invt, constrained)
 }
 
 #' Markov chain Monte Carlo for 2-component discrete extreme value mixture distribution
@@ -172,21 +172,22 @@ lpost_mix2 <- function(x, count, u, alpha, theta, shape, sigma, a_psiu, b_psiu, 
 #' @param shape Real number, initial value of the parameter
 #' @param sigma Positive real number, initial value of the parameter
 #' @param a_psiu,b_psiu,a_alpha,b_alpha,a_theta,b_theta,m_shape,s_shape,a_sigma,b_sigma Scalars, real numbers representing the hyperparameters of the prior distributions for the respective parameters. See details for the specification of the priors.
-#' @param positive Boolean, is alpha positive (TRUE) or unbounded (FALSE)?
+#' @param positive Boolean, is alpha positive (TRUE) or unbounded (FALSE)? Ignored if constrained is TRUE
 #' @param a_pseudo Positive real number, first parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
 #' @param b_pseudo Positive real number, second parameter of the pseudoprior beta distribution for theta in model selection; ignored if pr_power = 1.0
-#' @param pr_power Real number in [0, 1], prior probability of the discrete power law (below u)
+#' @param pr_power Real number in [0, 1], prior probability of the discrete power law (below u). Overridden if constrained is TRUE
 #' @param iter Positive integer representing the length of the MCMC output
 #' @param thin Positive integer representing the thinning in the MCMC
 #' @param burn Non-negative integer representing the burn-in of the MCMC
 #' @param freq Positive integer representing the frequency of the sampled values being printed
 #' @param invt Vector of the inverse temperatures for Metropolis-coupled MCMC
 #' @param mc3_or_marg Boolean, is invt for parallel tempering / Metropolis-coupled MCMC (TRUE, default) or marginal likelihood via power posterior (FALSE)?
+#' @param constrained Boolean, are alpha & shape constrained such that 1/shape+1 > alpha > 1 with the powerlaw assumed in the body & "continuity" at the threshold u (TRUE), or is there no constraint between alpha & shape, with the former governed by positive, and no powerlaw and continuity enforced (FALSE, default)?
 #' @return A list: $pars is a data frame of iter rows of the MCMC samples, $fitted is a data frame of length(x) rows with the fitted values, amongst other quantities related to the MCMC
 #' @seealso \code{\link{mcmc_pol}} and \code{\link{mcmc_mix3}} for MCMC for the Zipf-polylog and 3-component discrete extreme value mixture distributions, respectively.
 #' @export
-mcmc_mix2 <- function(x, count, u_set, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, positive, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, mc3_or_marg = TRUE) {
-    .Call(`_crandep_mcmc_mix2`, x, count, u_set, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, positive, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, mc3_or_marg)
+mcmc_mix2 <- function(x, count, u_set, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, positive, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, mc3_or_marg = TRUE, constrained = FALSE) {
+    .Call(`_crandep_mcmc_mix2`, x, count, u_set, u, alpha, theta, shape, sigma, a_psiu, b_psiu, a_alpha, b_alpha, a_theta, b_theta, m_shape, s_shape, a_sigma, b_sigma, positive, a_pseudo, b_pseudo, pr_power, iter, thin, burn, freq, invt, mc3_or_marg, constrained)
 }
 
 #' Probability mass function (PMF) of 3-component discrete extreme value mixture distribution

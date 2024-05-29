@@ -28,7 +28,8 @@ mcmc_mix2_wrapper(
   burn = 100000L,
   freq = 1000L,
   invts = 1,
-  mc3_or_marg = TRUE
+  mc3_or_marg = TRUE,
+  constrained = FALSE
 )
 }
 \arguments{
@@ -61,6 +62,8 @@ mcmc_mix2_wrapper(
 \item{invts}{Vector of the inverse temperatures for Metropolis-coupled MCMC (if mc3_or_marg = TRUE) or power posterior (if mc3_or_marg = FALSE)}
 
 \item{mc3_or_marg}{Boolean, is Metropolis-coupled MCMC to be used? Ignored if invts = c(1.0)}
+
+\item{constrained}{Boolean, are alpha & shape constrained such that 1/shape+1 > alpha > 1 with the powerlaw assumed in the body & "continuity" at the threshold u (TRUE), or is there no constraint between alpha & shape, with the former governed by positive, and no powerlaw and continuity enforced (FALSE, default)?}
 }
 \value{
 A list returned by \code{mcmc_mix2}

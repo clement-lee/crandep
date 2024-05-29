@@ -25,3 +25,5 @@
 ## subsume log-likelihood updates in update() in algo.cpp
 
 ## replaces *_prop NumericVectors by double
+
+## split optim.R into multiple files
