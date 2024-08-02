@@ -78,11 +78,11 @@ get_dep("xts", "LinkingTo")
 get_dep("xts", "linking to")
 ```
 
-For the reverse dependencies, the substring `"reverse_"` will not be shown in `type`; instead the `reverse` column will be `TRUE`. This can be illustrated by the following:
+For the reverse dependencies, instead of including the prefix "Reverse " in `type`, we use the argument `reverse`:
 
 ```{r}
-get_dep("abc", c("depends", "reverse_depends"))
-get_dep("xts", c("linking to", "reverse linking to"))
+get_dep("abc", c("depends", "depends"), reverse = TRUE)
+get_dep("xts", c("linking to", "linking to"), reverse = TRUE)
 ```
 Theoretically, for each forward dependency
 ```{r, echo=FALSE}
@@ -97,10 +97,10 @@ Aligning the `type` in the forward dependency and the reverse dependency enables
 To obtain all types of dependencies, we can use `"all"` in the second argument, instead of typing a character vector of all words:
 
 ```{r}
-df0.abc <- get_dep("abc", "all")
-df0.abc
-df0.rstan <- get_dep("rstan", "all") # too many rows to display
-dplyr::count(df0.rstan, type, reverse) # hence the summary using count()
+df0.rstan <- get_dep("rstan", "all")
+dplyr::count(df0.rstan, type)
+df1.rstan <- get_dep("rstan", "all", reverse = TRUE) # too many rows to display
+dplyr::count(df1.rstan, type) # hence the summary using count()
 ```
 
 ```{r,echo=FALSE}
@@ -167,7 +167,7 @@ g0.depends
 We could obtain essentially the same graph, but with the direction of the edges reversed, by specifying `type = "reverse depends"`:
 ```{r get_graph_all_packages_rev, eval = FALSE}
 # Not run
-g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
+g0.rev_depends <- get_graph_all_packages(type = "depends", reverse = TRUE)
 g0.rev_depends
 ```
 The dependency words accepted by the argument `type` is the same as in `get_dep()`. The two networks' size and order should be very close if not identical to each other. Because of the dependency direction, their edge lists should be the same but with the column names `from` and `to` swapped.

@@ -63,10 +63,10 @@ g0.depends <- get_graph_all_packages(type = "depends")
 g0.depends
 ```
 
-We could obtain essentially the same graph, but with the direction of the edges reversed, by specifying `type = "reverse depends"`:
+We could obtain essentially the same graph, but with the direction of the edges reversed, by using the argument `reverse`:
 ```{r get_graph_all_packages_rev, eval = FALSE}
 # Not run
-g0.rev_depends <- get_graph_all_packages(type = "reverse depends")
+g0.rev_depends <- get_graph_all_packages(type = "depends", reverse = TRUE)
 g0.rev_depends
 ```
 The dependency words accepted by the argument `type` is the same as in `get_dep()`. The two networks' size and order should be very close if not identical to each other. Because of the dependency direction, their edge lists should be the same but with the column names `from` and `to` swapped.

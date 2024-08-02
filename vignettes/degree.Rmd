@@ -54,7 +54,7 @@ head(df0.imports, 10)
 For the purpose of verification, we use the reverse dependencies to construct the network, then look at the out-degrees of the packages this time.
 
 ```{r}
-g0.rev_imports <- get_graph_all_packages(type = "reverse imports")
+g0.rev_imports <- get_graph_all_packages(type = "imports", reverse = TRUE)
 d0.rev_imports <- g0.rev_imports |> igraph::degree(mode = "out") # note the difference to above
 df0.rev_imports <-
   data.frame(name = names(d0.rev_imports), degree = as.integer(d0.rev_imports)) |>
@@ -205,7 +205,7 @@ gg2 <- df1.imports |>
 gg2
 ```
 
-This shows the discrete power law doesn't fit as good as it seems according to the frequency plot. To improve the fit, we use the discrete extreme value mixture distributions introduced in [Lee, Eastoe and Farrell, 2024](https://arxiv.org/abs/2008.03073). Provided in this package for such purpose are `dmix2()`, `Smix2()` and `mcmc_mix2()`. As it takes hours to run the inference algorithm using `mcmc_mix()`, we hardcode the parameter values based on their component-wise posterior median, and overlay the data by the fitted line.
+This shows the discrete power law doesn't fit as good as it seems according to the frequency plot. To improve the fit, we use the discrete extreme value mixture distributions introduced in [Lee, Eastoe and Farrell, 2024](https://doi.org/10.1111/stan.12355). Provided in this package for such purpose are `dmix2()`, `Smix2()` and `mcmc_mix2()`. As it takes hours to run the inference algorithm using `mcmc_mix()`, we hardcode the parameter values based on their component-wise posterior median, and overlay the data by the fitted line.
 
 ```{r}
 gg3 <- df1.imports |>

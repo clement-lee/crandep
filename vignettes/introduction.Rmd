@@ -28,7 +28,7 @@ library(igraph)
 
 
 ## One or multiple types of dependencies
-To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep()` which takes the package name and the type of dependencies as the first and second arguments, respectively. Currently, the second argument accepts a character vector of one or more of the following words: `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Enhances`, `Reverse_depends`, `Reverse_imports`, `Reverse_linking_to`, `Reverse_suggests`, and `Reverse_enhances`, or any variations in their letter cases, or if the underscore "_" is replaced by a space.
+To obtain the information about various kinds of dependencies of a package, we can use the function `get_dep()` which takes the package name and the type of dependencies as the first and second arguments, respectively. Currently, the second argument accepts a character vector of one or more of the following words: `Depends`, `Imports`, `LinkingTo`, `Suggests`, `Enhances`, or any variations in their letter cases, or if `LinkingTo` is written as `Linking_To` or `Linking To`.
 
 ```{r}
 get_dep("dplyr", "Imports")
@@ -44,11 +44,11 @@ get_dep("xts", "LinkingTo")
 get_dep("xts", "linking to")
 ```
 
-For the reverse dependencies, the substring `"reverse_"` will not be shown in `type`; instead the `reverse` column will be `TRUE`. This can be illustrated by the following:
+For the reverse dependencies, instead of including the prefix "Reverse " in `type`, we use the argument `reverse`:
 
 ```{r}
-get_dep("abc", c("depends", "reverse_depends"))
-get_dep("xts", c("linking to", "reverse linking to"))
+get_dep("abc", c("depends", "depends"), reverse = TRUE)
+get_dep("xts", c("linking to", "linking to"), reverse = TRUE)
 ```
 Theoretically, for each forward dependency
 ```{r, echo=FALSE}
@@ -60,13 +60,13 @@ data.frame(from = "B", to = "A", type = "c", reverse = TRUE)
 ```
 Aligning the `type` in the forward and reverse dependencies enables this to be checked easily.
 
-To obtain all types of dependencies, we can use `"all"` in the second argument, instead of typing a character vector of all 10 words:
+To obtain all types of dependencies, we can use `"all"` in the second argument, instead of typing a character vector of all 5 words:
 
 ```{r}
-df0.abc <- get_dep("abc", "all")
-df0.abc
-df0.rstan <- get_dep("rstan", "all") # too many rows to display
-dplyr::count(df0.rstan, type, reverse) # hence the summary using count()
+df0.rstan <- get_dep("rstan", "all")
+dplyr::count(df0.rstan, type)
+df1.rstan <- get_dep("rstan", "all", reverse = TRUE) # too many rows to display
+dplyr::count(df1.rstan, type) # hence the summary using count()
 ```
 
 

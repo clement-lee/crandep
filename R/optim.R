@@ -1073,8 +1073,8 @@ obtain_u_set_mix3 <- function(df,
                 positive = positive1,
                 control = list(fnscale = -1, maxit = 50000)
               ),
-            silent = TRUE
-          )
+              silent = TRUE
+            )
         }
         if (powerlaw2) {
           obj_pol2 <-

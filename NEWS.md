@@ -1,4 +1,14 @@
-# crandep 0.3.9
+# crandep 0.3.10 (2024-08-02)
+
+## Functions
+- Add argument `reverse` for `get_dep()` and `get_graph_all_packages()`, & remove `scrape` for the former.
+- Remove `cran_url()`, `html_text_vec()` and already deprecated `get_dep_df()` & `get_dep_all()`.
+- Introduce the use of native pipe operator `|>` in `check_dep_word()` & `get_dep_vec()`.
+
+## Miscellaneous
+- Update the DOI of the associated journal article.
+
+# crandep 0.3.9 (2024-05-30)
 
 ## Functions
 - Add `obtain_u_set_mix2_constrained()` for constrained version of `obtain_u_set_mix2()`. This assumes power law in the body i.e. theta = 1.0, and (1.0 / xi + 1.0) > alpha > 1.0, and "continuity" at the threshold u.

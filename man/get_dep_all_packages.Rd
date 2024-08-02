@@ -12,9 +12,6 @@ A data frame of dependencies of all CRAN packages
 \description{
 \code{get_dep_all_packages} returns the data frame of dependencies of all packages currently available on CRAN.
 }
-\details{
-Unlike \code{get_dep}, there is no boolean argument `scrape`, as it is much faster to obtain the dependencies of all packages via `tools::CRAN_package_db()`.
-}
 \examples{
 \dontrun{
 df.cran <- get_dep_all_packages()

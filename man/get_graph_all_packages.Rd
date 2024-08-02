@@ -4,12 +4,14 @@
 \alias{get_graph_all_packages}
 \title{Graph of dependencies of all CRAN packages}
 \usage{
-get_graph_all_packages(type, gc = TRUE)
+get_graph_all_packages(type, gc = TRUE, reverse = FALSE)
 }
 \arguments{
-\item{type}{A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", "Reverse depends", "Reverse imports", "Reverse linking to", "Reverse suggests", "Reverse enhances", up to letter case and space replaced by underscore. Alternatively, if 'types = "all"', all ten dependencies will be obtained.}
+\item{type}{A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", up to letter case and space replaced by underscore. Alternatively, if 'types = "all"', all five dependencies will be obtained.}
 
 \item{gc}{Boolean, if 'TRUE' (default) then the giant component is extracted, if 'FALSE' then the whole graph is returned}
+
+\item{reverse}{Boolean, whether forward (FALSE, default) or reverse (TRUE) dependencies are requested.}
 }
 \value{
 An igraph object & a connected graph if gc is 'TRUE'
@@ -20,7 +22,7 @@ An igraph object & a connected graph if gc is 'TRUE'
 \examples{
 \dontrun{
 g0.cran.depends <- get_graph_all_packages("depends")
-g1.cran.imports <- get_graph_all_packages("reverse imports")
+g1.cran.imports <- get_graph_all_packages("imports", reverse = TRUE)
 }
 }
 \seealso{
