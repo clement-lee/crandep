@@ -18,7 +18,8 @@ get_dep <- function(name, type, reverse = FALSE) {
   if (length(type) == 1L) {
     v0 <- try(tools::package_dependencies(name, db = pdb, which = type, reverse = reverse), silent = TRUE)
     if (inherits(v0, "try-error")) {
-      stop("get_dep() uses tools::package_dependencies() which fails. Check Internet connection.")
+      message("get_dep() uses tools::package_dependencies() which fails. Check Internet connection.")
+      return(NULL)
     } else {
       if (length(v0[[1L]]) == 0L) {
         v0[[1L]] <- as.character(NA)
@@ -69,7 +70,8 @@ reshape_dep <- function(x, names) {
 get_dep_all_packages <- function() {
   db0 <- try(tools::CRAN_package_db(), silent = TRUE)
   if (inherits(db0, "try-error")) {
-    stop("get_dep_all_packages() uses tools::CRAN_package_db() which fails. Check Internet connection.")
+    message("get_dep_all_packages() uses tools::CRAN_package_db() which fails. Check Internet connection.")
+    return(NULL)
   } else {
     df0 <- as.data.frame(db0, stringsAsFactors = FALSE)
     pkgnames <- df0$Package
