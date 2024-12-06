@@ -17,7 +17,7 @@
 #'
 #' A dataset containing the citations of conference papers of the ACM Conference on Human Factors in Computing Systems (CHI) from 1981 to 2019, obtained from the ACM digital library. The resulting citation network can be compared to the dependencies network of CRAN packages, in terms of network-related characteristics, such as degree distribution and sparsity.
 #'
-#' @format A data from with21951 rows and 4 variables:
+#' @format A data from with 21951 rows and 4 variables:
 #' \describe{
 #'   \item{from}{the unique identifier (in the digital library) of the paper that cites other papers}
 #'   \item{to}{the unique identifier of the paper that is being cited}

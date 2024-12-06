@@ -8,7 +8,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This vignette provides an introduction to the functions facilitating the analysis of the dependencies of CRAN packages, specifically `get_dep()`, `df_to_graph()` and `topo_sort_kahn()`.
+This vignette provides an introduction to the functions facilitating the analysis of the dependencies of CRAN packages, specifically `get_dep()` and `df_to_graph()`.
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -127,28 +127,6 @@ old.par <- par(mar = rep(0.0, 4))
 plot(g0.core, vertex.label.cex = 1.5)
 par(old.par)
 ```
-
-
-
-
-
-## Topological ordering of nodes
-Since networks according to `Imports` or `Depends` are DAGs, we can obtain the [topological ordering](https://en.wikipedia.org/wiki/Topological_sorting) using, for example, [Kahn's (1962) sorting algorithm](https://doi.org/10.1145/368996.369025).
-
-```{r}
-topo_sort_kahn(g0.core)
-```
-In the topological ordering, represented by the column `id_num`, a low (high) number represents being at the front (back) of the ordering. If package A `Imports` package B i.e. there is a directed edge from A to B, then A will be topologically before B. As the package 'tibble' doesn't import any package but is imported by most other packages, it naturally goes to the back of the ordering. This ordering may not be unique for a DAG, and other admissible orderings can be obtained by setting `random=TRUE` in the function:
-```{r}
-set.seed(387L); topo_sort_kahn(g0.core, random = TRUE)
-```
-We can also apply the topological sorting to the bigger dependencies network.
-```{r}
-df0.topo <- topo_sort_kahn(g0.imports)
-head(df0.topo)
-tail(df0.topo)
-```
-
 
 
 

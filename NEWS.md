@@ -1,3 +1,11 @@
+# crandep 0.3.11 (2024-12-06)
+
+## Functions
+- Remove `topo_sort_kahn()` and its appearance in vignettes as it does not quite fit the core of this package.
+
+## Miscellaneous
+- Fix typo in documentation of `chi_citations`.
+
 # crandep 0.3.10 (2024-08-02)
 
 ## Functions

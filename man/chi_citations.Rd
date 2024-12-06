@@ -5,7 +5,7 @@
 \alias{chi_citations}
 \title{Citation network of CHI papers}
 \format{
-A data from with21951 rows and 4 variables:
+A data from with 21951 rows and 4 variables:
 \describe{
   \item{from}{the unique identifier (in the digital library) of the paper that cites other papers}
   \item{to}{the unique identifier of the paper that is being cited}
