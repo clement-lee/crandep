@@ -22,13 +22,11 @@ check_dep_word <- function(x) {
   } else if (any(substr(tolower(x), 1L, 7L) == "reverse")) {
     stop("check_dep_word: some dependency types contain 'Reverse ' up to letter case. Remove these substrings and use the argument 'reverse' in the function that calls check_dep_word.")
   } else {
-    x <-
-      x |>
-      stringr::str_replace_all(" ", "_") |>
-      stringr::str_replace_all("\u00a0", "_") |>
-      stringr::str_to_title() |>
-      conditional_change(c("Linkingto", "Linking_to"), "LinkingTo") |>
-      stringr::str_replace_all("_", " ")
+    x <- stringr::str_replace_all(x, " ", "_")
+    x <- stringr::str_replace_all(x, "\u00a0", "_")
+    x <- stringr::str_to_title(x)
+    x <- conditional_change(x, c("Linkingto", "Linking_to"), "LinkingTo")
+    x <- stringr::str_replace_all(x, "_", " ")
   }
   if (!all(x %in% types)) {
     s <- paste(types, collapse = ", ")
@@ -47,14 +45,13 @@ get_dep_vec <- function(x) {
   if (is.na(x)) {
     y <- as.character(NA)
   } else {
-    u <- # the strings of dependencies
-      x |>
-      stringr::str_replace_all(",", ", ") |>
-      stringr::str_replace_all("\\(", " \\(") |>
-      stringr::str_replace_all("\n", " ") |>
-      stringr::str_replace_all("  ", " ") |>
-      stringr::str_replace_all("  ", " ") |>
-      stringr::str_split(", ")
+    u <- stringr::str_replace_all(x, ",$", "") # the strings of dependencies
+    u <- stringr::str_replace_all(u, ",", ", ")
+    u <- stringr::str_replace_all(u, "\\(", " \\(")
+    u <- stringr::str_replace_all(u, "\n", " ")
+    u <- stringr::str_replace_all(u, "  ", " ")
+    u <- stringr::str_replace_all(u, "  ", " ")
+    u <- stringr::str_split(u, ", ")
     v <- stringr::str_locate(u[[1L]], " ")[, 1L] # the indices of 1st space
     w <- substr(u[[1L]], 1L, ifelse(is.na(v), nchar(u[[1L]]), v - 1L)) # the substrings
     if (length(w) == 1L && w == "R") {

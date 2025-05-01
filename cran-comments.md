@@ -1,8 +1,8 @@
-This is the first submission of version 0.3.11. The total check time is expected to be below 10min.
+This is the first submission of version 0.3.12. The total check time is expected to be below 10min.
 
-There are no ERRORs or WARNINGs, and possible NOTEs are explained below.
+There are no ERRORs, WARNINGs or NOTEs. The INFO(s) are listed below.
 
-## checking installed package size ... NOTE
+## checking installed package size ... INFO
     installed size is 21.1Mb
     sub-directories of 1Mb or more:
       data   1.2Mb

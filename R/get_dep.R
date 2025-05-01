@@ -56,11 +56,11 @@ reshape_dep <- function(x, names) {
 
 #' Dependencies of all CRAN packages
 #'
-#' \code{get_dep_all_packages} returns the data frame of dependencies of all packages currently available on CRAN.
+#' \code{get_dep_all_packages} returns the data frame of dependencies of all packages currently available on CRAN with at least one dependency of any type, forward or reverse.
 #'
 #' @importFrom tools CRAN_package_db
 #' @importFrom dplyr bind_rows
-#' @return A data frame of dependencies of all CRAN packages
+#' @return A data frame of dependencies of all CRAN packages that have at least one dependency of any type, forward or reverse. A Depends of an R version doesn't count as a dependency here.
 #' @examples
 #' \dontrun{
 #' df.cran <- get_dep_all_packages()
@@ -103,7 +103,6 @@ get_dep_all_packages <- function() {
       stringsAsFactors = FALSE
     )
     df2 <- df2[!is.na(df2$to),]
-    df2 <- df2[df2$to != "",] # there are rows with "" - may need to fix from source get_dep_vec()
     return(unique(df2))
   }
 }
