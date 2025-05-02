@@ -1,3 +1,16 @@
+# crandep 0.3.12 (2025-05-02)
+
+## Functions
+- Within `get_dep_vec()`, remove trailing commas of the string. This is because, in `tools::CRAN_package_db()`, some strings of dependencies have trailing commas, causing the resulting data frame of `get_dep_all_packages()` to contain some rows with the package name being "" (empty string).
+- Consequently, remove the relevant line in `get_dep_all_packages()` that delete rows with the package name being "".
+- Retract the use of pipe operator `|>` in `check_dep_word()` and `get_dep_vec()`.
+- Clarify in the documentation of `get_dep_all_packages()` that the orphan packages (those with no dependency of any type, forward or reverse) are not included. A `Depends` on an R version doesn't count.
+
+## Miscellaneous
+- Set up Github actions / workflows to enable Rhub checks.
+
+
+
 # crandep 0.3.11 (2024-12-06)
 
 ## Functions

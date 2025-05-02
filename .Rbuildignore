@@ -8,3 +8,4 @@ next.md
 old_built
 ^CRAN-RELEASE$
 ^CRAN-SUBMISSION$
+.github/workflows/rhub.yaml
