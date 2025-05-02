@@ -54,6 +54,8 @@ head(df0.imports, 10)
 For the purpose of verification, we use the reverse dependencies to construct the network, then look at the out-degrees of the packages this time.
 
 ```{r}
+#| eval: false
+## Not run
 g0.rev_imports <- get_graph_all_packages(type = "imports", reverse = TRUE)
 d0.rev_imports <- g0.rev_imports |> igraph::degree(mode = "out") # note the difference to above
 df0.rev_imports <-
@@ -65,6 +67,8 @@ head(df0.rev_imports, 10)
 Theoretically, the two data frames are identical. Any possible (but small) difference is due to the CRAN pages being updated while scraping.
 
 ```{r}
+#| eval: false
+## Not run
 identical(df0.imports, df0.rev_imports)
 setdiff(df0.imports, df0.rev_imports)
 setdiff(df0.rev_imports, df0.imports)

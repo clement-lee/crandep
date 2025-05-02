@@ -8,6 +8,7 @@
 
 ## Miscellaneous
 - Set up Github actions / workflows to enable Rhub checks.
+- Not evaluate some code chunks in degree.Rmd to reduce total check time.
 
 
 
