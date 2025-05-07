@@ -2,7 +2,7 @@
 #'
 #' \code{get_dep} returns a data frame of multiple types of dependencies of a package
 #' @param name String, name of the package
-#' @param type A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", up to letter case and space replaced by underscore. Alternatively, if 'type = "all"', all five dependencies will be obtained.
+#' @param type A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", up to letter case and space replaced by underscore. Alternatively, if 'type = "all"', all five dependencies will be obtained; if 'type = "strong"', "Depends", "Imports" & "LinkingTo" will be obtained.
 #' @param reverse Boolean, whether forward (FALSE, default) or reverse (TRUE) dependencies are requested.
 #' @importFrom tools package_dependencies
 #' @importFrom utils available.packages findCRANmirror
@@ -56,11 +56,11 @@ reshape_dep <- function(x, names) {
 
 #' Dependencies of all CRAN packages
 #'
-#' \code{get_dep_all_packages} returns the data frame of dependencies of all packages currently available on CRAN with at least one dependency of any type, forward or reverse.
+#' \code{get_dep_all_packages} returns the data frame of dependencies of all packages currently available on CRAN.
 #'
 #' @importFrom tools CRAN_package_db
 #' @importFrom dplyr bind_rows
-#' @return A data frame of dependencies of all CRAN packages that have at least one dependency of any type, forward or reverse. A Depends of an R version doesn't count as a dependency here.
+#' @return A list of two data frames, one the names of all CRAN packages, the other their dependencies
 #' @examples
 #' \dontrun{
 #' df.cran <- get_dep_all_packages()
@@ -68,12 +68,11 @@ reshape_dep <- function(x, names) {
 #' @seealso \code{\link{get_dep}} for multiple types of dependencies, and \code{\link{get_graph_all_packages}} for obtaining directly a network of dependencies as an igraph object
 #' @export
 get_dep_all_packages <- function() {
-  db0 <- try(tools::CRAN_package_db(), silent = TRUE)
-  if (inherits(db0, "try-error")) {
+  df0 <- try(tools::CRAN_package_db(), silent = TRUE)
+  if (inherits(df0, "try-error")) {
     message("get_dep_all_packages() uses tools::CRAN_package_db() which fails. Check Internet connection.")
     return(NULL)
   } else {
-    df0 <- as.data.frame(db0, stringsAsFactors = FALSE)
     pkgnames <- df0$Package
     df1 <-
       dplyr::bind_rows(
@@ -103,6 +102,7 @@ get_dep_all_packages <- function() {
       stringsAsFactors = FALSE
     )
     df2 <- df2[!is.na(df2$to),]
-    return(unique(df2))
+    l <- list(packages = data.frame(name = unique(pkgnames)), dependencies = unique(df2))
+    return(l)
   }
 }

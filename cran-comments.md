@@ -1,4 +1,4 @@
-This is the first submission of version 0.3.12. The total check time is expected to be below 10min.
+This is the first submission of version 0.3.13. The total check time is expected to be below 10min.
 
 There are no ERRORs, WARNINGs or NOTEs. The INFO(s) are listed below.
 

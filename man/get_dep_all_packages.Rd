@@ -7,10 +7,10 @@
 get_dep_all_packages()
 }
 \value{
-A data frame of dependencies of all CRAN packages that have at least one dependency of any type, forward or reverse. A Depends of an R version doesn't count as a dependency here.
+A list of two data frames, one the names of all CRAN packages, the other their dependencies
 }
 \description{
-\code{get_dep_all_packages} returns the data frame of dependencies of all packages currently available on CRAN with at least one dependency of any type, forward or reverse.
+\code{get_dep_all_packages} returns the data frame of dependencies of all packages currently available on CRAN.
 }
 \examples{
 \dontrun{

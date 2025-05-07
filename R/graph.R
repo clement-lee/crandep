@@ -17,16 +17,14 @@ df_to_graph <- function(edgelist, nodelist = NULL, gc = TRUE) {
   if (is.null(nodelist)) {
     g <- igraph::graph_from_data_frame(edgelist)
   } else {
+    nodelist <- unique(nodelist[, "name", drop = FALSE])
     df <- dplyr::semi_join(edgelist, nodelist, c("to" = "name")) # semi join as some nodes may have become obsolete
-    g <- igraph::graph_from_data_frame(df)
+    df <- dplyr::semi_join(df, nodelist, c("from" = "name"))
+    g <- igraph::graph_from_data_frame(df, vertices = nodelist$name)
   }
   if (gc) {
     l <- igraph::decompose.graph(g)
-    n <- length(l)
-    v <- rep(as.integer(NA), n)
-    for (i in seq(n)) {
-      v[i] <- igraph::gorder(l[[i]])
-    }
+    v <- sapply(l, igraph::gorder, simplify = TRUE)
     g <- l[[which.max(v)]]
   }
   g
@@ -35,7 +33,7 @@ df_to_graph <- function(edgelist, nodelist = NULL, gc = TRUE) {
 #' Graph of dependencies of all CRAN packages
 #'
 #' \code{get_graph_all_packages} returns an igraph object representing the network of one or more types of dependencies of all CRAN packages.
-#' @param type A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", up to letter case and space replaced by underscore. Alternatively, if 'types = "all"', all five dependencies will be obtained.
+#' @param type A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", up to letter case and space replaced by underscore. Alternatively, if 'type = "all"', all five dependencies will be obtained; if 'type = "strong"', "Depends", "Imports" & "LinkingTo" will be obtained.
 #' @param gc Boolean, if 'TRUE' (default) then the giant component is extracted, if 'FALSE' then the whole graph is returned
 #' @param reverse Boolean, whether forward (FALSE, default) or reverse (TRUE) dependencies are requested.
 #' @return An igraph object & a connected graph if gc is 'TRUE'
@@ -50,11 +48,10 @@ df_to_graph <- function(edgelist, nodelist = NULL, gc = TRUE) {
 get_graph_all_packages <- function(type, gc = TRUE, reverse = FALSE) {
   ## change params to align with others
   type <- check_dep_word(type)
-  df0 <- get_dep_all_packages()
+  l0 <- get_dep_all_packages()
   df1 <- data.frame(type = type, reverse = reverse)
   df1$type <- conditional_change(tolower(df1$type), "linkingto", "linking to")
-  df2 <- dplyr::inner_join(df0, df1, c("type", "reverse")) # edgelist
+  df2 <- dplyr::inner_join(l0$dependencies, df1, c("type", "reverse")) # edgelist
   df2 <- unique(df2[, c("from", "to")])
-  df3 <- data.frame(name = unique(df0$from))
-  df_to_graph(df2, df3, gc)
+  df_to_graph(df2, l0$packages, gc)
 }

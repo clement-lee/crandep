@@ -19,6 +19,8 @@ check_dep_word <- function(x) {
   types <- c("Depends", "Imports", "LinkingTo", "Suggests", "Enhances")
   if (length(x) == 1L && stringr::str_to_title(x) == "All") {
     x <- types
+  } else if (length(x) == 1L && stringr::str_to_title(x) == "Strong") {
+    x <- c("Depends", "Imports", "LinkingTo")
   } else if (any(substr(tolower(x), 1L, 7L) == "reverse")) {
     stop("check_dep_word: some dependency types contain 'Reverse ' up to letter case. Remove these substrings and use the argument 'reverse' in the function that calls check_dep_word.")
   } else {

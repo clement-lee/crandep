@@ -39,7 +39,7 @@ dplyr::count(cran_dependencies, type, reverse)
 
 This is essentially a snapshot of CRAN. We can obtain all the current dependencies using `get_dep_all_packages()`, which requires no arguments:
 ```{r get_dep_all_packages}
-df0.cran <- get_dep_all_packages()
+df0.cran <- get_dep_all_packages()$dependencies
 head(df0.cran)
 dplyr::count(df0.cran, type, reverse) # numbers in general larger than above
 ```

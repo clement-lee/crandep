@@ -7,7 +7,7 @@
 get_graph_all_packages(type, gc = TRUE, reverse = FALSE)
 }
 \arguments{
-\item{type}{A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", up to letter case and space replaced by underscore. Alternatively, if 'types = "all"', all five dependencies will be obtained.}
+\item{type}{A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", up to letter case and space replaced by underscore. Alternatively, if 'type = "all"', all five dependencies will be obtained; if 'type = "strong"', "Depends", "Imports" & "LinkingTo" will be obtained.}
 
 \item{gc}{Boolean, if 'TRUE' (default) then the giant component is extracted, if 'FALSE' then the whole graph is returned}
 

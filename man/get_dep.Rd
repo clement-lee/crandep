@@ -9,7 +9,7 @@ get_dep(name, type, reverse = FALSE)
 \arguments{
 \item{name}{String, name of the package}
 
-\item{type}{A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", up to letter case and space replaced by underscore. Alternatively, if 'type = "all"', all five dependencies will be obtained.}
+\item{type}{A character vector that contains one or more of the following dependency words: "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", up to letter case and space replaced by underscore. Alternatively, if 'type = "all"', all five dependencies will be obtained; if 'type = "strong"', "Depends", "Imports" & "LinkingTo" will be obtained.}
 
 \item{reverse}{Boolean, whether forward (FALSE, default) or reverse (TRUE) dependencies are requested.}
 }
