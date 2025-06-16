@@ -1,3 +1,8 @@
+# crandep 0.3.13 (2025-06-16)
+
+## Functions
+- `get_dep_all_packages()` now returns a list of two data frames (instead of a data frame), namely `$packages` and `$dependencies`. In this way the "orphan" packages i.e. those that have no dependencies (forward or reverse) of any type are included in `$packages` even though they aren't in `$dependencies`.
+
 # crandep 0.3.12 (2025-05-02)
 
 ## Functions
