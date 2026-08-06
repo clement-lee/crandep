@@ -1,5 +1,8 @@
 # crandep (development version)
 
+## Functions
+- Re-add `topo_sort_kahn()`, previously removed in v0.3.11, along with its appearance in the introduction vignette.
+
 # crandep 0.3.13 (2025-06-16)
 
 ## Functions
